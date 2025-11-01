@@ -2,7 +2,7 @@
 
 ## About
 
-> Pending...
+A *GTD-based* tool to use without leaving your terminal.
 
 ## Features
 
@@ -101,22 +101,23 @@
         - [ ] stop
     - [ ] Horizon 1
       - [ ] Projects
-         - [ ] add
+         - [X] add
          - [ ] complete
          - [ ] decide
-         - [ ] delete
+         - [X] delete
          - [ ] edit
-         - [ ] list
+         - [X] list
          - [ ] note
+         - [X] rename
          - [ ] start
          - [ ] stop
-    - [ ] Horizon 2
-      - [ ] Areas
-        - [ ] add
-        - [ ] delete
-        - [ ] edit
-        - [ ] list
+    - [X] Horizon 2
+      - [X] Areas
+        - [X] add
+        - [X] delete
+        - [X] list
         - [ ] note
+        - [X] rename
     - [ ] Horizon 3
       - [ ] Goals
         - [ ] add

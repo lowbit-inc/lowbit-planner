@@ -1,6 +1,7 @@
 #!/bin/bash
 
 function inboxAdd() {
+
   this_inbox_item="$@"
 
   if [[ $this_inbox_item ]] ; then
@@ -26,8 +27,8 @@ function inboxHelp() {
   echo "${help_banner} - Inbox"
   echo
   echo "ACTIONS:"
-  echo "  add [item_name]"
-  echo "  delete [item_id]"
+  echo "  add item_name"
+  echo "  delete item_id"
   echo "  help (this message)"
   echo "  list"
 }

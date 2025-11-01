@@ -7,6 +7,7 @@ function database_check(){
   if [[ ! -f "${database_path}" ]] ; then
     echo "Database file not found. Initializing..."
     database_init
+    echo
   fi
 }
 
@@ -18,7 +19,13 @@ function database_init(){
 function database_run(){
   this_query="$@"
 
-  sqlite3 --table "${database_path}" "${this_query}"
+  sqlite3 --box "${database_path}" "${this_query}"
+}
+
+function database_silent(){
+  this_query="$@"
+
+  sqlite3 --csv "${database_path}" "${this_query}"
 }
 
 database_check

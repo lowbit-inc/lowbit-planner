@@ -12,6 +12,8 @@ function helpMessage() {
   echo
   echo "OBJECTS:"
   echo "  inbox"
+  echo "  project"
+  echo "  area"
   echo
   echo "ACTIONS:"
   echo "  capture [item_name]"

@@ -11,10 +11,12 @@
 ########
 # Libs #
 ########
+source ./libs/area.sh
 source ./libs/database.sh
 source ./libs/dependencies.sh
 source ./libs/help.sh
 source ./libs/inbox.sh
+source ./libs/project.sh
 
 ##########
 # Script #
@@ -23,6 +25,10 @@ source ./libs/inbox.sh
 usr_command="${1}"
 
 case "${usr_command}" in
+  "area")
+    shift
+    areaMain "$@"
+    ;;
   "capture")
     shift
     inboxAdd "$@"
@@ -33,6 +39,10 @@ case "${usr_command}" in
   "inbox")
     shift
     inboxMain "$@"
+    ;;
+  "project")
+    shift
+    projectMain "$@"
     ;;
   "version")
     helpVersion
