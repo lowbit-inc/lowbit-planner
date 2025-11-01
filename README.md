@@ -141,8 +141,8 @@
         - [ ] note
       - [ ] Principles
         - [ ] note
-  - [-] Actions
-    - [-] Capture (Inbox)
+  - [X] Actions
+    - [X] Capture (Inbox)
     - [ ] Clarify
     - [ ] Organize
     - [ ] Reflect (Review)
