@@ -12,6 +12,7 @@
 # Libs #
 ########
 source ./libs/area.sh
+source ./libs/collection.sh
 source ./libs/database.sh
 source ./libs/dependencies.sh
 source ./libs/help.sh
@@ -32,6 +33,10 @@ case "${usr_command}" in
   "capture")
     shift
     inboxAdd "$@"
+    ;;
+  "collection")
+    shift
+    collectionMain "$@"
     ;;
   "help")
     helpMessage

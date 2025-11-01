@@ -16,7 +16,7 @@ A *GTD-based* tool to use without leaving your terminal.
 - [ ] Tasks
 - [ ] Recurring Tasks
 - [ ] Habits
-- [ ] Listings
+- [ ] Collections
 - [ ] References
 
 ##### Horizon 1
@@ -85,17 +85,17 @@ A *GTD-based* tool to use without leaving your terminal.
         - [ ] delete
         - [ ] edit
         - [ ] list
-      - [ ] Listings
-        - [ ] add
-        - [ ] delete
-        - [ ] edit
-        - [ ] list
-      - [ ] Listing Items
+      - [ ] Collections
+        - [X] add
+        - [X] delete
+        - [X] list
+        - [X] rename
+      - [ ] Collection Items
         - [ ] add
         - [ ] complete
         - [ ] decide
         - [ ] delete
-        - [ ] edit
+        - [X] edit
         - [ ] list
         - [ ] start
         - [ ] stop

@@ -12,6 +12,7 @@ function helpMessage() {
   echo
   echo "OBJECTS:"
   echo "  inbox"
+  echo "  collection"
   echo "  project"
   echo "  area"
   echo
