@@ -23,6 +23,10 @@ source ./libs/inbox.sh
 usr_command="${1}"
 
 case "${usr_command}" in
+  "capture")
+    shift
+    inboxAdd "$@"
+    ;;
   "help")
     helpMessage
     ;;
@@ -30,13 +34,10 @@ case "${usr_command}" in
     shift
     inboxMain "$@"
     ;;
-  "usage")
-    helpUsage
-    ;;
   "version")
     helpVersion
     ;;
   *)
-    helpUsage
+    helpMessage
     ;;
 esac

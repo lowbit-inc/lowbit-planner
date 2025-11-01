@@ -12,7 +12,7 @@
 
 ##### Ground
 
-- [ ] Inbox
+- [X] Inbox
 - [ ] Tasks
 - [ ] Recurring Tasks
 - [ ] Habits
@@ -48,19 +48,19 @@
 
 ## Interfaces
 
-- [ ] **CLI** (Command Line Interface)
+- [-] **CLI** (Command Line Interface)
 - [ ] **TUI** (Terminal User Interface)
 - [ ] **GUI** (Graphical User Interface)
 
 ## TODO
 
-- [ ] CLI
-  - [ ] Objects
-    - [ ] Ground
-      - [ ] Inbox
-        - [ ] add
-        - [ ] delete
-        - [ ] list
+- [-] CLI
+  - [-] Objects
+    - [-] Ground
+      - [X] Inbox
+        - [X] add
+        - [X] delete
+        - [X] list
       - [ ] Tasks
         - [ ] add
         - [ ] complete
@@ -141,8 +141,8 @@
         - [ ] note
       - [ ] Principles
         - [ ] note
-  - [ ] Actions
-    - [ ] Capture (Inbox)
+  - [-] Actions
+    - [-] Capture (Inbox)
     - [ ] Clarify
     - [ ] Organize
     - [ ] Reflect (Review)
