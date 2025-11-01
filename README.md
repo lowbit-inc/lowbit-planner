@@ -54,22 +54,22 @@ A *GTD-based* tool to use without leaving your terminal.
 
 ## TODO
 
-- [ ] CLI
-  - [ ] Objects
-    - [ ] Ground
+- [X] CLI
+  - [X] Objects
+    - [X] Ground
       - [X] Inbox
         - [X] add
         - [X] delete
         - [X] list
-      - [ ] Tasks
-        - [ ] add
-        - [ ] complete
-        - [ ] decide
-        - [ ] delete
+      - [X] Tasks
+        - [X] add
+        - [X] complete
+        - [X] delete
         - [ ] edit
-        - [ ] list
-        - [ ] start
-        - [ ] stop
+        - [X] list
+        - [X] rename
+        - [X] start
+        - [X] stop
       - [ ] Recurring Tasks
         - [ ] add
         - [ ] complete
@@ -79,7 +79,7 @@ A *GTD-based* tool to use without leaving your terminal.
         - [ ] list
         - [ ] start
         - [ ] stop
-      - [ ] Habits
+      - [ ] Habits (daily/weekly/monthly/quarterly/biyearly/yearly)
         - [ ] add
         - [ ] complete
         - [ ] delete
