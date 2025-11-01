@@ -58,28 +58,95 @@
   - [ ] Objects
     - [ ] Ground
       - [ ] Inbox
+        - [ ] add
+        - [ ] delete
+        - [ ] list
       - [ ] Tasks
+        - [ ] add
+        - [ ] complete
+        - [ ] decide
+        - [ ] delete
+        - [ ] edit
+        - [ ] list
+        - [ ] start
+        - [ ] stop
       - [ ] Recurring Tasks
+        - [ ] add
+        - [ ] complete
+        - [ ] decide
+        - [ ] delete
+        - [ ] edit
+        - [ ] list
+        - [ ] start
+        - [ ] stop
       - [ ] Habits
+        - [ ] add
+        - [ ] complete
+        - [ ] delete
+        - [ ] edit
+        - [ ] list
       - [ ] Listings
-      - [ ] References
+        - [ ] add
+        - [ ] delete
+        - [ ] edit
+        - [ ] list
+      - [ ] Listing Items
+        - [ ] add
+        - [ ] complete
+        - [ ] decide
+        - [ ] delete
+        - [ ] edit
+        - [ ] list
+        - [ ] start
+        - [ ] stop
     - [ ] Horizon 1
       - [ ] Projects
+         - [ ] add
+         - [ ] complete
+         - [ ] decide
+         - [ ] delete
+         - [ ] edit
+         - [ ] list
+         - [ ] note
+         - [ ] start
+         - [ ] stop
     - [ ] Horizon 2
       - [ ] Areas
+        - [ ] add
+        - [ ] delete
+        - [ ] edit
+        - [ ] list
+        - [ ] note
     - [ ] Horizon 3
       - [ ] Goals
+        - [ ] add
+        - [ ] complete
+        - [ ] decide
+        - [ ] delete
+        - [ ] edit
+        - [ ] list
+        - [ ] note
+        - [ ] start
+        - [ ] stop
     - [ ] Horizon 4
       - [ ] Vision
+        - [ ] add
+        - [ ] decide
+        - [ ] delete
+        - [ ] edit
+        - [ ] list
+        - [ ] note
     - [ ] Horizon 5
       - [ ] Purpose
+        - [ ] note
       - [ ] Principles
+        - [ ] note
   - [ ] Actions
-    - [ ] Capture
+    - [ ] Capture (Inbox)
     - [ ] Clarify
     - [ ] Organize
-    - [ ] Reflect
-    - [ ] Engage (Next Actions)
+    - [ ] Reflect (Review)
+    - [ ] Engage (Next Actions / Do)
 - [ ] TUI
   - [ ] Modes
     - [ ] Plan
