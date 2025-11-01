@@ -48,15 +48,15 @@
 
 ## Interfaces
 
-- [-] **CLI** (Command Line Interface)
+- [ ] **CLI** (Command Line Interface)
 - [ ] **TUI** (Terminal User Interface)
 - [ ] **GUI** (Graphical User Interface)
 
 ## TODO
 
-- [-] CLI
-  - [-] Objects
-    - [-] Ground
+- [ ] CLI
+  - [ ] Objects
+    - [ ] Ground
       - [X] Inbox
         - [X] add
         - [X] delete
