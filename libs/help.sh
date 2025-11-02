@@ -5,23 +5,39 @@ help_version="undefined"
 function helpMessage() {
   echo "${help_banner} - Help Message"
   echo
-  echo "$(basename $0) OBJECT ACTION [args]"
-  echo "$(basename $0) ACTION [args]"
-  echo "$(basename $0) help (this message)"
-  echo "$(basename $0) version"
+  echo "Basics:"
+  echo "  $(basename $0) help (this message)"
+  echo "  $(basename $0) version"
   echo
-  echo "OBJECTS:"
-  echo "  inbox"
-  echo "  task"
-  echo "  recurring"
-  echo "  collection"
+  echo "Actions:"
+  echo "  $(basename $0) capture ITEM_NAME"
+  echo "  $(basename $0) clarify"
+  echo "  $(basename $0) organize"
+  echo "  $(basename $0) reflect"
+  echo "  $(basename $0) engage"
   echo
-  echo "  project"
+  echo "Ground:"
+  echo "  $(basename $0) inbox SUB_COMMAND"
+  echo "  $(basename $0) task SUB_COMMAND"
+  echo "  $(basename $0) recurring SUB_COMMAND"
+  echo "  $(basename $0) collection SUB_COMMAND"
   echo
-  echo "  area"
+  echo "Horizon 1:"
+  echo "  $(basename $0) project SUB_COMMAND"
   echo
-  echo "ACTIONS:"
-  echo "  capture [item_name]"
+  echo "Horizon 2:"
+  echo "  $(basename $0) area SUB_COMMAND"
+  echo
+  echo "Horizon 3:"
+  echo "  $(basename $0) goal SUB_COMMAND"
+  echo
+  echo "Horizon 4:"
+  echo "  $(basename $0) vision SUB_COMMAND"
+  echo
+  echo "Horizon 5:"
+  echo "  $(basename $0) purpose SUB_COMMAND"
+  echo "  $(basename $0) principle SUB_COMMAND"
+  echo
 }
 
 function helpVersion() {
