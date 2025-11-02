@@ -5,6 +5,8 @@ help_version="undefined"
 function helpMessage() {
   echo "${help_banner} - Help Message"
   echo
+  echo "> A GTD-based tool to manage your life, without leaving the terminal."
+  echo
   echo "Basics:"
   echo "  $(basename $0) help (this message)"
   echo "  $(basename $0) version"
