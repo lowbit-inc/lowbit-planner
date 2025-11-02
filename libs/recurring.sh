@@ -4,11 +4,13 @@ function recurringHelp() {
 
   echo "${help_banner} - Recurring Tasks"
   echo
-  echo "Commands:"
-  echo "  add --name task_name --recur FREQUENCY"
-  echo "  delete task_id"
-  echo "  help (this message)"
-  echo "  list"
+  echo "Actions:"
+  echo "  $(basename $0) add --name TASK_NAME --recur FREQUENCY"
+  echo "  $(basename $0) complete TASK_ID"
+  echo "  $(basename $0) delete TASK_ID"
+  echo "  $(basename $0) help (this message)"
+  echo "  $(basename $0) list"
+  echo "  $(basename $0) rename OLD_TASK_NAME NEW_TASK_NAME"
   echo
   echo "Frequencies:"
   echo "  daily"
@@ -17,6 +19,7 @@ function recurringHelp() {
   echo "  quarterly"
   echo "  biannual"
   echo "  yearly"
+  echo
 
 }
 

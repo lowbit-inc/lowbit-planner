@@ -26,21 +26,22 @@ function collectionHelp() {
   echo "${help_banner} - Collections"
   echo
   echo "Collections:"
-  echo "  add collection_name"
-  echo "  decide collection_name"
-  echo "  delete collection_name"
-  echo "  help (this message)"
-  echo "  list"
-  echo "  rename old_collection_name new_collection_name"
+  echo "  $(basename $0) add COLLECTION_NAME"
+  echo "  $(basename $0) decide COLLECTION_NAME"
+  echo "  $(basename $0) delete COLLECTION_NAME"
+  echo "  $(basename $0) help (this message)"
+  echo "  $(basename $0) list"
+  echo "  $(basename $0) rename OLD_COLLECTION_NAME NEW_COLLECTION_NAME"
   echo
   echo "Items:"
-  echo "  add-item collection_name item_name"
-  echo "  complete collection_name item_name"
-  echo "  delete-item collection_name item_name"
-  echo "  list-item collection_name"
-  echo "  rename-item collection_name old_item_name new_item_name"
-  echo "  start collection_name item_name"
-  echo "  stop collection_name item_name"
+  echo "  $(basename $0) add-item COLLECTION_NAME ITEM_NAME"
+  echo "  $(basename $0) complete COLLECTION_NAME ITEM_NAME"
+  echo "  $(basename $0) delete-item COLLECTION_NAME ITEM_NAME"
+  echo "  $(basename $0) list-item COLLECTION_NAME"
+  echo "  $(basename $0) rename-item COLLECTION_NAME OLD_ITEM_NAME NEW_ITEM_NAME"
+  echo "  $(basename $0) start COLLECTION_NAME ITEM_NAME"
+  echo "  $(basename $0) stop COLLECTION_NAME ITEM_NAME"
+  echo
 }
 
 function collectionList() {

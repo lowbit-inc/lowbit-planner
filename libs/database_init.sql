@@ -90,4 +90,4 @@ CREATE TABLE recurring (
   state TEXT DEFAULT "Pending"
 );
 
-INSERT INTO recurring (name, recurrence) VALUES ("Projects Review", "Weekly");
+INSERT INTO recurring (name, recurrence) VALUES ("Pay the bills", "Monthly");
