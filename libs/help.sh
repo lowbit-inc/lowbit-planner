@@ -1,6 +1,7 @@
 #!/bin/bash
 help_banner="Lowbit Planner"
 help_version="undefined"
+help_basename="$(basename $0)"
 
 function helpMessage() {
   echo "${help_banner} - Help Message"
@@ -8,38 +9,38 @@ function helpMessage() {
   echo "> A GTD-based tool to manage your life, without leaving the terminal."
   echo
   echo "Basics:"
-  echo "  $(basename $0) help (this message)"
-  echo "  $(basename $0) version"
+  echo "  ${help_basename} help (this message)"
+  echo "  ${help_basename} version"
   echo
   echo "Actions:"
-  echo "  $(basename $0) capture ITEM_NAME"
-  echo "  $(basename $0) clarify"
-  echo "  $(basename $0) organize"
-  echo "  $(basename $0) reflect"
-  echo "  $(basename $0) engage"
+  echo "  ${help_basename} capture ITEM_NAME"
+  echo "  ${help_basename} clarify"
+  echo "  ${help_basename} organize"
+  echo "  ${help_basename} reflect"
+  echo "  ${help_basename} engage"
   echo
   echo "Ground:"
-  echo "  $(basename $0) inbox"
-  echo "  $(basename $0) task"
-  echo "  $(basename $0) recurring"
-  echo "  $(basename $0) habit"
-  echo "  $(basename $0) collection"
+  echo "  ${help_basename} inbox"
+  echo "  ${help_basename} task"
+  echo "  ${help_basename} recurring"
+  echo "  ${help_basename} habit"
+  echo "  ${help_basename} collection"
   echo
   echo "Horizon 1:"
-  echo "  $(basename $0) project"
+  echo "  ${help_basename} project"
   echo
   echo "Horizon 2:"
-  echo "  $(basename $0) area"
+  echo "  ${help_basename} area"
   echo
   echo "Horizon 3:"
-  echo "  $(basename $0) goal"
+  echo "  ${help_basename} goal"
   echo
   echo "Horizon 4:"
-  echo "  $(basename $0) vision"
+  echo "  ${help_basename} vision"
   echo
   echo "Horizon 5:"
-  echo "  $(basename $0) purpose"
-  echo "  $(basename $0) principle"
+  echo "  ${help_basename} purpose"
+  echo "  ${help_basename} principle"
   echo
 }
 

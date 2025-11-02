@@ -73,11 +73,11 @@ function projectHelp() {
   echo "${help_banner} - Projects"
   echo
   echo "Actions:"
-  echo "  $(basename $0) add --name PROJECT_NAME [--area AREA_NAME] [--deadline DATE]"
-  echo "  $(basename $0) delete PROJECT_ID"
-  echo "  $(basename $0) help (this message)"
-  echo "  $(basename $0) list"
-  echo "  $(basename $0) rename OLD_PROJECT_NAME NEW_PROJECT_NAME"
+  echo "  ${help_basename} add --name PROJECT_NAME [--area AREA_NAME] [--deadline DATE]"
+  echo "  ${help_basename} delete PROJECT_ID"
+  echo "  ${help_basename} help (this message)"
+  echo "  ${help_basename} list"
+  echo "  ${help_basename} rename OLD_PROJECT_NAME NEW_PROJECT_NAME"
   echo
 }
 

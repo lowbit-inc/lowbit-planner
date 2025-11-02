@@ -42,7 +42,7 @@ CREATE TABLE area (
 INSERT INTO area (name) VALUES ("Personal");
 INSERT INTO area (name) VALUES ("Work");
 
--- Idea: try to consolidade the amount of objects for the areas
+---- Idea: try to consolidade the amount of objects for the areas
 -- CREATE VIEW area_view AS
 -- SELECT area.name AS name, projects, goals, visions
 -- FROM area;
@@ -80,7 +80,14 @@ INSERT INTO task (name) VALUES ("Procrastinate");
 CREATE VIEW task_view AS
 SELECT task.id AS id, task.name AS name, project.name AS project, task.deadline AS deadline, task.state AS state
 FROM task
-LEFT JOIN project ON task.project_id = project.id;
+LEFT JOIN project ON task.project_id = project.id
+WHERE state <> 'Done' ORDER BY deadline ASC NULLS LAST, state DESC;
+
+CREATE VIEW task_log AS
+SELECT task.id AS id, task.name AS name, project.name AS project, task.deadline AS deadline, task.completion_date AS completion_date
+FROM task
+LEFT JOIN project ON task.project_id = project.id
+WHERE state == 'Done' ORDER BY completion_date ASC;
 
 CREATE TABLE recurring (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,4 +97,9 @@ CREATE TABLE recurring (
   state TEXT DEFAULT "Pending"
 );
 
-INSERT INTO recurring (name, recurrence) VALUES ("Pay the bills", "Monthly");
+CREATE VIEW recurring_log AS
+SELECT id, name, recurrence, completion_date, state
+FROM recurring
+WHERE state == 'Done';
+
+INSERT INTO recurring (name, recurrence) VALUES ("Pay the bills", "monthly");

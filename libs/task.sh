@@ -84,21 +84,26 @@ function taskHelp() {
   echo "${help_banner} - Tasks"
   echo
   echo "Actions:"
-  echo "  $(basename $0) add --name TASK_NAME [--project PROJECT_NAME] [--deadline DATE]"
-  echo "  $(basename $0) complete TASK_ID"
-  echo "  $(basename $0) delete TASK_ID"
-  echo "  $(basename $0) help (this message)"
-  echo "  $(basename $0) list"
-  echo "  $(basename $0) rename OLD_TASK_NAME NEW_TASK_NAME"
-  echo "  $(basename $0) set-deadline TASK_ID DATE"
-  echo "  $(basename $0) set-project TASK_ID PROJECT_NAME"
-  echo "  $(basename $0) start TASK_ID"
-  echo "  $(basename $0) stop TASK_ID"
+  echo "  ${help_basename} add --name TASK_NAME [--project PROJECT_NAME] [--deadline DATE]"
+  echo "  ${help_basename} complete TASK_ID"
+  echo "  ${help_basename} delete TASK_ID"
+  echo "  ${help_basename} help (this message)"
+  echo "  ${help_basename} list"
+  echo "  ${help_basename} list-completed"
+  echo "  ${help_basename} rename OLD_TASK_NAME NEW_TASK_NAME"
+  echo "  ${help_basename} set-deadline TASK_ID [DATE]"
+  echo "  ${help_basename} set-project TASK_ID [PROJECT_NAME]"
+  echo "  ${help_basename} start TASK_ID"
+  echo "  ${help_basename} stop TASK_ID"
   echo
 }
 
 function taskList() {
-  database_run "SELECT * FROM task_view WHERE state <> 'Done' ORDER BY deadline ASC NULLS LAST, state DESC"
+  database_run "SELECT * FROM task_view;"
+}
+
+function taskListCompleted() {
+  database_run "SELECT * FROM task_log;"
 }
 
 function taskMain() {
@@ -122,6 +127,9 @@ function taskMain() {
       ;;
     "list")
       taskList
+      ;;
+    "list-completed")
+      taskListCompleted
       ;;
     "rename")
       shift
@@ -162,7 +170,7 @@ function taskRename() {
 }
 
 function taskSetDeadline() {
-  if [[ ! $2 ]]; then
+  if [[ ! $1 ]]; then
     echo "Error: missing required args."
     exit 1
   fi
@@ -175,7 +183,7 @@ function taskSetDeadline() {
 }
 
 function taskSetProject() {
-  if [[ ! $2 ]]; then
+  if [[ ! $1 ]]; then
     echo "Error: missing required args."
     exit 1
   fi
@@ -190,6 +198,8 @@ function taskSetProject() {
       echo "Error: invalid project name."
       exit 1
     fi
+  else
+    this_project_id="NULL"
   fi
 
   database_run "UPDATE task SET project_id = $this_project_id WHERE id = $this_task_id;"

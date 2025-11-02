@@ -27,11 +27,11 @@ function inboxHelp() {
   echo "${help_banner} - Inbox"
   echo
   echo "Actions:"
-  echo "  $(basename $0) add ITEM_NAME"
-  echo "  $(basename $0) clarify"
-  echo "  $(basename $0) delete ITEM_ID"
-  echo "  $(basename $0) help (this message)"
-  echo "  $(basename $0) list"
+  echo "  ${help_basename} add ITEM_NAME"
+  echo "  ${help_basename} clarify"
+  echo "  ${help_basename} delete ITEM_ID"
+  echo "  ${help_basename} help (this message)"
+  echo "  ${help_basename} list"
   echo
 }
 
@@ -46,6 +46,9 @@ function inboxMain() {
     "add")
       shift
       inboxAdd "$@"
+      ;;
+    "clarify")
+      clarify
       ;;
     "delete")
       shift

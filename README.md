@@ -106,7 +106,8 @@ A *GTD-based* tool to use without leaving your terminal.
          - [ ] decide
          - [X] delete
          - [ ] edit
-         - [X] list
+         - [ ] list (show amount of tasks)
+         - [ ] list-tasks
          - [ ] note
          - [X] rename
          - [ ] start
@@ -148,6 +149,9 @@ A *GTD-based* tool to use without leaving your terminal.
     - [ ] Organize
     - [ ] Reflect (Review)
     - [ ] Engage (Next Actions / Do)
+  - [ ] Other
+    - [ ] Colors!
+    - [ ] Global search
 - [ ] TUI
   - [ ] Modes
     - [ ] Plan
