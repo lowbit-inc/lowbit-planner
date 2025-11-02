@@ -13,19 +13,19 @@ A *GTD-based* tool to use without leaving your terminal.
 ##### Ground
 
 - [X] Inbox
-- [ ] Tasks
+- [X] Tasks
 - [ ] Recurring Tasks
 - [ ] Habits
-- [ ] Collections
+- [X] Collections
 - [ ] References
 
 ##### Horizon 1
 
-- [ ] Projects
+- [X] Projects
 
 ##### Horizon 2
 
-- [ ] Areas
+- [X] Areas
 
 ##### Horizon 3
 
@@ -42,13 +42,13 @@ A *GTD-based* tool to use without leaving your terminal.
 
 #### Modes
 
-- [ ] Capture (*Inbox*)
+- [X] Capture (*Inbox*)
 - [ ] Plan (*Review*)
 - [ ] Do (*Next Actions*)
 
 ## Interfaces
 
-- [ ] **CLI** (Command Line Interface)
+- [X] **CLI** (Command Line Interface)
 - [ ] **TUI** (Terminal User Interface)
 - [ ] **GUI** (Graphical User Interface)
 
@@ -65,7 +65,7 @@ A *GTD-based* tool to use without leaving your terminal.
         - [X] add
         - [X] complete
         - [X] delete
-        - [ ] edit
+        - [X] edit
         - [X] list
         - [X] rename
         - [X] start

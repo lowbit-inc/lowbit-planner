@@ -80,73 +80,6 @@ function taskDelete() {
   fi
 }
 
-function taskEdit() {
-
-  # Getting args
-  while [[ "$@" ]] ; do
-    this_arg="${1}"
-
-    case "${this_arg}" in
-      "--deadline")
-        shift
-        if [[ "${1}" ]] ; then
-          this_task_deadline="'${1}'"
-        else
-          echo "Error: missing task deadline"
-          exit 1
-        fi
-        ;;
-      "--name")
-        shift
-        if [[ "${1}" ]] ; then
-          this_task_name="'${1}'"
-        else
-          echo "Error: missing task name"
-          exit 1
-        fi
-        ;;
-      "--name")
-        shift
-        if [[ "${1}" ]] ; then
-          this_task_name="'${1}'"
-        else
-          echo "Error: missing task name"
-          exit 1
-        fi
-        ;;
-      "--project")
-        shift
-        if [[ "${1}" ]] ; then
-          this_task_project="${1}"
-        else
-          echo "Error: missing task project"
-          exit 1
-        fi
-        ;;
-    esac
-
-    shift
-  done
-
-  # Validating input
-  if [[ ! ${this_task_name} ]]; then
-    echo "Error: missing task name"
-    exit 1
-  fi
-
-  if [[ ${this_task_project} ]]; then
-    this_project_id=$(database_silent "SELECT id FROM project WHERE name='${this_task_project}'")
-    if [[ ! $this_project_id ]] ; then
-      echo "Error: invalid project name."
-      exit 1
-    fi
-  fi
-
-  # Inserting
-  database_run "INSERT INTO task (name, project_id, deadline) VALUES (${this_task_name}, ${this_project_id:-NULL}, ${this_task_deadline:-NULL});"
-  
-}
-
 function taskHelp() {
   echo "${help_banner} - Tasks"
   echo
@@ -157,6 +90,8 @@ function taskHelp() {
   echo "  help (this message)"
   echo "  list"
   echo "  rename old_task_name new_task_name"
+  echo "  set-deadline task_id DATE"
+  echo "  set-project task_id project_name"
   echo "  start task_id"
   echo "  stop task_id"
 }
@@ -191,6 +126,14 @@ function taskMain() {
       shift
       taskRename "$@"
       ;;
+    "set-deadline")
+      shift
+      taskSetDeadline "$@"
+      ;;
+    "set-project")
+      shift
+      taskSetProject "$@"
+      ;;
     "start")
       shift
       taskStart "$1"
@@ -215,6 +158,41 @@ function taskRename() {
     echo "Error: missing required args."
     exit 1
   fi
+}
+
+function taskSetDeadline() {
+  if [[ ! $2 ]]; then
+    echo "Error: missing required args."
+    exit 1
+  fi
+
+  this_task_id="$1"
+  this_task_deadline="$2"
+
+  database_run "UPDATE task SET deadline = '$this_task_deadline' WHERE id = $this_task_id;"
+
+}
+
+function taskSetProject() {
+  if [[ ! $2 ]]; then
+    echo "Error: missing required args."
+    exit 1
+  fi
+
+  this_task_id="$1"
+  this_task_project="$2"
+
+  # Validating project
+  if [[ ${this_task_project} ]]; then
+    this_project_id=$(database_silent "SELECT id FROM project WHERE name='${this_task_project}'")
+    if [[ ! $this_project_id ]] ; then
+      echo "Error: invalid project name."
+      exit 1
+    fi
+  fi
+
+  database_run "UPDATE task SET project_id = $this_project_id WHERE id = $this_task_id;"
+
 }
 
 function taskStart() {
