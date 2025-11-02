@@ -81,3 +81,13 @@ CREATE VIEW task_view AS
 SELECT task.id AS id, task.name AS name, project.name AS project, task.deadline AS deadline, task.state AS state
 FROM task
 LEFT JOIN project ON task.project_id = project.id;
+
+CREATE TABLE recurring (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE,
+  recurrence TEXT,
+  completion_date TEXT,
+  state TEXT DEFAULT "Pending"
+);
+
+INSERT INTO recurring (name, recurrence) VALUES ("Projects Review", "Weekly");

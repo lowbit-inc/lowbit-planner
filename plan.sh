@@ -18,6 +18,7 @@ source ./libs/dependencies.sh
 source ./libs/help.sh
 source ./libs/inbox.sh
 source ./libs/project.sh
+source ./libs/recurring.sh
 source ./libs/task.sh
 
 ##########
@@ -49,6 +50,10 @@ case "${usr_command}" in
   "project")
     shift
     projectMain "$@"
+    ;;
+  "recurring")
+    shift
+    recurringMain "$@"
     ;;
   "task")
     shift
