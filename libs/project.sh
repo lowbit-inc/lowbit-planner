@@ -72,12 +72,13 @@ function projectDelete() {
 function projectHelp() {
   echo "${help_banner} - Projects"
   echo
-  echo "ACTIONS:"
-  echo "  add --name project_name [--area area_name] [--deadline DATE]"
-  echo "  delete project_id"
-  echo "  help (this message)"
-  echo "  list"
-  echo "  rename old_project_name new_project_name"
+  echo "Actions:"
+  echo "  $(basename $0) add --name PROJECT_NAME [--area AREA_NAME] [--deadline DATE]"
+  echo "  $(basename $0) delete PROJECT_ID"
+  echo "  $(basename $0) help (this message)"
+  echo "  $(basename $0) list"
+  echo "  $(basename $0) rename OLD_PROJECT_NAME NEW_PROJECT_NAME"
+  echo
 }
 
 function projectList() {

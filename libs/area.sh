@@ -25,12 +25,13 @@ function areaDelete() {
 function areaHelp() {
   echo "${help_banner} - Areas"
   echo
-  echo "ACTIONS:"
-  echo "  add area_name"
-  echo "  delete area_name"
-  echo "  help (this message)"
-  echo "  list"
-  echo "  rename old_area_name new_area_name"
+  echo "Actions:"
+  echo "  $(basename $0) add AREA_NAME"
+  echo "  $(basename $0) delete AREA_NAME"
+  echo "  $(basename $0) help (this message)"
+  echo "  $(basename $0) list"
+  echo "  $(basename $0) rename OLD_AREA_NAME NEW_AREA_NAME"
+  echo
 }
 
 function areaList() {
