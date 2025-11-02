@@ -26,11 +26,12 @@ function inboxDelete() {
 function inboxHelp() {
   echo "${help_banner} - Inbox"
   echo
-  echo "ACTIONS:"
-  echo "  add item_name"
-  echo "  delete item_id"
-  echo "  help (this message)"
-  echo "  list"
+  echo "Actions:"
+  echo "  $(basename $0) add ITEM_NAME"
+  echo "  $(basename $0) clarify"
+  echo "  $(basename $0) delete ITEM_ID"
+  echo "  $(basename $0) help (this message)"
+  echo "  $(basename $0) list"
 }
 
 function inboxList() {
