@@ -4,21 +4,20 @@
 # Date: 2025-11-01
 # Description: GTD-inspired task management tool for the terminal.
 
-##########
-# Config #
-##########
-
 ########
 # Libs #
 ########
 source ./libs/area.sh
+source ./libs/clarify.sh
 source ./libs/collection.sh
 source ./libs/database.sh
 source ./libs/dependencies.sh
+source ./libs/engage.sh
 source ./libs/help.sh
 source ./libs/inbox.sh
 source ./libs/project.sh
 source ./libs/recurring.sh
+source ./libs/reflect.sh
 source ./libs/task.sh
 
 ##########
@@ -36,9 +35,15 @@ case "${usr_command}" in
     shift
     inboxAdd "$@"
     ;;
+  "clarify")
+    clarify
+    ;;
   "collection")
     shift
     collectionMain "$@"
+    ;;
+  "engage")
+    engage
     ;;
   "help")
     helpMessage
@@ -47,6 +52,9 @@ case "${usr_command}" in
     shift
     inboxMain "$@"
     ;;
+  "organize")
+    clarify
+    ;;
   "project")
     shift
     projectMain "$@"
@@ -54,6 +62,9 @@ case "${usr_command}" in
   "recurring")
     shift
     recurringMain "$@"
+    ;;
+  "reflect")
+    reflect
     ;;
   "task")
     shift

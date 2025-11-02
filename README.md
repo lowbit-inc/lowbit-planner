@@ -156,3 +156,43 @@ A *GTD-based* tool to use without leaving your terminal.
 - [ ] Web (?)
 - [ ] Mobile (?)
 - [ ] Backend/Sync (?)
+
+
+
+
+## Concept
+
+### TUI
+
+**Plan**:
+```ascii
++-----------------------------------+
+| Lowbit Planner        [PLAN] [do] |
++-----------------------------------+
+| Ground    | Daily     | [Pending] |
+| Horizon 1 | Weekly    | [Pending] |
+| Horizon 2 | Monthly   | [  OK!  ] |
+| Horizon 3 | Quarterly | [Pending] |
+| Horizon 4 | Biannual  | [  OK!  ] |
+| Horizon 5 | Yearly    | [Pending] |
++-----------+-----------+-----------+
+| > ............................... |
++-----------------------------------+
+```
+
+**Do**:
+```ascii
++------------------------------------------------------------------------------------------------------------+
+| Lowbit Planner                                                                                 [plan] [DO] |
++------------------------------------------------------------------------------------------------------------+
+| Type            | Description               | Deadline         | Recurrence | Parent             | State   |
++-----------------+---------------------------+------------------+------------+--------------------+---------+
+| Event           | English Class             | 2025-11-02 15:00 | --         | --                 | --      |
+| Task            | Choose travel destination | 2025-11-05       | --         | Vacation (Project) | Pending |
+| Recurrent Task  | Pay the bills             | (This month)     | Monthly    | --                 | Pending |
+| Habit           | Drink water               | (Today)          | Daily      | --                 | Pending |
+| Collection Item | Persona 5: Royal          | Started          | --         | Games (Collection) | Started |
++------------------------------------------------------------------------------------------------------------+
+| > ........................................................................................................ |
++------------------------------------------------------------------------------------------------------------+
+```
