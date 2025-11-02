@@ -32,6 +32,7 @@ function inboxHelp() {
   echo "  $(basename $0) delete ITEM_ID"
   echo "  $(basename $0) help (this message)"
   echo "  $(basename $0) list"
+  echo
 }
 
 function inboxList() {

@@ -83,17 +83,18 @@ function taskDelete() {
 function taskHelp() {
   echo "${help_banner} - Tasks"
   echo
-  echo "ACTIONS:"
-  echo "  add --name task_name [--project project_name] [--deadline DATE]"
-  echo "  complete task_id"
-  echo "  delete task_id"
-  echo "  help (this message)"
-  echo "  list"
-  echo "  rename old_task_name new_task_name"
-  echo "  set-deadline task_id DATE"
-  echo "  set-project task_id project_name"
-  echo "  start task_id"
-  echo "  stop task_id"
+  echo "Actions:"
+  echo "  $(basename $0) add --name TASK_NAME [--project PROJECT_NAME] [--deadline DATE]"
+  echo "  $(basename $0) complete TASK_ID"
+  echo "  $(basename $0) delete TASK_ID"
+  echo "  $(basename $0) help (this message)"
+  echo "  $(basename $0) list"
+  echo "  $(basename $0) rename OLD_TASK_NAME NEW_TASK_NAME"
+  echo "  $(basename $0) set-deadline TASK_ID DATE"
+  echo "  $(basename $0) set-project TASK_ID PROJECT_NAME"
+  echo "  $(basename $0) start TASK_ID"
+  echo "  $(basename $0) stop TASK_ID"
+  echo
 }
 
 function taskList() {
