@@ -10,6 +10,7 @@ function helpMessage() {
   echo
   echo "Basics:"
   echo "  ${help_basename} help (this message)"
+  echo "  ${help_basename} install"
   echo "  ${help_basename} version"
   echo
   echo "Actions:"
