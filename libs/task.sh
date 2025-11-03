@@ -66,7 +66,7 @@ function taskComplete() {
     exit 1
   fi
 
-  database_run "UPDATE task SET state = 'Done', completion_date = DATE('now') WHERE id = $this_task_id;"
+  database_run "UPDATE task SET state = 'Done', completion_date = DATE('now', 'localtime') WHERE id = $this_task_id;"
 }
 
 function taskDelete() {

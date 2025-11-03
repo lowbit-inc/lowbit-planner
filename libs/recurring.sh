@@ -1,7 +1,5 @@
 #!/bin/bash
 
-recurring_temp_file="/tmp/recurring.tmp"
-
 function recurringAdd() {
 
   # Getting args
@@ -64,7 +62,7 @@ function recurringComplete() {
     exit 1
   fi
 
-  database_run "UPDATE recurring SET state = 'Done', completion_date = DATE('now') WHERE id = $this_recurring_id;"
+  database_run "UPDATE recurring SET state = 'Done', completion_date = DATE('now', 'localtime') WHERE id = $this_recurring_id;"
 }
 
 function recurringDelete() {
@@ -83,7 +81,7 @@ function recurringHelp() {
   echo "${help_banner} - Recurring Tasks"
   echo
   echo "Actions:"
-  echo "  ${help_basename} add --name TASK_NAME --recurency FREQUENCY"
+  echo "  ${help_basename} add --name TASK_NAME --recurrence FREQUENCY"
   echo "  ${help_basename} complete TASK_ID"
   echo "  ${help_basename} delete TASK_ID"
   echo "  ${help_basename} help (this message)"
@@ -103,6 +101,10 @@ function recurringHelp() {
 
 function recurringList() {
 
+  # Updating before listing
+  recurringUpdate
+
+  # Listing
   database_run "SELECT * FROM recurring;"
 
 }
@@ -129,9 +131,9 @@ function recurringMain() {
       shift
       recurringRename "$@"
       ;;
-    "update")
-      recurringUpdate
-      ;;
+    # "update")
+    #   recurringUpdate
+    #   ;;
     *)
       recurringHelp
       ;;
@@ -151,33 +153,18 @@ function recurringRename() {
   fi
 }
 
+function recurringUncheck() {
+  if [[ "$1" ]] ; then
+    this_recurring_id="$1"
+  else
+    echo "Error: missing recurring task ID."
+    exit 1
+  fi
+
+  database_run "UPDATE recurring SET state = 'Pending', completion_date = NULL WHERE id = $this_recurring_id;"
+}
+
 function recurringUpdate() {
-
-  reference_date="2020-05-09"
-
-  # Debugging
-  echo """
-    Current Day         => $(datetime_get_current_day)
-    Current Week        => $(datetime_get_current_week)
-    Current Month       => $(datetime_get_current_month)
-    Current Quarter     => $(datetime_get_current_quarter)
-    Current Semester    => $(datetime_get_current_semester)
-    Current Year        => $(datetime_get_current_year)
-
-    Reference Day       => $reference_date
-    Reference Week      => $(datetime_get_week_from_date $reference_date)
-    Reference Month     => $(datetime_get_month_from_date $reference_date)
-    Reference Quarter   => $(datetime_get_quarter_from_date $reference_date)
-    Reference Semester  => $(datetime_get_semester_from_date $reference_date)
-    Reference Year      => $(datetime_get_year_from_date $reference_date)
-
-  """
-  exit 0
-  # Check all recurring tasks
-  # Do a loop in all completed ones
-  # For each completed task, check
-  # What is the recurrence?
-  # Is it today still completed?
 
   IFS=$'\n'
   for task in $(database_silent "SELECT * FROM recurring_log;"); do
@@ -193,28 +180,46 @@ function recurringUpdate() {
     # echo "  - Recurrence: ${this_task_recurrence}"
     # echo "  - Completion: ${this_task_completion}"
 
-    # Comparing the dates
-    echo "Recurrence: ${this_task_recurrence}"
-    echo "Completion: ${this_task_completion}"
-
     case "${this_task_recurrence}" in
       "daily")
+        if [[ $(datetime_get_current_day) != "$this_task_completion" ]] ; then
+          recurringUncheck ${this_task_id}
+          # echo "$(datetime_get_current_day) != $this_task_completion"
+        fi
         ;;
       "weekly")
+        if [[ $(datetime_get_current_week) != $(datetime_get_week_from_date $this_task_completion) ]] ; then
+          recurringUncheck ${this_task_id}
+          # echo "$(datetime_get_current_week) != $(datetime_get_week_from_date $this_task_completion)"
+        fi
         ;;
       "monthly")
+        if [[ $(datetime_get_current_month) != $(datetime_get_month_from_date $this_task_completion) ]] ; then
+          recurringUncheck ${this_task_id}
+          # echo "$(datetime_get_current_month) != $(datetime_get_month_from_date $this_task_completion)"
+        fi
         ;;
       "quarterly")
+        if [[ $(datetime_get_current_quarter) != $(datetime_get_quarter_from_date $this_task_completion) ]] ; then
+          recurringUncheck ${this_task_id}
+          # echo "$(datetime_get_current_quarter) != $(datetime_get_quarter_from_date $this_task_completion)"
+        fi
         ;;
       "biannual")
+        if [[ $(datetime_get_current_semester) != $(datetime_get_semester_from_date $this_task_completion) ]] ; then
+          recurringUncheck ${this_task_id}
+          # echo "$(datetime_get_current_semester) != $(datetime_get_semester_from_date $this_task_completion)"
+        fi
         ;;
       "yearly")
+        if [[ $(datetime_get_current_year) != $(datetime_get_year_from_date $this_task_completion) ]] ; then
+          recurringUncheck ${this_task_id}
+          # echo "$(datetime_get_current_year) != $(datetime_get_year_from_date $this_task_completion)"
+        fi
         ;;
     esac
 
   done
   unset $IFS
-
-  exit 0
 
 }

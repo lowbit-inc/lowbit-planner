@@ -14,6 +14,7 @@ source ./libs/database.sh
 source ./libs/datetime.sh
 source ./libs/dependencies.sh
 source ./libs/engage.sh
+source ./libs/habit.sh
 source ./libs/help.sh
 source ./libs/inbox.sh
 source ./libs/project.sh
@@ -45,6 +46,10 @@ case "${usr_command}" in
     ;;
   "engage")
     engage
+    ;;
+  "habit")
+    shift
+    habitMain "$@"
     ;;
   "help")
     helpMessage

@@ -14,8 +14,8 @@ A *GTD-based* tool to use without leaving your terminal.
 
 - [X] Inbox
 - [X] Tasks
-- [ ] Recurring Tasks
-- [ ] Habits
+- [X] Recurring Tasks
+- [X] Habits
 - [X] Collections
 - [ ] References
 
@@ -70,22 +70,19 @@ A *GTD-based* tool to use without leaving your terminal.
         - [X] rename
         - [X] start
         - [X] stop
-      - [ ] Recurring Tasks
-        - [ ] add
-        - [ ] complete
-        - [ ] decide
-        - [ ] delete
+      - [X] Recurring Tasks
+        - [X] add
+        - [X] complete
+        - [X] delete
         - [ ] edit
-        - [ ] list
-        - [ ] start
-        - [ ] stop
-      - [ ] Habits (daily/weekly/monthly/quarterly/biyearly/yearly)
-        - [ ] add
-        - [ ] complete
-        - [ ] delete
+        - [X] list
+      - [X] Habits
+        - [X] add
+        - [X] complete
+        - [X] delete
         - [ ] edit
-        - [ ] list
-      - [ ] Collections
+        - [X] list
+      - [X] Collections
         - [X] add
         - [X] delete
         - [X] list

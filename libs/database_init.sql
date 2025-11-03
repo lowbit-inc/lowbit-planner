@@ -103,3 +103,18 @@ FROM recurring
 WHERE state == 'Done';
 
 INSERT INTO recurring (name, recurrence) VALUES ("Pay the bills", "monthly");
+
+CREATE TABLE habit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE,
+  recurrence TEXT,
+  completion_date TEXT,
+  state TEXT DEFAULT "Pending"
+);
+
+CREATE VIEW habit_log AS
+SELECT id, name, recurrence, completion_date, state
+FROM habit
+WHERE state == 'Done';
+
+INSERT INTO habit (name, recurrence) VALUES ("Drink water", "daily");
