@@ -12,6 +12,7 @@ source ./libs/clarify.sh
 source ./libs/collection.sh
 source ./libs/database.sh
 source ./libs/datetime.sh
+source ./libs/decision.sh
 source ./libs/dependencies.sh
 source ./libs/engage.sh
 source ./libs/habit.sh

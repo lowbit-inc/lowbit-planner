@@ -27,12 +27,26 @@ CREATE TABLE collection_item (
   name TEXT UNIQUE,
   collection_id INTEGER NOT NULL,
   state TEXT DEFAULT "Pending",
+  completion_date TEXT,
   position INTEGER DEFAULT 0,
   FOREIGN KEY (collection_id) REFERENCES collection (id)
 );
 
 INSERT INTO collection_item (name, collection_id) VALUES ("Neuromancer",1);
+INSERT INTO collection_item (name, collection_id) VALUES ("Animal Crossing: New Horizon",2);
 INSERT INTO collection_item (name, collection_id) VALUES ("Persona 5: Royal",2);
+INSERT INTO collection_item (name, collection_id) VALUES ("Pokémon Midori",2);
+
+CREATE TABLE collection_item_decision (
+  collection_id INTEGER NOT NULL,
+  collection_item_id1 INTEGER NOT NULL,
+  collection_item_id2 INTEGER NOT NULL,
+  collection_item_id_choice INTEGER,
+  FOREIGN KEY (collection_id) REFERENCES collection (id),
+  FOREIGN KEY (collection_item_id1) REFERENCES collection_item (id),
+  FOREIGN KEY (collection_item_id2) REFERENCES collection_item (id),
+  PRIMARY KEY (collection_id, collection_item_id1, collection_item_id2)
+);
 
 CREATE TABLE area (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

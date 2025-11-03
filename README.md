@@ -87,15 +87,15 @@ A *GTD-based* tool to use without leaving your terminal.
         - [X] delete
         - [X] list
         - [X] rename
-      - [ ] Collection Items
-        - [ ] add
-        - [ ] complete
+      - [X] Collection Items
+        - [X] add
+        - [X] complete
         - [ ] decide
-        - [ ] delete
-        - [X] edit
-        - [ ] list
-        - [ ] start
-        - [ ] stop
+        - [X] delete
+        - [ ] edit
+        - [X] list
+        - [X] start
+        - [X] stop
     - [ ] Horizon 1
       - [ ] Projects
          - [X] add
