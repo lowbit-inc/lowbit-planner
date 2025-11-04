@@ -149,6 +149,7 @@ A *GTD-based* tool to use without leaving your terminal.
   - [ ] Other
     - [ ] Colors!
     - [ ] Global search
+    - [ ] Confirmation upon intrusive commands (little function)
 - [ ] TUI
   - [ ] Modes
     - [ ] Plan
