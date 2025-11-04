@@ -91,6 +91,27 @@ function collectionDeleteItem() {
 
 }
 
+function collectionForget() {
+
+  # Parsing args
+  if [[ $1 ]] ; then
+    this_collection_name="$1"
+  else
+    echo "Error: missing collection name."
+    exit 1
+  fi
+
+  # Validating collection name
+  this_collection_id=$(database_silent "SELECT id FROM collection WHERE name = '${this_collection_name}'")
+  if [[ ! "${this_collection_id}" ]] ; then
+    echo "Error: invalid collection name."
+    exit 1
+  fi
+
+  decisionForget $this_collection_id
+
+}
+
 function collectionHelp() {
   echo "${help_banner} - Collections"
   echo
@@ -98,6 +119,7 @@ function collectionHelp() {
   echo "  ${help_basename} add COLLECTION_NAME"
   echo "  ${help_basename} decide COLLECTION_NAME"
   echo "  ${help_basename} delete COLLECTION_NAME"
+  echo "  ${help_basename} forget COLLECTION_NAME"
   echo "  ${help_basename} help (this message)"
   echo "  ${help_basename} list"
   echo "  ${help_basename} rename OLD_COLLECTION_NAME NEW_COLLECTION_NAME"
@@ -162,6 +184,10 @@ function collectionMain() {
     "delete-item")
       shift
       collectionDeleteItem "$1"
+      ;;
+    "forget")
+      shift
+      collectionForget "$1"
       ;;
     "help")
       collectionHelp

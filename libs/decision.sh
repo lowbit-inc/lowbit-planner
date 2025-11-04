@@ -1,5 +1,12 @@
 #!/bin/bash
 
+function decisionForget() {
+  this_collection_id=$1
+
+  database_silent "DELETE FROM collection_item_decision WHERE collection_id = ${this_collection_id}"
+  database_silent "UPDATE collection_item SET position = 0 WHERE collection_id = ${this_collection_id}"
+}
+
 function decisionGenerateList() {
   this_collection_id=$1
 
@@ -57,7 +64,7 @@ function decisionMakeChoice() {
   fi
 
   # Deciding...
-  this_decisions=$(database_silent "SELECT collection_item_id1, collection_item_id2 FROM collection_item_decision WHERE collection_id = $this_collection_id AND collection_item_id_choice IS NULL;")
+  this_decisions=$(database_silent "SELECT collection_item_id1, collection_item_id2 FROM collection_item_decision WHERE collection_id = $this_collection_id AND collection_item_id_choice IS NULL ORDER BY RANDOM();")
   for decision in $this_decisions; do
 
     # Option IDs
@@ -75,15 +82,21 @@ function decisionMakeChoice() {
       echo "1) $this_option_1_label"
       echo "2) $this_option_2_label"
       echo
+      echo "a) abort decision process"
+      echo
+      echo -n "> "
       read this_choice
       case $this_choice in
-        1)
+        "1")
           this_choice_id=$this_option_1
           break
           ;;
-        2)
+        "2")
           this_choice_id=$this_option_2
           break
+          ;;
+        "a")
+          exit 0
           ;;
       esac
     done

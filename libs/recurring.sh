@@ -87,6 +87,7 @@ function recurringHelp() {
   echo "  ${help_basename} help (this message)"
   echo "  ${help_basename} list"
   echo "  ${help_basename} rename OLD_TASK_NAME NEW_TASK_NAME"
+  echo "  ${help_basename} update"
   echo
   echo "Frequencies:"
   echo "  daily"
@@ -131,9 +132,9 @@ function recurringMain() {
       shift
       recurringRename "$@"
       ;;
-    # "update")
-    #   recurringUpdate
-    #   ;;
+    "update")
+      recurringUpdate
+      ;;
     *)
       recurringHelp
       ;;
