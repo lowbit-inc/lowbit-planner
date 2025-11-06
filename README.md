@@ -17,7 +17,6 @@ A *GTD-based* tool to use without leaving your terminal.
 - [X] Recurring Tasks
 - [X] Habits
 - [X] Collections
-- [ ] References
 
 ##### Horizon 1
 
@@ -29,11 +28,11 @@ A *GTD-based* tool to use without leaving your terminal.
 
 ##### Horizon 3
 
-- [ ] Goals
+- [X] Goals
 
 ##### Horizon 4
 
-- [ ] Vision
+- [X] Vision
 
 ##### Horizon 5
 
@@ -150,6 +149,7 @@ A *GTD-based* tool to use without leaving your terminal.
     - [ ] Colors!
     - [ ] Global search
     - [ ] Confirmation upon intrusive commands (little function)
+    - [ ] Installer (install command)
 - [ ] TUI
   - [ ] Modes
     - [ ] Plan

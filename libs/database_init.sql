@@ -132,3 +132,34 @@ FROM habit
 WHERE state == 'Done';
 
 INSERT INTO habit (name, recurrence) VALUES ("Drink water", "daily");
+
+CREATE TABLE goal (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE,
+  area_id INTEGER,
+  deadline TEXT,
+  position INTEGER DEFAULT 0,
+  FOREIGN KEY (area_id) REFERENCES area (id)
+);
+
+INSERT INTO goal (name, area_id) VALUES ("Move to new home", 1);
+
+CREATE VIEW goal_view AS
+SELECT goal.id AS id, goal.name AS name, area.name AS area, goal.deadline AS deadline, goal.position AS position
+FROM goal
+LEFT JOIN area ON goal.area_id = area.id;
+
+CREATE TABLE vision (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE,
+  area_id INTEGER,
+  position INTEGER DEFAULT 0,
+  FOREIGN KEY (area_id) REFERENCES area (id)
+);
+
+INSERT INTO vision (name, area_id) VALUES ("Learn Karate", 1);
+
+CREATE VIEW vision_view AS
+SELECT vision.id AS id, vision.name AS name, area.name AS area, vision.position AS position
+FROM vision
+LEFT JOIN area ON vision.area_id = area.id;
