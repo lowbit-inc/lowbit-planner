@@ -51,106 +51,111 @@ A *GTD-based* tool to use without leaving your terminal.
 - [ ] **TUI** (Terminal User Interface)
 - [ ] **GUI** (Graphical User Interface)
 
-## TODO
+## Commands Map
 
-- [X] CLI
-  - [X] Objects
-    - [X] Ground
-      - [X] Inbox
-        - [X] add
-        - [X] delete
-        - [X] list
-      - [X] Tasks
-        - [X] add
-        - [X] complete
-        - [X] delete
-        - [X] edit
-        - [X] list
-        - [X] rename
-        - [X] start
-        - [X] stop
-      - [X] Recurring Tasks
-        - [X] add
-        - [X] complete
-        - [X] delete
-        - [ ] edit
-        - [X] list
-      - [X] Habits
-        - [X] add
-        - [X] complete
-        - [X] delete
-        - [ ] edit
-        - [X] list
-      - [X] Collections
-        - [X] add
-        - [X] delete
-        - [X] list
-        - [X] rename
-      - [X] Collection Items
-        - [X] add
-        - [X] complete
-        - [ ] decide
-        - [X] delete
-        - [ ] edit
-        - [X] list
-        - [X] start
-        - [X] stop
-    - [ ] Horizon 1
-      - [ ] Projects
-         - [X] add
-         - [ ] complete
-         - [ ] decide
-         - [X] delete
-         - [ ] edit
-         - [ ] list (show amount of tasks)
-         - [ ] list-tasks
-         - [ ] note
-         - [X] rename
-         - [ ] start
-         - [ ] stop
-    - [X] Horizon 2
-      - [X] Areas
-        - [X] add
-        - [X] delete
-        - [X] list
-        - [ ] note
-        - [X] rename
-    - [ ] Horizon 3
-      - [ ] Goals
-        - [ ] add
-        - [ ] complete
-        - [ ] decide
-        - [ ] delete
-        - [ ] edit
-        - [ ] list
-        - [ ] note
-        - [ ] start
-        - [ ] stop
-    - [ ] Horizon 4
-      - [ ] Vision
-        - [ ] add
-        - [ ] decide
-        - [ ] delete
-        - [ ] edit
-        - [ ] list
-        - [ ] note
-    - [ ] Horizon 5
-      - [ ] Purpose
-        - [ ] note
-      - [ ] Principles
-        - [ ] note
-  - [X] Actions
-    - [X] Capture (Inbox)
-    - [ ] Clarify
-    - [ ] Organize
-    - [ ] Reflect (Review)
-    - [ ] Engage (Next Actions / Do)
-  - [ ] Other
-    - [ ] Colors!
-    - [ ] Global search
-    - [ ] Confirmation upon intrusive commands (little function)
-    - [ ] Installer (install command)
-    - [ ] Don't decide on completed items
+- [ ] area
+  - [ ] add
+  - [ ] delete
+  - [ ] help
+  - [ ] list
+  - [ ] rename
+- [ ] capture
+- [ ] clarify
+- [ ] collection
+  - [ ] add
+  - [ ] add-item
+  - [ ] complete
+  - [ ] decide
+  - [ ] delete
+  - [ ] delete-item
+  - [ ] forget
+  - [ ] help
+  - [ ] list
+  - [ ] list-item
+  - [ ] rename
+  - [ ] rename-item
+  - [ ] start
+  - [ ] stop
+- [ ] engage
+- [ ] goal
+  - [ ] add
+  - [ ] delete
+  - [ ] help
+  - [ ] list
+  - [ ] rename
+- [ ] habit
+  - [ ] add
+  - [ ] complete
+  - [ ] delete
+  - [ ] help
+  - [ ] list
+  - [ ] rename
+  - [ ] update
+- [ ] help
+- [ ] inbox
+  - [ ] add
+  - [ ] clarify
+  - [ ] delete
+  - [ ] help
+  - [ ] list
+- [ ] install
+- [ ] organize
+- [ ] project
+  - [ ] add
+  - [ ] decide
+  - [ ] delete
+  - [ ] help
+  - [ ] list
+  - [ ] list-tasks
+  - [ ] list-completed
+  - [ ] rename
+  - [ ] start
+  - [ ] stop
+- [ ] principle
+  - [ ] edit
+  - [ ] help
+  - [ ] view
+- [ ] purpose
+  - [ ] edit
+  - [ ] help
+  - [ ] view
+- [ ] recurring
+  - [ ] add
+  - [ ] complete
+  - [ ] delete
+  - [ ] help
+  - [ ] list
+  - [ ] rename
+  - [ ] update
+- [ ] reflect
+- [ ] task
+  - [ ] add
+  - [ ] complete
+  - [ ] delete
+  - [ ] help
+  - [ ] list
+  - [ ] list-completed
+  - [ ] rename
+  - [ ] set-deadline
+  - [ ] set-project
+  - [ ] start
+  - [ ] stop
+- [ ] version
+- [ ] vision
+  - [ ] add
+  - [ ] delete
+  - [ ] help
+  - [ ] list
+  - [ ] rename
+
+## Other
+
+- [ ] Other
+  - [ ] Colors!
+  - [ ] Global search
+  - [ ] Confirmation upon intrusive commands (little function)
+  - [ ] Installer (install command)
+  - [ ] Don't decide on completed items
 - [ ] TUI
   - [ ] Modes
     - [ ] Plan
@@ -159,9 +164,6 @@ A *GTD-based* tool to use without leaving your terminal.
 - [ ] Web (?)
 - [ ] Mobile (?)
 - [ ] Backend/Sync (?)
-
-
-
 
 ## Concept
 
