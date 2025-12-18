@@ -1,50 +1,53 @@
 #!/bin/bash
-help_banner="Lowbit Planner"
-help_version="undefined"
-help_basename="$(basename $0)"
 
-function helpMessage() {
-  echo "${help_banner} - Help Message"
-  echo
-  echo "> A GTD-based tool to manage your life, without leaving the terminal."
-  echo
-  echo "Basics:"
-  echo "  ${help_basename} help (this message)"
-  echo "  ${help_basename} install"
-  echo "  ${help_basename} version"
-  echo
-  echo "Actions:"
-  echo "  ${help_basename} capture ITEM_NAME"
-  echo "  ${help_basename} clarify"
-  echo "  ${help_basename} organize"
-  echo "  ${help_basename} reflect"
-  echo "  ${help_basename} engage"
-  echo
-  echo "Ground:"
-  echo "  ${help_basename} inbox"
-  echo "  ${help_basename} task"
-  echo "  ${help_basename} recurring"
-  echo "  ${help_basename} habit"
-  echo "  ${help_basename} collection"
-  echo
-  echo "Horizon 1:"
-  echo "  ${help_basename} project"
-  echo
-  echo "Horizon 2:"
-  echo "  ${help_basename} area"
-  echo
-  echo "Horizon 3:"
-  echo "  ${help_basename} goal"
-  echo
-  echo "Horizon 4:"
-  echo "  ${help_basename} vision"
-  echo
-  echo "Horizon 5:"
-  echo "  ${help_basename} purpose"
-  echo "  ${help_basename} principle"
-  echo
-}
+function help_main() {
+  
+  log_message debug "Getting help message: main"
 
-function helpVersion() {
-  echo "${help_banner} - Version: ${help_version}"
+  printf "${color_bold}${system_banner} - Main Help${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}DESCRIPTION:${color_reset}\n"
+  printf "  A GTD-inspired task management tool for the terminal.\n"
+  printf "\n"
+  printf "${color_bold}USAGE:${color_reset}\n"
+  printf "  ${color_underline}${system_basename}${color_reset} ${color_bold}${color_red}COMMAND${color_reset} ${color_gray}[${color_bold}${color_green}SUBCOMMAND${color_reset}${color_gray}] [${color_bold}${color_blue}ARGUMENTS${color_reset}${color_gray}]${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}COMMANDS:${color_reset}\n"
+  printf "\n"
+  printf "${color_gray}  # Ground #${color_reset}\n"
+  printf "  inbox\n"
+  printf "  task\n"
+  printf "  recurring\n"
+  printf "  habit\n"
+  printf "  collection\n"
+  printf "\n"
+  printf "${color_gray}  # Horizon 1 #${color_reset}\n"
+  printf "  project\n"
+  printf "\n"
+  printf "${color_gray}  # Horizon 2 #${color_reset}\n"
+  printf "  area\n"
+  printf "\n"
+  printf "${color_gray}  # Horizon 3 #${color_reset}\n"
+  printf "  goal\n"
+  printf "\n"
+  printf "${color_gray}  # Horizon 4 #${color_reset}\n"
+  printf "  vision\n"
+  printf "\n"
+  printf "${color_gray}  # Horizon 5 #${color_reset}\n"
+  printf "  principle\n"
+  printf "  purpose\n"
+  printf "\n"
+  printf "${color_gray}  # GTD Phases #${color_reset}\n"
+  printf "  capture\n"
+  printf "  clarify\n"
+  printf "  organize\n"
+  printf "  reflect\n"
+  printf "  engage\n"
+  printf "\n"
+  printf "${color_gray}  # System #${color_reset}\n"
+  printf "  help\n"
+  printf "  install\n"
+  printf "  version\n"
+  printf "\n"
+  exit 0
 }

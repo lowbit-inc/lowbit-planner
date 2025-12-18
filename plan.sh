@@ -2,12 +2,12 @@
 #
 # Author: fewbits
 # Date: 2025-11-01
-# Description: GTD-inspired task management tool for the terminal.
+# Description: A GTD-inspired task management tool for the terminal.
 
 ##########
 # Config #
 ##########
-configTextEditor="vim"
+#config_text_editor="vim" # Why/where is it used?
 
 ########
 # Libs #
@@ -15,6 +15,7 @@ configTextEditor="vim"
 source ./libs/area.sh
 source ./libs/clarify.sh
 source ./libs/collection.sh
+source ./libs/color.sh
 source ./libs/database.sh
 source ./libs/datetime.sh
 source ./libs/decision.sh
@@ -24,11 +25,13 @@ source ./libs/goal.sh
 source ./libs/habit.sh
 source ./libs/help.sh
 source ./libs/inbox.sh
+source ./libs/log.sh
 source ./libs/principle.sh
 source ./libs/project.sh
 source ./libs/purpose.sh
 source ./libs/recurring.sh
 source ./libs/reflect.sh
+source ./libs/system.sh
 source ./libs/task.sh
 source ./libs/vision.sh
 
@@ -36,76 +39,84 @@ source ./libs/vision.sh
 # Script #
 ##########
 
-usr_command="${1}"
+log_message debug "Starting ${system_banner}"
 
-case "${usr_command}" in
+if [[ "${1}" ]]; then
+  user_command="${1}" && log_message debug "User command: ${user_command}"
+else
+  log_message debug "No user command provided - calling help message"
+  help_main
+fi
+
+case "${1}" in
   "area")
     shift
-    areaMain "$@"
+    area_main "$@"
     ;;
   "capture")
     shift
-    inboxAdd "$@"
+    inbox_add "$@"
     ;;
   "clarify")
     clarify
     ;;
   "collection")
     shift
-    collectionMain "$@"
+    collection_main "$@"
     ;;
   "engage")
     engage
     ;;
   "goal")
     shift
-    goalMain "$@"
+    goal_main "$@"
     ;;
   "habit")
     shift
-    habitMain "$@"
+    habit_main "$@"
     ;;
   "help")
-    helpMessage
+    help_main
     ;;
   "inbox")
     shift
-    inboxMain "$@"
+    inbox_main "$@"
     ;;
   "organize")
     clarify
     ;;
   "principle")
     shift
-    principleMain "$@"
+    principle_main "$@"
     ;;
   "project")
     shift
-    projectMain "$@"
+    project_main "$@"
     ;;
   "purpose")
     shift
-    purposeMain "$@"
+    purpose_main "$@"
     ;;
   "recurring")
     shift
-    recurringMain "$@"
+    recurring_main "$@"
     ;;
   "reflect")
     reflect
     ;;
   "task")
     shift
-    taskMain "$@"
+    task_main "$@"
     ;;
   "version")
-    helpVersion
+    system_get_version
     ;;
   "vision")
     shift
-    visionMain "$@"
+    vision_main "$@"
     ;;
   *)
-    helpMessage
+    log_message warn "Unknown command (${user_command})"
+    help_main
     ;;
 esac
