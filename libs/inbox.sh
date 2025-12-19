@@ -23,25 +23,21 @@ function inboxDelete() {
   fi
 }
 
-function inboxHelp() {
-  echo "${help_banner} - Inbox"
-  echo
-  echo "Actions:"
-  echo "  ${help_basename} add ITEM_NAME"
-  echo "  ${help_basename} clarify"
-  echo "  ${help_basename} delete ITEM_ID"
-  echo "  ${help_basename} help (this message)"
-  echo "  ${help_basename} list"
-  echo
-}
-
 function inboxList() {
   database_run "SELECT * FROM inbox"
 }
 
-function inboxMain() {
-  usr_command="$1"
-  
+function inbox_main() {
+
+  log_message debug "Starting Inbox Main"
+
+  if [[ "${1}" ]]; then
+    user_command="${1}" && log_message debug "User command: ${user_command}"
+  else
+    log_message debug "No user command provided - calling help message"
+    help_inbox
+  fi
+
   case "${usr_command}" in
     "add")
       shift
@@ -55,13 +51,14 @@ function inboxMain() {
       inboxDelete "$1"
       ;;
     "help")
-      inboxHelp
+      help_inbox
       ;;
     "list")
       inboxList
       ;;
     *)
-      inboxHelp
+      log_message warn "Unknown command (${user_command})"
+      help_inbox
       ;;
   esac
 }
