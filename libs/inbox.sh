@@ -38,7 +38,7 @@ function inbox_main() {
     help_inbox
   fi
 
-  case "${usr_command}" in
+  case "${user_command}" in
     "add")
       shift
       inboxAdd "$@"
