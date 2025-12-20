@@ -42,9 +42,9 @@ source ./libs/vision.sh
 log_message debug "Starting ${system_banner}"
 
 if [[ "${1}" ]]; then
-  user_command="${1}" && log_message debug "User command: ${user_command}"
+  user_arg="${1}" && log_message debug "User arg: ${user_arg}"
 else
-  log_message debug "No user command provided - calling help message"
+  log_message debug "No user arg provided - calling help message"
   help_main
 fi
 
@@ -116,7 +116,7 @@ case "${1}" in
     vision_main "$@"
     ;;
   *)
-    log_message warn "Unknown command (${user_command})"
+    log_message warn "Unknown command (${user_arg})"
     help_main
     ;;
 esac

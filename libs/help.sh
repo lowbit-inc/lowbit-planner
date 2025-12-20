@@ -20,6 +20,22 @@ function help_inbox() {
   exit 0
 }
 
+function help_inbox_add() {
+  log_message debug "Getting help message: inbox add"
+  printf "${color_bold}${system_banner} - Inbox Add${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}DESCRIPTION:${color_reset}\n"
+  printf "  Add items to the inbox.\n"
+  printf "\n"
+  printf "${color_bold}USAGE:${color_reset}\n"
+  printf "  ${color_underline}${system_basename}${color_reset} ${color_bold}${color_red}inbox ${color_green}add ${color_blue}ITEM_NAME${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}ARGUMENTS:${color_reset}\n"
+  printf "  ${color_gray}(no supported args)${color_reset}\n"
+  printf "\n"
+  exit 0
+}
+
 function help_main() {
   
   log_message debug "Getting help message: main"

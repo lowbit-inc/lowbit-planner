@@ -1,6 +1,15 @@
 #!/bin/bash
 
-function inboxAdd() {
+function inbox_add() {
+
+  log_message debug "Starting Inbox Add"
+
+  if [[ "${1}" ]]; then
+    user_arg="${1}" && log_message debug "User arg: ${user_arg}"
+  else
+    log_message debug "No user arg provided - calling help message"
+    help_inbox_add
+  fi
 
   this_inbox_item="$@"
 
@@ -32,16 +41,16 @@ function inbox_main() {
   log_message debug "Starting Inbox Main"
 
   if [[ "${1}" ]]; then
-    user_command="${1}" && log_message debug "User command: ${user_command}"
+    user_arg="${1}" && log_message debug "User arg: ${user_arg}"
   else
-    log_message debug "No user command provided - calling help message"
+    log_message debug "No User arg provided - calling help message"
     help_inbox
   fi
 
-  case "${user_command}" in
+  case "${user_arg}" in
     "add")
       shift
-      inboxAdd "$@"
+      inbox_add "$@"
       ;;
     "clarify")
       clarify
@@ -57,7 +66,7 @@ function inbox_main() {
       inboxList
       ;;
     *)
-      log_message warn "Unknown command (${user_command})"
+      log_message warn "Unknown command (${user_arg})"
       help_inbox
       ;;
   esac

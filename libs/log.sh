@@ -2,8 +2,8 @@
 
 function log_message() {
   if [[ "$2" ]]; then
-    this_log_level="$1"
-    this_log_message="$2"
+    this_log_level="$1"   ; shift
+    this_log_message="$@"
   else
     echo "Error: missing required args for log_message function."
     exit 1
