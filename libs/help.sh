@@ -8,7 +8,7 @@ function help_inbox() {
   printf "  The place to capture all of your ideas.\n"
   printf "\n"
   printf "${color_bold}USAGE:${color_reset}\n"
-  printf "  ${color_underline}${system_basename}${color_reset} ${color_bold}${color_red}inbox${color_reset} ${color_gray}[${color_bold}${color_green}SUBCOMMAND${color_reset}${color_gray}] [${color_bold}${color_blue}ARGUMENTS${color_reset}${color_gray}]${color_reset}\n"
+  printf "  ${color_underline}${system_basename}${color_reset} ${color_bold}${color_red}inbox ${color_green}SUBCOMMAND${color_reset} ${color_gray}[${color_bold}${color_blue}ARGUMENTS${color_reset}${color_gray}]${color_reset}\n"
   printf "\n"
   printf "${color_bold}SUBCOMMANDS:${color_reset}\n"
   printf "  add\n"
