@@ -2,7 +2,13 @@
 
 ## About
 
-A *life planner* tool to use without leaving your terminal.
+A *life planner* tool to use without leaving the terminal.
+
+## Features
+
+* ⬜️ Colors
+* ⬜️ Debug mode
+* ⬜️ JSON database: won't be done now
 
 ## Commands Map
 
@@ -11,6 +17,7 @@ A *life planner* tool to use without leaving your terminal.
 > * ✴️ - Started
 > * ✅ - Complete
 
+* ⬜️ (root)
 * ⬜️ area
   * ⬜️ add
   * ⬜️ delete

@@ -45,7 +45,7 @@ if [[ "${1}" ]]; then
   user_arg="${1}" && log_message debug "User arg: ${user_arg}"
 else
   log_message debug "No user arg provided - calling help message"
-  help_main
+  system_get_help
 fi
 
 case "${1}" in
@@ -76,7 +76,7 @@ case "${1}" in
     habit_main "$@"
     ;;
   "help")
-    help_main
+    system_get_help
     ;;
   "inbox")
     shift
@@ -117,6 +117,6 @@ case "${1}" in
     ;;
   *)
     log_message warn "Unknown command (${user_arg})"
-    help_main
+    system_get_help
     ;;
 esac
