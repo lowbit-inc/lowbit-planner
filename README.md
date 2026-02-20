@@ -4,12 +4,6 @@
 
 A *life planner* tool to use without leaving the terminal.
 
-## Features
-
-* ⬜️ Colors
-* ⬜️ Debug mode
-* ⬜️ JSON database: won't be done now
-
 ## Commands Map
 
 > **Legend**:
@@ -116,3 +110,9 @@ A *life planner* tool to use without leaving the terminal.
   * ⬜️ help
   * ⬜️ list
   * ⬜️ rename
+
+## Features
+
+* ✅ Colors
+* ✅ Debug mode
+* ⏭️ JSON database (won't be done now)
