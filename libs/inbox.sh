@@ -1,6 +1,15 @@
 #!/bin/bash
 
-function inboxAdd() {
+function inbox_add() {
+
+  log_message debug "Starting Inbox Add"
+
+  if [[ "${1}" ]]; then
+    user_arg="${1}" && log_message debug "User arg: ${user_arg}"
+  else
+    log_message debug "No user arg provided - calling help message"
+    help_inbox_add
+  fi
 
   this_inbox_item="$@"
 
@@ -23,29 +32,25 @@ function inboxDelete() {
   fi
 }
 
-function inboxHelp() {
-  echo "${help_banner} - Inbox"
-  echo
-  echo "Actions:"
-  echo "  ${help_basename} add ITEM_NAME"
-  echo "  ${help_basename} clarify"
-  echo "  ${help_basename} delete ITEM_ID"
-  echo "  ${help_basename} help (this message)"
-  echo "  ${help_basename} list"
-  echo
-}
-
 function inboxList() {
   database_run "SELECT * FROM inbox"
 }
 
-function inboxMain() {
-  usr_command="$1"
-  
-  case "${usr_command}" in
+function inbox_main() {
+
+  log_message debug "Starting Inbox Main"
+
+  if [[ "${1}" ]]; then
+    user_arg="${1}" && log_message debug "User arg: ${user_arg}"
+  else
+    log_message debug "No User arg provided - calling help message"
+    help_inbox
+  fi
+
+  case "${user_arg}" in
     "add")
       shift
-      inboxAdd "$@"
+      inbox_add "$@"
       ;;
     "clarify")
       clarify
@@ -55,13 +60,14 @@ function inboxMain() {
       inboxDelete "$1"
       ;;
     "help")
-      inboxHelp
+      help_inbox
       ;;
     "list")
       inboxList
       ;;
     *)
-      inboxHelp
+      log_message warn "Unknown command (${user_arg})"
+      help_inbox
       ;;
   esac
 }
