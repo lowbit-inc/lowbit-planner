@@ -17,7 +17,7 @@ A *life planner* tool to use without leaving the terminal.
 > * ✴️ - Started
 > * ✅ - Complete
 
-* ⬜️ (root)
+* ✅ (root)
 * ⬜️ area
   * ⬜️ add
   * ⬜️ delete
