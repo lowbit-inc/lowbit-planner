@@ -34,6 +34,7 @@ source ./libs/reflect.sh
 source ./libs/system.sh
 source ./libs/task.sh
 source ./libs/vision.sh
+source ./libs/tui.sh
 
 ##########
 # Script #
@@ -107,6 +108,9 @@ case "${1}" in
   "task")
     shift
     task_main "$@"
+    ;;
+  "tui")
+    tui_main
     ;;
   "version")
     system_get_version
