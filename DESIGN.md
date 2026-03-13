@@ -1,9 +1,10 @@
 # System
 
-## Commands
+## Global Commands
 
 - [ ] help
 - [ ] install
+- [ ] search
 - [ ] version
 
 ## Global Args
@@ -40,6 +41,7 @@
 - [ ] due_date
 - [ ] id
 - [ ] name
+- [ ] project
 - [ ] start_date
 - [ ] status
 
@@ -99,6 +101,7 @@
 
 #### Properties
 
+- [ ] collection
 - [ ] created_at
 - [ ] id
 - [ ] name
@@ -143,6 +146,7 @@
 - [ ] completed_at
 - [ ] created_at
 - [ ] due_date
+- [ ] goal
 - [ ] id
 - [ ] name
 - [ ] ranking
@@ -191,6 +195,7 @@
 - [ ] ranking
 - [ ] start_date
 - [ ] status
+- [ ] vision
 
 #### Methods
 
@@ -308,3 +313,85 @@
 # Tests
 
 ## Unit Tests
+
+# Terminal User Interface
+
+```bash
+# Lowbit Planner - v0.1.0 #
+[Capture] [Clarify] [Organize] [Reflect] [Engage]
+
+Commands: [sync] [search] [help] [quit]
+
+---
+
+# Lowbit Planner - v0.1.0 #
+[CAPTURE] [Clarify] [Organize] [Reflect] [Engage]
+
+Add to Inbox:
+
+Commands: [sync] [search] [help] [quit]
+
+---
+
+# Lowbit Planner - v0.1.0 #
+[Capture] [CLARIFY] [Organize] [Reflect] [Engage]
+
+Inbox item: XYZ
+What kind of object is it?
+- (t) Task
+- (r) Recurring
+- (h) Habit
+- (c) Collection
+- (i) Collection Item
+- (p) Project
+- (a) Area
+- (g) Goal
+- (v) Vision
+- (n) Principle
+- (u) Purpose
+
+Convert to task!
+
+Name*: XYZ
+Start date:
+Due date:
+Project:
+
+---
+
+# Lowbit Planner - v0.1.0 #
+[Capture] [Clarify] [ORGANIZE] [Reflect] [Engage]
+[GROUND] [Horizon 1] [Horizon 2] [Horizon 3] [Horizon 4] [Horizon 5]
+[inbox] [TASK] [recurring] [habit] [collection]
+
+-> Some idea I had
+
+---
+
+# Lowbit Planner - v0.1.0 #
+[Capture] [Clarify] [Organize] [REFLECT] [Engage]
+
+[ ] Ground
+[ ] Horizon 1
+[*] Horizon 2
+[*] Horizon 3
+[ ] Horizon 4
+[*] Horizon 5
+
+Commands: [review]
+Global: [sync] [search] [help] [quit]
+
+---
+
+# Lowbit Planner - v0.1.0 #
+Menu: [Capture] [Clarify] [Organize] [Reflect] [ENGAGE]
+
+[ Event      ] -> Almoço (2026-03-13T12:00)
+[ Task       ] -> Revisar anotações (project: Revisão, due: 2026-04-01)
+[ Recurring  ] -> Fazer aula do Duolingo (daily)
+[ Habit      ] -> Limpar o piso do apartamento (weekly)
+[ Collection ] -> Essencialismo: A Busca Indisciplinada por Menos (livros)
+
+Commands: [task] [recurring] [habit] [collection]
+Global commands: [sync] [search] [help] [quit]
+```
