@@ -143,6 +143,7 @@
 
 #### Properties
 
+- [ ] area
 - [ ] completed_at
 - [ ] created_at
 - [ ] due_date
@@ -314,7 +315,17 @@
 
 ## Unit Tests
 
-# Terminal User Interface
+# Interfaces
+
+## Command Line Interface
+
+```bash
+plan project add "Arrumar a torneira" \
+  --area Casa \
+  --due-date 2026-03-31
+```
+
+## Terminal User Interface
 
 ```bash
 # Lowbit Planner - v0.1.0 #
@@ -394,4 +405,71 @@ Menu: [Capture] [Clarify] [Organize] [Reflect] [ENGAGE]
 
 Commands: [task] [recurring] [habit] [collection]
 Global commands: [sync] [search] [help] [quit]
+```
+
+## Web
+
+```
+Lowbit Planner
+
+[Plan:Do]
+
+________________________________
+Capture:
+```
+
+## iOS
+
+```
+1. Capture    - Inbox
+2. Clarify    - Process
+3. Organize   - Explore (Ground/Horizons)
+4. Reflect    - Review
+5. Engage     - Focus
+```
+
+## ipadOS
+
+## macOS
+
+```
+Lowbit Planner
+
+[PLAN] do
+
+[!] Ground
+[ ] Horizon 1
+[ ] Horizon 2
+[ ] Horizon 3
+[ ] Horizon 4
+[ ] Horizon 5
+________________________________
+Capture:
+```
+
+```
+Lowbit Planner
+
+plan [DO]
+
+Event       :
+Task        :
+Recur       :
+Habit       :
+Collection  :
+
+________________________________
+Capture:
+```
+
+## tvOS
+
+## watchOS
+
+```
+(Plan: Horizon 2 / Do: Today)
+<Event>
+<Next Action>
+<Habit>
+<Collection>
 ```
