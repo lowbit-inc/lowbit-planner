@@ -12,7 +12,7 @@ A *life planner* tool to use without leaving the terminal.
 > * ✅ - Complete
 
 * ✅ (root)
-* ⬜️ area
+* ✴️ area
   * ⬜️ add
   * ⬜️ delete
   * ⬜️ help

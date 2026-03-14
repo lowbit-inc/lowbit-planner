@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function areaAdd() {
+function area_add() {
   this_area_name="$@"
 
   if [[ $this_area_name ]] ; then
@@ -11,7 +11,7 @@ function areaAdd() {
   fi
 }
 
-function areaDelete() {
+function area_delete() {
   this_area_name="$1"
 
   if [[ $this_area_name ]] ; then
@@ -22,23 +22,25 @@ function areaDelete() {
   fi
 }
 
-function areaHelp() {
-  echo "${help_banner} - Areas"
-  echo
-  echo "Actions:"
-  echo "  ${help_basename} add AREA_NAME"
-  echo "  ${help_basename} delete AREA_NAME"
-  echo "  ${help_basename} help (this message)"
-  echo "  ${help_basename} list"
-  echo "  ${help_basename} rename OLD_AREA_NAME NEW_AREA_NAME"
-  echo
+function area_help() {
+  printf "${system_banner} - Areas\n"
+  printf "\n"
+  printf "${color_bold}DESCRIPTION:${color_reset}\n"
+  printf "  Manage ${color_underline}Areas${color_reset} of life (${color_underline}Horizon 2${color_reset} in ${color_underline}GTD${color_reset})\n"
+  printf "\n"
+  printf "${color_bold}USAGE:${color_reset}\n"
+  printf "  ${color_underline}${system_basename}${color_reset} ${color_bold}${color_red}area${color_reset} ${color_gray}[${color_bold}${color_green}SUBCOMMAND${color_reset}${color_gray}] [${color_bold}${color_blue}ARGUMENTS${color_reset}${color_gray}]${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}SUBCOMMANDS:${color_reset}\n"
+  printf "  add\n"
+  printf "\n"
 }
 
-function areaList() {
+function area_list() {
   database_run "SELECT name FROM area ORDER BY name"
 }
 
-function areaMain() {
+function area_main() {
   usr_command="$1"
   
   case "${usr_command}" in
@@ -48,25 +50,25 @@ function areaMain() {
       ;;
     "delete")
       shift
-      areaDelete "$1"
+      area_delete "$1"
       ;;
     "help")
-      areaHelp
+      area_help
       ;;
     "list")
-      areaList
+      area_list
       ;;
     "rename")
       shift
-      areaRename "$@"
+      area_rename "$@"
       ;;
     *)
-      areaHelp
+      area_help
       ;;
   esac
 }
 
-function areaRename() {
+function area_rename() {
   this_old_area_name="$1"
   this_new_area_name="$2"
 
