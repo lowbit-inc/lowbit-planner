@@ -8,14 +8,14 @@
 # Libs #
 ########
 
-# System
-source ./libs/system/color.sh
-source ./libs/system/config.sh
-source ./libs/system/datetime.sh
-source ./libs/system/dependencies.sh
-source ./libs/system/help.sh
-source ./libs/system/log.sh
-source ./libs/system/system.sh
+# Utils
+source ./libs/utils/color.sh
+source ./libs/utils/config.sh
+source ./libs/utils/datetime.sh
+source ./libs/utils/dependencies.sh
+# source ./libs/utils/help.sh # Each help message should be in it's related object, right?
+source ./libs/utils/log.sh
+source ./libs/utils/system.sh
 
 # Database
 source ./libs/database/database.sh
@@ -34,10 +34,12 @@ source ./libs/objects/purpose.sh      # Horizon 5
 source ./libs/objects/principle.sh    # Horizon 5
 
 # Workflow
-source ./libs/workflow/clarify.sh
-source ./libs/workflow/decision.sh
-source ./libs/workflow/engage.sh
-source ./libs/workflow/reflect.sh
+#source ./libs/workflow/capture.sh    # Step 1 - Is it needed?
+source ./libs/workflow/clarify.sh     # Step 2
+source ./libs/workflow/organize.sh    # Step 3
+source ./libs/workflow/reflect.sh     # Step 4
+source ./libs/workflow/engage.sh      # Step 5
+source ./libs/workflow/decision.sh    # Ranking System
 
 ##########
 # Script #
