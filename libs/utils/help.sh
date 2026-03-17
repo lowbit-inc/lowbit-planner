@@ -2,7 +2,7 @@
 
 function help_inbox() {
   log_message debug "Getting help message: inbox"
-  printf "${color_bold}${system_banner} - Inbox${color_reset}\n"
+  printf "${color_bold}${system_long_name} - Inbox${color_reset}\n"
   printf "\n"
   printf "${color_bold}DESCRIPTION:${color_reset}\n"
   printf "  The place to capture all of your ideas.\n"
@@ -22,7 +22,7 @@ function help_inbox() {
 
 function help_inbox_add() {
   log_message debug "Getting help message: inbox add"
-  printf "${color_bold}${system_banner} - Inbox Add${color_reset}\n"
+  printf "${color_bold}${system_long_name} - Inbox Add${color_reset}\n"
   printf "\n"
   printf "${color_bold}DESCRIPTION:${color_reset}\n"
   printf "  Add items to the inbox.\n"

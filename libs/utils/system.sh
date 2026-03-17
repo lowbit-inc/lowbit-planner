@@ -6,7 +6,6 @@
 
 system_short_name="lowbit-planner"
 system_long_name="Lowbit Planner"
-system_banner="Lowbit Planner"
 system_version="v0.2.0-dev"
 system_basename="$(basename $0)"
 
@@ -16,7 +15,7 @@ system_basename="$(basename $0)"
 
 function system_get_help() {
   log_message debug "Getting help message: main"
-  printf "${color_bold}${system_banner} - Main Help${color_reset}\n"
+  printf "${color_bold}${system_long_name} - Main Help${color_reset}\n"
   printf "\n"
   printf "${color_bold}DESCRIPTION:${color_reset}\n"
   printf "  A ${color_underline}life planner${color_reset} tool to use without leaving the terminal.\n"
@@ -30,5 +29,5 @@ function system_get_help() {
 }
 
 function system_get_version() {
-  echo "${system_banner} - Version: ${system_version}"
+  echo "${system_long_name} - Version: ${system_version}"
 }
