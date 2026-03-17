@@ -1,7 +1,16 @@
 #!/bin/bash
+
+##############
+# Properties #
+##############
+
 database_dir="${HOME}/.plan"
 database_file="plan.db"
 database_path="${database_dir}/${database_file}"
+
+###########
+# Methods #
+###########
 
 function database_check(){
   if [[ ! -f "${database_path}" ]] ; then
@@ -13,7 +22,7 @@ function database_check(){
 
 function database_init(){
   mkdir -p "${database_dir}"
-  sqlite3 "${database_path}" < ./libs/database_init.sql
+  sqlite3 "${database_path}" < ./libs/database/database_init.sql
 }
 
 function database_run(){
