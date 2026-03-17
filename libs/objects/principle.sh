@@ -28,7 +28,7 @@ function principleInit() {
 }
 
 function principleList() {
-  database_run "SELECT * FROM principle_view ORDER BY name ASC"
+  database_run "box" "SELECT * FROM principle_view ORDER BY name ASC"
 }
 
 function principleMain() {

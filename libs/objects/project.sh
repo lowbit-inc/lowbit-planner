@@ -46,7 +46,7 @@ function projectAdd() {
   fi
 
   if [[ ${this_project_area} ]]; then
-    this_area_id=$(database_silent "SELECT id FROM area WHERE name='${this_project_area}'")
+    this_area_id=$(database_run "csv" "SELECT id FROM area WHERE name='${this_project_area}'")
     if [[ ! $this_area_id ]] ; then
       echo "Error: invalid area name."
       exit 1
@@ -54,7 +54,7 @@ function projectAdd() {
   fi
 
   # Inserting
-  database_run "INSERT INTO project (name, area_id, deadline) VALUES (${this_project_name}, ${this_area_id:-NULL}, ${this_project_deadline:-NULL});"
+  database_run "box" "INSERT INTO project (name, area_id, deadline) VALUES (${this_project_name}, ${this_area_id:-NULL}, ${this_project_deadline:-NULL});"
   
 }
 
@@ -62,7 +62,7 @@ function projectDelete() {
   this_project_id="$1"
 
   if [[ $this_project_id ]] ; then
-    database_run "DELETE FROM project WHERE id = $this_project_id;"
+    database_run "box" "DELETE FROM project WHERE id = $this_project_id;"
   else
     echo "Error: missing project ID."
     exit 1
@@ -82,7 +82,7 @@ function projectHelp() {
 }
 
 function projectList() {
-  database_run "SELECT * FROM project_view ORDER BY deadline ASC NULLS LAST"
+  database_run "box" "SELECT * FROM project_view ORDER BY deadline ASC NULLS LAST"
 }
 
 function projectMain() {
@@ -118,7 +118,7 @@ function projectRename() {
   this_new_project_name="$2"
 
   if [[ $this_new_project_name ]] ; then
-    database_run "UPDATE project SET name='$this_new_project_name' WHERE name='$this_old_project_name';"
+    database_run "box" "UPDATE project SET name='$this_new_project_name' WHERE name='$this_old_project_name';"
   else
     echo "Error: missing required args."
     exit 1

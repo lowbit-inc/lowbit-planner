@@ -14,7 +14,7 @@ function inbox_add() {
   this_inbox_item="$@"
 
   if [[ $this_inbox_item ]] ; then
-    database_run "INSERT INTO inbox (name) VALUES ('$this_inbox_item');"
+    database_run "box" "INSERT INTO inbox (name) VALUES ('$this_inbox_item');"
   else
     echo "Error: missing inbox item name."
     exit 1
@@ -25,7 +25,7 @@ function inboxDelete() {
   this_inbox_id="$1"
 
   if [[ $this_inbox_id ]] ; then
-    database_run "DELETE FROM inbox WHERE id = $this_inbox_id;"
+    database_run "box" "DELETE FROM inbox WHERE id = $this_inbox_id;"
   else
     echo "Error: missing inbox item ID."
     exit 1
@@ -33,7 +33,7 @@ function inboxDelete() {
 }
 
 function inboxList() {
-  database_run "SELECT * FROM inbox"
+  database_run "box" "SELECT * FROM inbox"
 }
 
 function inbox_main() {

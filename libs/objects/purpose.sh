@@ -28,7 +28,7 @@ function purposeInit() {
 }
 
 function purposeList() {
-  database_run "SELECT * FROM purpose_view ORDER BY name ASC"
+  database_run "box" "SELECT * FROM purpose_view ORDER BY name ASC"
 }
 
 function purposeMain() {

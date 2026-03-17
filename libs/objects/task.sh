@@ -46,7 +46,7 @@ function taskAdd() {
   fi
 
   if [[ ${this_task_project} ]]; then
-    this_project_id=$(database_silent "SELECT id FROM project WHERE name='${this_task_project}'")
+    this_project_id=$(database_run "csv" "SELECT id FROM project WHERE name='${this_task_project}'")
     if [[ ! $this_project_id ]] ; then
       echo "Error: invalid project name."
       exit 1
@@ -54,7 +54,7 @@ function taskAdd() {
   fi
 
   # Inserting
-  database_run "INSERT INTO task (name, project_id, deadline) VALUES (${this_task_name}, ${this_project_id:-NULL}, ${this_task_deadline:-NULL});"
+  database_run "box" "INSERT INTO task (name, project_id, deadline) VALUES (${this_task_name}, ${this_project_id:-NULL}, ${this_task_deadline:-NULL});"
   
 }
 
@@ -66,14 +66,14 @@ function taskComplete() {
     exit 1
   fi
 
-  database_run "UPDATE task SET state = 'Done', completion_date = DATE('now', 'localtime') WHERE id = $this_task_id;"
+  database_run "box" "UPDATE task SET state = 'Done', completion_date = DATE('now', 'localtime') WHERE id = $this_task_id;"
 }
 
 function taskDelete() {
   this_task_id="$1"
 
   if [[ $this_task_id ]] ; then
-    database_run "DELETE FROM task WHERE id = $this_task_id;"
+    database_run "box" "DELETE FROM task WHERE id = $this_task_id;"
   else
     echo "Error: missing task ID."
     exit 1
@@ -99,11 +99,11 @@ function taskHelp() {
 }
 
 function taskList() {
-  database_run "SELECT * FROM task_view;"
+  database_run "box" "SELECT * FROM task_view;"
 }
 
 function taskListCompleted() {
-  database_run "SELECT * FROM task_log;"
+  database_run "box" "SELECT * FROM task_log;"
 }
 
 function taskMain() {
@@ -162,7 +162,7 @@ function taskRename() {
   this_new_task_name="$2"
 
   if [[ $this_new_task_name ]] ; then
-    database_run "UPDATE task SET name='$this_new_task_name' WHERE name='$this_old_task_name';"
+    database_run "box" "UPDATE task SET name='$this_new_task_name' WHERE name='$this_old_task_name';"
   else
     echo "Error: missing required args."
     exit 1
@@ -178,7 +178,7 @@ function taskSetDeadline() {
   this_task_id="$1"
   this_task_deadline="$2"
 
-  database_run "UPDATE task SET deadline = '$this_task_deadline' WHERE id = $this_task_id;"
+  database_run "box" "UPDATE task SET deadline = '$this_task_deadline' WHERE id = $this_task_id;"
 
 }
 
@@ -193,7 +193,7 @@ function taskSetProject() {
 
   # Validating project
   if [[ ${this_task_project} ]]; then
-    this_project_id=$(database_silent "SELECT id FROM project WHERE name='${this_task_project}'")
+    this_project_id=$(database_run "csv" "SELECT id FROM project WHERE name='${this_task_project}'")
     if [[ ! $this_project_id ]] ; then
       echo "Error: invalid project name."
       exit 1
@@ -202,7 +202,7 @@ function taskSetProject() {
     this_project_id="NULL"
   fi
 
-  database_run "UPDATE task SET project_id = $this_project_id WHERE id = $this_task_id;"
+  database_run "box" "UPDATE task SET project_id = $this_project_id WHERE id = $this_task_id;"
 
 }
 
@@ -214,7 +214,7 @@ function taskStart() {
     exit 1
   fi
 
-  database_run "UPDATE task SET state = 'Started' WHERE id = $this_task_id;"
+  database_run "box" "UPDATE task SET state = 'Started' WHERE id = $this_task_id;"
 }
 
 function taskStop() {
@@ -225,5 +225,5 @@ function taskStop() {
     exit 1
   fi
 
-  database_run "UPDATE task SET state = 'Pending' WHERE id = $this_task_id;"
+  database_run "box" "UPDATE task SET state = 'Pending' WHERE id = $this_task_id;"
 }

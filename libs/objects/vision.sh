@@ -37,7 +37,7 @@ function visionAdd() {
   fi
 
   if [[ ${this_vision_area} ]]; then
-    this_area_id=$(database_silent "SELECT id FROM area WHERE name='${this_vision_area}'")
+    this_area_id=$(database_run "csv" "SELECT id FROM area WHERE name='${this_vision_area}'")
     if [[ ! $this_area_id ]] ; then
       echo "Error: invalid area name."
       exit 1
@@ -45,7 +45,7 @@ function visionAdd() {
   fi
 
   # Inserting
-  database_run "INSERT INTO vision (name, area_id) VALUES (${this_vision_name}, ${this_area_id:-NULL});"
+  database_run "box" "INSERT INTO vision (name, area_id) VALUES (${this_vision_name}, ${this_area_id:-NULL});"
   
 }
 
@@ -53,7 +53,7 @@ function visionDelete() {
   this_vision_id="$1"
 
   if [[ $this_vision_id ]] ; then
-    database_run "DELETE FROM vision WHERE id = $this_vision_id;"
+    database_run "box" "DELETE FROM vision WHERE id = $this_vision_id;"
   else
     echo "Error: missing vision ID."
     exit 1
@@ -73,7 +73,7 @@ function visionHelp() {
 }
 
 function visionList() {
-  database_run "SELECT * FROM vision_view ORDER BY name ASC"
+  database_run "box" "SELECT * FROM vision_view ORDER BY name ASC"
 }
 
 function visionMain() {
@@ -109,7 +109,7 @@ function visionRename() {
   this_new_vision_name="$2"
 
   if [[ $this_new_vision_name ]] ; then
-    database_run "UPDATE vision SET name='$this_new_vision_name' WHERE name='$this_old_vision_name';"
+    database_run "box" "UPDATE vision SET name='$this_new_vision_name' WHERE name='$this_old_vision_name';"
   else
     echo "Error: missing required args."
     exit 1

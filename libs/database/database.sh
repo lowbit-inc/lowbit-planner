@@ -26,15 +26,14 @@ function database_init(){
 }
 
 function database_run(){
+  this_mode="$1"
   this_query="$@"
 
-  sqlite3 --box "${database_path}" "${this_query}"
+  sqlite3 "--${this_mode}" "${database_path}" "${this_query}"
 }
 
-function database_silent(){
-  this_query="$@"
-
-  sqlite3 --csv "${database_path}" "${this_query}"
-}
+##########
+# Script #
+##########
 
 database_check

@@ -4,7 +4,7 @@ function collectionAdd() {
   this_collection_name="$@"
 
   if [[ $this_collection_name ]] ; then
-    database_run "INSERT INTO collection (name) VALUES ('$this_collection_name');"
+    database_run "box" "INSERT INTO collection (name) VALUES ('$this_collection_name');"
   else
     echo "Error: missing collection name."
     exit 1
@@ -23,14 +23,14 @@ function collectionAddItem() {
 
   # Validating collection name
   if [[ ${this_collection_name} ]]; then
-    this_collection_id=$(database_silent "SELECT id FROM collection WHERE name='${this_collection_name}'")
+    this_collection_id=$(database_run "csv" "SELECT id FROM collection WHERE name='${this_collection_name}'")
     if [[ ! $this_collection_id ]] ; then
       echo "Error: invalid collection name."
       exit 1
     fi
   fi
 
-  database_run "INSERT INTO collection_item (name, collection_id) VALUES ('$this_collection_item_name', '$this_collection_id');"
+  database_run "box" "INSERT INTO collection_item (name, collection_id) VALUES ('$this_collection_item_name', '$this_collection_id');"
 
 }
 
@@ -42,7 +42,7 @@ function collectionComplete() {
     exit 1
   fi
 
-  database_run "UPDATE collection_item SET state = 'Done', completion_date = DATE('now', 'localtime') WHERE id = $this_collection_item_id;"
+  database_run "box" "UPDATE collection_item SET state = 'Done', completion_date = DATE('now', 'localtime') WHERE id = $this_collection_item_id;"
 }
 
 function collectionDecide() {
@@ -56,7 +56,7 @@ function collectionDecide() {
   fi
 
   # Validating collection name
-  this_collection_id=$(database_silent "SELECT id FROM collection WHERE name = '${this_collection_name}'")
+  this_collection_id=$(database_run "csv" "SELECT id FROM collection WHERE name = '${this_collection_name}'")
   if [[ ! "${this_collection_id}" ]] ; then
     echo "Error: invalid collection name."
     exit 1
@@ -71,7 +71,7 @@ function collectionDelete() {
   this_collection_name="$1"
 
   if [[ $this_collection_name ]] ; then
-    database_run "DELETE FROM collection WHERE name = '$this_collection_name';"
+    database_run "box" "DELETE FROM collection WHERE name = '$this_collection_name';"
   else
     echo "Error: missing collection name."
     exit 1
@@ -87,7 +87,7 @@ function collectionDeleteItem() {
     exit 1
   fi
 
-  database_run "DELETE FROM collection_item WHERE id = '$this_collection_item_id';"
+  database_run "box" "DELETE FROM collection_item WHERE id = '$this_collection_item_id';"
 
 }
 
@@ -102,7 +102,7 @@ function collectionForget() {
   fi
 
   # Validating collection name
-  this_collection_id=$(database_silent "SELECT id FROM collection WHERE name = '${this_collection_name}'")
+  this_collection_id=$(database_run "csv" "SELECT id FROM collection WHERE name = '${this_collection_name}'")
   if [[ ! "${this_collection_id}" ]] ; then
     echo "Error: invalid collection name."
     exit 1
@@ -136,7 +136,7 @@ function collectionHelp() {
 }
 
 function collectionList() {
-  database_run "SELECT name FROM collection ORDER BY name"
+  database_run "box" "SELECT name FROM collection ORDER BY name"
 }
 
 function collectionListItem() {
@@ -148,13 +148,13 @@ function collectionListItem() {
     exit 1
   fi
 
-  this_collection_id=$(database_silent "SELECT id FROM collection WHERE name='${this_collection_name}'")
+  this_collection_id=$(database_run "csv" "SELECT id FROM collection WHERE name='${this_collection_name}'")
   if [[ ! $this_collection_id ]] ; then
     echo "Error: invalid collection name."
     exit 1
   fi
 
-  database_run "SELECT id, name, position, completion_date, state FROM collection_item WHERE collection_id=$this_collection_id ORDER BY position DESC;"
+  database_run "box" "SELECT id, name, position, completion_date, state FROM collection_item WHERE collection_id=$this_collection_id ORDER BY position DESC;"
 }
 
 function collectionMain() {
@@ -226,7 +226,7 @@ function collectionRename() {
   this_new_collection_name="$2"
 
   if [[ $this_new_collection_name ]] ; then
-    database_run "UPDATE collection SET name='$this_new_collection_name' WHERE name='$this_old_collection_name';"
+    database_run "box" "UPDATE collection SET name='$this_new_collection_name' WHERE name='$this_old_collection_name';"
   else
     echo "Error: missing required args."
     exit 1
@@ -238,7 +238,7 @@ function collectionRenameItem() {
   this_new_collection_item_name="$2"
 
   if [[ $this_new_collection_item_name ]] ; then
-    database_run "UPDATE collection_item SET name='$this_new_collection_item_name' WHERE name='$this_old_collection_item_name';"
+    database_run "box" "UPDATE collection_item SET name='$this_new_collection_item_name' WHERE name='$this_old_collection_item_name';"
   else
     echo "Error: missing required args."
     exit 1
@@ -253,7 +253,7 @@ function collectionItemStart() {
     exit 1
   fi
 
-  database_run "UPDATE collection_item SET state = 'Started' WHERE id = $this_collection_item_id;"
+  database_run "box" "UPDATE collection_item SET state = 'Started' WHERE id = $this_collection_item_id;"
 }
 
 function collectionItemStop() {
@@ -264,5 +264,5 @@ function collectionItemStop() {
     exit 1
   fi
 
-  database_run "UPDATE collection_item SET state = 'Pending' WHERE id = $this_collection_item_id;"
+  database_run "box" "UPDATE collection_item SET state = 'Pending' WHERE id = $this_collection_item_id;"
 }

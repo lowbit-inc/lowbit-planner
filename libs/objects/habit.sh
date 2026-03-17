@@ -50,7 +50,7 @@ function habitAdd() {
   fi
 
   # Inserting
-  database_run "INSERT INTO habit (name, recurrence) VALUES (${this_habit_name}, ${this_habit_recurrence});"
+  database_run "box" "INSERT INTO habit (name, recurrence) VALUES (${this_habit_name}, ${this_habit_recurrence});"
   
 }
 
@@ -62,14 +62,14 @@ function habitComplete() {
     exit 1
   fi
 
-  database_run "UPDATE habit SET state = 'Done', completion_date = DATE('now', 'localtime') WHERE id = $this_habit_id;"
+  database_run "box" "UPDATE habit SET state = 'Done', completion_date = DATE('now', 'localtime') WHERE id = $this_habit_id;"
 }
 
 function habitDelete() {
   this_habit_id="$1"
 
   if [[ $this_habit_id ]] ; then
-    database_run "DELETE FROM habit WHERE id = $this_habit_id;"
+    database_run "box" "DELETE FROM habit WHERE id = $this_habit_id;"
   else
     echo "Error: missing habit ID."
     exit 1
@@ -106,7 +106,7 @@ function habitList() {
   habitUpdate
 
   # Listing
-  database_run "SELECT * FROM habit;"
+  database_run "box" "SELECT * FROM habit;"
 
 }
 
@@ -147,7 +147,7 @@ function habitRename() {
   this_new_habit_name="$2"
 
   if [[ $this_new_habit_name ]] ; then
-    database_run "UPDATE habit SET name='$this_new_habit_name' WHERE name='$this_old_habit_name';"
+    database_run "box" "UPDATE habit SET name='$this_new_habit_name' WHERE name='$this_old_habit_name';"
   else
     echo "Error: missing required args."
     exit 1
@@ -162,13 +162,13 @@ function habitUncheck() {
     exit 1
   fi
 
-  database_run "UPDATE habit SET state = 'Pending', completion_date = NULL WHERE id = $this_habit_id;"
+  database_run "box" "UPDATE habit SET state = 'Pending', completion_date = NULL WHERE id = $this_habit_id;"
 }
 
 function habitUpdate() {
 
   IFS=$'\n'
-  for habit in $(database_silent "SELECT * FROM habit_log;"); do
+  for habit in $(database_run "csv" "SELECT * FROM habit_log;"); do
     # Mapping
     this_habit_id=$(echo ${habit} | cut -d, -f1)
     this_habit_name=$(echo ${habit} | cut -d, -f2)

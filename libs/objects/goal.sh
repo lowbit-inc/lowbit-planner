@@ -46,7 +46,7 @@ function goalAdd() {
   fi
 
   if [[ ${this_goal_area} ]]; then
-    this_area_id=$(database_silent "SELECT id FROM area WHERE name='${this_goal_area}'")
+    this_area_id=$(database_run "csv" "SELECT id FROM area WHERE name='${this_goal_area}'")
     if [[ ! $this_area_id ]] ; then
       echo "Error: invalid area name."
       exit 1
@@ -54,7 +54,7 @@ function goalAdd() {
   fi
 
   # Inserting
-  database_run "INSERT INTO goal (name, area_id, deadline) VALUES (${this_goal_name}, ${this_area_id:-NULL}, ${this_goal_deadline:-NULL});"
+  database_run "box" "INSERT INTO goal (name, area_id, deadline) VALUES (${this_goal_name}, ${this_area_id:-NULL}, ${this_goal_deadline:-NULL});"
   
 }
 
@@ -62,7 +62,7 @@ function goalDelete() {
   this_goal_id="$1"
 
   if [[ $this_goal_id ]] ; then
-    database_run "DELETE FROM goal WHERE id = $this_goal_id;"
+    database_run "box" "DELETE FROM goal WHERE id = $this_goal_id;"
   else
     echo "Error: missing goal ID."
     exit 1
@@ -82,7 +82,7 @@ function goalHelp() {
 }
 
 function goalList() {
-  database_run "SELECT * FROM goal_view ORDER BY deadline ASC NULLS LAST"
+  database_run "box" "SELECT * FROM goal_view ORDER BY deadline ASC NULLS LAST"
 }
 
 function goalMain() {
@@ -118,7 +118,7 @@ function goalRename() {
   this_new_goal_name="$2"
 
   if [[ $this_new_goal_name ]] ; then
-    database_run "UPDATE goal SET name='$this_new_goal_name' WHERE name='$this_old_goal_name';"
+    database_run "box" "UPDATE goal SET name='$this_new_goal_name' WHERE name='$this_old_goal_name';"
   else
     echo "Error: missing required args."
     exit 1

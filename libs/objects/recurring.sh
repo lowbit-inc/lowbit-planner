@@ -50,7 +50,7 @@ function recurringAdd() {
   fi
 
   # Inserting
-  database_run "INSERT INTO recurring (name, recurrence) VALUES (${this_task_name}, ${this_task_recurrence});"
+  database_run "box" "INSERT INTO recurring (name, recurrence) VALUES (${this_task_name}, ${this_task_recurrence});"
   
 }
 
@@ -62,14 +62,14 @@ function recurringComplete() {
     exit 1
   fi
 
-  database_run "UPDATE recurring SET state = 'Done', completion_date = DATE('now', 'localtime') WHERE id = $this_recurring_id;"
+  database_run "box" "UPDATE recurring SET state = 'Done', completion_date = DATE('now', 'localtime') WHERE id = $this_recurring_id;"
 }
 
 function recurringDelete() {
   this_recurring_id="$1"
 
   if [[ $this_recurring_id ]] ; then
-    database_run "DELETE FROM recurring WHERE id = $this_recurring_id;"
+    database_run "box" "DELETE FROM recurring WHERE id = $this_recurring_id;"
   else
     echo "Error: missing recurring task ID."
     exit 1
@@ -106,7 +106,7 @@ function recurringList() {
   recurringUpdate
 
   # Listing
-  database_run "SELECT * FROM recurring;"
+  database_run "box" "SELECT * FROM recurring;"
 
 }
 
@@ -147,7 +147,7 @@ function recurringRename() {
   this_new_recurring_name="$2"
 
   if [[ $this_new_recurring_name ]] ; then
-    database_run "UPDATE recurring SET name='$this_new_recurring_name' WHERE name='$this_old_recurring_name';"
+    database_run "box" "UPDATE recurring SET name='$this_new_recurring_name' WHERE name='$this_old_recurring_name';"
   else
     echo "Error: missing required args."
     exit 1
@@ -162,13 +162,13 @@ function recurringUncheck() {
     exit 1
   fi
 
-  database_run "UPDATE recurring SET state = 'Pending', completion_date = NULL WHERE id = $this_recurring_id;"
+  database_run "box" "UPDATE recurring SET state = 'Pending', completion_date = NULL WHERE id = $this_recurring_id;"
 }
 
 function recurringUpdate() {
 
   IFS=$'\n'
-  for task in $(database_silent "SELECT * FROM recurring_log;"); do
+  for task in $(database_run "csv" "SELECT * FROM recurring_log;"); do
     # Mapping
     this_task_id=$(echo ${task} | cut -d, -f1)
     this_task_name=$(echo ${task} | cut -d, -f2)

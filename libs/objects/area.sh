@@ -4,7 +4,7 @@ function areaAdd() {
   this_area_name="$@"
 
   if [[ $this_area_name ]] ; then
-    database_run "INSERT INTO area (name) VALUES ('$this_area_name');"
+    database_run "box" "INSERT INTO area (name) VALUES ('$this_area_name');"
   else
     echo "Error: missing area name."
     exit 1
@@ -15,7 +15,7 @@ function areaDelete() {
   this_area_name="$1"
 
   if [[ $this_area_name ]] ; then
-    database_run "DELETE FROM area WHERE name = '$this_area_name';"
+    database_run "box" "DELETE FROM area WHERE name = '$this_area_name';"
   else
     echo "Error: missing area name."
     exit 1
@@ -35,7 +35,7 @@ function areaHelp() {
 }
 
 function areaList() {
-  database_run "SELECT name FROM area ORDER BY name"
+  database_run "box" "SELECT name FROM area ORDER BY name"
 }
 
 function areaMain() {
@@ -71,7 +71,7 @@ function areaRename() {
   this_new_area_name="$2"
 
   if [[ $this_new_area_name ]] ; then
-    database_run "UPDATE area SET name='$this_new_area_name' WHERE name='$this_old_area_name';"
+    database_run "box" "UPDATE area SET name='$this_new_area_name' WHERE name='$this_old_area_name';"
   else
     echo "Error: missing required args."
     exit 1
