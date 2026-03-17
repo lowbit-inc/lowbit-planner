@@ -15,7 +15,6 @@ system_basename="$(basename $0)"
 ###########
 
 function system_get_help() {
-  
   log_message debug "Getting help message: main"
   printf "${color_bold}${system_banner} - Main Help${color_reset}\n"
   printf "\n"

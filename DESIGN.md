@@ -2,9 +2,9 @@
 
 ## Global Commands
 
-- [ ] help
-- [ ] install
-- [ ] search
+- [X] help
+- [-] install
+- [-] search
 - [ ] version
 
 ## Global Args
