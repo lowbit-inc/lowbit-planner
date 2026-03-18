@@ -72,7 +72,6 @@ function inbox_help() {
   printf "  add\n"
   printf "  clarify\n"
   printf "  delete\n"
-  printf "  edit\n"
   printf "  list\n"
   printf "\n"
   exit 0
