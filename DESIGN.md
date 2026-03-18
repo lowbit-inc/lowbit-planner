@@ -22,8 +22,8 @@
 #### Properties
 
 - [ ] created_at
-- [ ] id
-- [ ] name
+- [X] id
+- [X] name
 
 #### Methods
 

@@ -1,4 +1,5 @@
 -- System
+
 CREATE TABLE meta (
   name TEXT UNIQUE,
   value TEXT
@@ -6,13 +7,16 @@ CREATE TABLE meta (
 
 INSERT INTO meta VALUES ("db_schema", "1");
 
--- Objects
+-- Objects --
+
+---- Ground ----
+
+------ Inbox ------
+
 CREATE TABLE inbox (
   id INTEGER PRIMARY KEY,
   name TEXT
 );
-
-INSERT INTO inbox (name) VALUES ("Some idea I had");
 
 CREATE TABLE collection (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
