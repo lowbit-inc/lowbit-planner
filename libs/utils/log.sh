@@ -1,11 +1,21 @@
 #!/bin/bash
 
-function log_message() {
+##############
+# Properties #
+##############
+
+# N/A
+
+###########
+# Methods #
+###########
+
+function log_print() {
   if [[ "$2" ]]; then
     this_log_level="$1"   ; shift
     this_log_message="$@"
   else
-    echo "Error: missing required args for log_message function."
+    echo "Error: missing required args for log_print function."
     exit 1
   fi
 

@@ -12,12 +12,12 @@
 
 function inbox_add() {
 
-  log_message debug "Starting Inbox Add"
+  log_print debug "Starting Inbox Add"
 
   if [[ "${1}" ]]; then
-    user_arg="${1}" && log_message debug "User arg: ${user_arg}"
+    user_arg="${1}" && log_print debug "User arg: ${user_arg}"
   else
-    log_message debug "No user arg provided - calling help message"
+    log_print debug "No user arg provided - calling help message"
     inbox_help_add
   fi
 
@@ -32,7 +32,7 @@ function inbox_add() {
 }
 
 function inbox_add_help() {
-  log_message debug "Getting help message: inbox add"
+  log_print debug "Getting help message: inbox add"
   printf "${color_bold}${system_long_name} - Inbox Add${color_reset}\n"
   printf "\n"
   printf "${color_bold}DESCRIPTION:${color_reset}\n"
@@ -59,7 +59,7 @@ function inboxDelete() {
 }
 
 function inbox_help() {
-  log_message debug "Getting help message: inbox"
+  log_print debug "Getting help message: inbox"
   printf "${color_bold}${system_long_name} - Inbox${color_reset}\n"
   printf "\n"
   printf "${color_bold}DESCRIPTION:${color_reset}\n"
@@ -83,12 +83,12 @@ function inboxList() {
 
 function inbox_main() {
 
-  log_message debug "Starting Inbox Main"
+  log_print debug "Starting Inbox Main"
 
   if [[ "${1}" ]]; then
-    user_arg="${1}" && log_message debug "User arg: ${user_arg}"
+    user_arg="${1}" && log_print debug "User arg: ${user_arg}"
   else
-    log_message debug "No User arg provided - calling help message"
+    log_print debug "No User arg provided - calling help message"
     inbox_help
   fi
 
@@ -111,7 +111,7 @@ function inbox_main() {
       inboxList
       ;;
     *)
-      log_message warn "Unknown command (${user_arg})"
+      log_print warn "Unknown command (${user_arg})"
       inbox_help
       ;;
   esac

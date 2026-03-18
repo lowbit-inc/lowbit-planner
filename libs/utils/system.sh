@@ -14,7 +14,7 @@ system_basename="$(basename $0)"
 ###########
 
 function system_get_help() {
-  log_message debug "Getting help message: main"
+  log_print debug "Getting help message: main"
   printf "${color_bold}${system_long_name} - Main Help${color_reset}\n"
   printf "\n"
   printf "${color_bold}DESCRIPTION:${color_reset}\n"
@@ -23,7 +23,9 @@ function system_get_help() {
   printf "${color_bold}USAGE:${color_reset}\n"
   printf "  ${color_underline}${system_basename}${color_reset} ${color_bold}${color_red}COMMAND${color_reset} ${color_gray}[${color_bold}${color_green}SUBCOMMAND${color_reset}${color_gray}] [${color_bold}${color_blue}ARGUMENTS${color_reset}${color_gray}]${color_reset}\n"
   printf "\n"
-  printf "${color_bold}COMMANDS:${color_reset}\n"
+  printf "${color_bold}SYSTEM COMMANDS:${color_reset}\n"
+  printf "  help\n"
+  printf "  version\n"
   printf "\n"
   exit 0
 }

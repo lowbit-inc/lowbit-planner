@@ -45,14 +45,14 @@ source ./libs/workflow/decision.sh    # Ranking System
 # Script #
 ##########
 
-log_message debug "Starting ${system_long_name}"
+log_print debug "Starting ${system_long_name}"
 
 # Getting user args
 if [[ "${1}" ]]; then
-  log_message debug "User args: $@"
+  log_print debug "User args: $@"
   user_arg="${1}"; shift # Capturing first arg
 else
-  log_message debug "No user args provided - calling help message"
+  log_print debug "No user args provided - calling help message"
   system_get_help
 fi
 
@@ -119,7 +119,7 @@ case "${user_arg}" in
     ;;
   # Other
   *)
-    log_message warn "Unknown command (${user_arg})"
+    log_print warn "Unknown command (${user_arg})"
     system_get_help
     ;;
 esac

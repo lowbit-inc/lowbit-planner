@@ -7,7 +7,7 @@ source ./libs/utils/log.sh
 source ./libs/utils/test.sh
 
 # Start
-log_message info "Starting test scenarios"
+log_print info "Starting test scenarios"
 
 # Test Scenarios
 test_command_output "Libs - Utils - Datetime - Get week from date" "datetime_get_week_from_date 2026-03-17" "2026W11"
@@ -15,4 +15,4 @@ test_command_output "Global Command - help"     "./plan.sh help" "Lowbit Planner
 test_command_output "Global Command - version"  "./plan.sh version" "Lowbit Planner - Version: "
 
 # End
-log_message info "End of test scenarios"
+log_print info "End of test scenarios"
