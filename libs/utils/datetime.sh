@@ -1,5 +1,15 @@
 #!/bin/bash
 
+##############
+# Properties #
+##############
+
+# N/A
+
+###########
+# Methods #
+###########
+
 function datetime_get_current_day() {
   date '+%Y-%m-%d'
 }
