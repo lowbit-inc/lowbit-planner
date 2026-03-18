@@ -325,6 +325,12 @@ plan project add "Arrumar a torneira" \
   --due-date 2026-03-31
 ```
 
+### Features
+
+- [ ] Autocomplete/completion
+- [X] Colors
+- [ ] Install
+
 ## Terminal User Interface
 
 ```bash
