@@ -1,7 +1,16 @@
 #!/bin/bash
+
+##############
+# Properties #
+##############
+
 dependencies_list="
   sqlite3
 "
+
+###########
+# Methods #
+###########
 
 function dependencies_check() {
   for dependency in $dependencies_list; do
@@ -15,5 +24,9 @@ function dependencies_check() {
     fi
   done
 }
+
+##########
+# Script #
+##########
 
 dependencies_check
