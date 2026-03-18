@@ -13,7 +13,6 @@ source ./libs/utils/color.sh
 source ./libs/utils/config.sh
 source ./libs/utils/datetime.sh
 source ./libs/utils/dependencies.sh
-# source ./libs/utils/help.sh # Each help message should be in it's related object, right?
 source ./libs/utils/log.sh
 source ./libs/utils/system.sh
 
