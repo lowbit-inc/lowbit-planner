@@ -26,10 +26,12 @@ function database_init(){
 }
 
 function database_run(){
-  this_mode="$1"
-  this_query="$@"
+  this_mode="$1" ; shift  # First arg
+  this_query="$@"         # All the rest
 
-  sqlite3 "--${this_mode}" "${database_path}" "${this_query}"
+  sqlite3 "--${this_mode}" "${database_path}" "${this_query}" ; sqlite3_rc=$?
+
+  return $sqlite3_rc
 }
 
 ##########

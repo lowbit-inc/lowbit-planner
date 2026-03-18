@@ -15,20 +15,23 @@ function inbox_add() {
   log_print debug "Starting Inbox Add"
 
   if [[ "${1}" ]]; then
-    user_arg="${1}" && log_print debug "User arg: ${user_arg}"
+    user_args="$@"
+    log_print debug "User args: ${user_args}"
   else
     log_print debug "No user arg provided - calling help message"
-    inbox_help_add
+    inbox_add_help
   fi
 
-  this_inbox_item="$@"
+  this_inbox_item="${user_args}"
 
-  if [[ $this_inbox_item ]] ; then
-    database_run "box" "INSERT INTO inbox (name) VALUES ('$this_inbox_item');"
+  database_run box "INSERT INTO inbox (name) VALUES ('$this_inbox_item');" ; database_run_rc=$?
+
+  if [[ $database_run_rc -eq 0 ]] ; then
+    log_print info "Item added to inbox"
   else
-    echo "Error: missing inbox item name."
-    exit 1
+    log_print error "Failed to add item to inbox"
   fi
+
 }
 
 function inbox_add_help() {
@@ -86,7 +89,8 @@ function inbox_main() {
   log_print debug "Starting Inbox Main"
 
   if [[ "${1}" ]]; then
-    user_arg="${1}" && log_print debug "User arg: ${user_arg}"
+    user_arg="${1}" ; shift
+    log_print debug "User arg: ${user_arg}"
   else
     log_print debug "No User arg provided - calling help message"
     inbox_help
@@ -94,21 +98,19 @@ function inbox_main() {
 
   case "${user_arg}" in
     "add")
-      shift
       inbox_add "$@"
       ;;
     "clarify")
-      clarify
+      clarify_main
       ;;
     "delete")
-      shift
-      inboxDelete "$1"
+      inbox_delete "$1"
       ;;
     "help")
       inbox_help
       ;;
     "list")
-      inboxList
+      inbox_list
       ;;
     *)
       log_print warn "Unknown command (${user_arg})"
