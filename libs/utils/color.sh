@@ -1,4 +1,9 @@
 #!/bin/bash
+
+##############
+# Properties #
+##############
+
 color_reset="\e[0m"
 color_bold="\e[1m"
 color_underline="\e[4m"
@@ -18,3 +23,9 @@ color_bright_blue="\e[94m"
 color_bright_magenta="\e[95m"
 color_bright_cyan="\e[96m"
 color_bright_white="\e[97m"
+
+###########
+# Methods #
+###########
+
+# N/A
