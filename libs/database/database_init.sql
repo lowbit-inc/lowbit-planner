@@ -18,6 +18,8 @@ CREATE TABLE inbox (
   name TEXT
 );
 
+-- Other
+
 CREATE TABLE collection (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT UNIQUE
