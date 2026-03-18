@@ -22,7 +22,7 @@ function test_command_output() {
   log_print debug "${color_gray}Expected output:${color_reset} ${this_output}"
 
   # Command
-  ${this_command} | grep "${this_output}" >/dev/null 2>&1
+  $this_command | grep "${this_output}" >/dev/null 2>&1
 
   # Result
   this_command_rc=$?

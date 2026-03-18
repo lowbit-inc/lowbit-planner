@@ -15,10 +15,11 @@ INSERT INTO meta VALUES ("db_schema", "1");
 
 CREATE TABLE inbox (
   id INTEGER PRIMARY KEY,
-  name TEXT
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  name TEXT NOT NULL
 );
 
--- Other
+-------------------------------- Other --------------------------------
 
 CREATE TABLE collection (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
