@@ -19,6 +19,11 @@ CREATE TABLE inbox (
   name TEXT NOT NULL
 );
 
+CREATE VIEW inbox_view AS
+SELECT inbox.id AS ID, inbox.name AS Name
+FROM inbox
+ORDER BY ID ASC;
+
 -------------------------------- Other --------------------------------
 
 CREATE TABLE collection (

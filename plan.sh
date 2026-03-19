@@ -15,6 +15,7 @@ source ./libs/utils/datetime.sh
 source ./libs/utils/dependencies.sh
 source ./libs/utils/log.sh
 source ./libs/utils/system.sh
+source ./libs/utils/validate.sh
 
 # Database
 source ./libs/database/database.sh
@@ -33,7 +34,7 @@ source ./libs/objects/purpose.sh      # Horizon 5
 source ./libs/objects/principle.sh    # Horizon 5
 
 # Workflow
-#source ./libs/workflow/capture.sh    # Step 1 - Is it needed?
+source ./libs/workflow/capture.sh     # Step 1
 source ./libs/workflow/clarify.sh     # Step 2
 source ./libs/workflow/organize.sh    # Step 3
 source ./libs/workflow/reflect.sh     # Step 4
@@ -99,7 +100,7 @@ case "${user_arg}" in
     ;;
   # Workflow
   "capture")
-    inbox_add "$@"
+    capture_main "$@"
     ;;
   "clarify")
     clarify_main
