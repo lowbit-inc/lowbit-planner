@@ -21,13 +21,13 @@
 
 #### Properties
 
-- [ ] created_at
+- [X] created_at
 - [X] id
 - [X] name
 
 #### Methods
 
-- [ ] add
+- [X] add
 - [ ] clarify
 - [ ] delete
 - [ ] list
