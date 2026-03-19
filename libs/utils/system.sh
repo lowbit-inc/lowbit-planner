@@ -6,7 +6,7 @@
 
 system_short_name="lowbit-planner"
 system_long_name="Lowbit Planner"
-system_version="v0.2.0-dev"
+system_version="0.1.0"
 system_basename="$(basename $0)"
 
 ###########
@@ -37,5 +37,5 @@ function system_get_help() {
 }
 
 function system_get_version() {
-  echo "${system_long_name} - Version: ${system_version}"
+  echo "${system_short_name} ${system_version}"
 }
