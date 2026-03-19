@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function clarify(){
+function clarify_main(){
 
   # - Get inbox items
   # - Store in a list

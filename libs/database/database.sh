@@ -4,7 +4,7 @@
 # Properties #
 ##############
 
-database_dir="${HOME}/.plan"
+database_dir="${HOME}/.lowbit-planner"
 database_file="plan.db"
 database_path="${database_dir}/${database_file}"
 
@@ -14,9 +14,8 @@ database_path="${database_dir}/${database_file}"
 
 function database_check(){
   if [[ ! -f "${database_path}" ]] ; then
-    echo "Database file not found. Initializing..."
+    log_print info "Database file not found. Initializing..."
     database_init
-    echo
   fi
 }
 
@@ -26,10 +25,12 @@ function database_init(){
 }
 
 function database_run(){
-  this_mode="$1"
-  this_query="$@"
+  this_mode="$1" ; shift  # First arg
+  this_query="$@"         # All the rest
 
-  sqlite3 "--${this_mode}" "${database_path}" "${this_query}"
+  sqlite3 "--${this_mode}" "${database_path}" "${this_query}" ; sqlite3_rc=$?
+
+  return $sqlite3_rc
 }
 
 ##########

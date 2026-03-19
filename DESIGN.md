@@ -21,13 +21,13 @@
 
 #### Properties
 
-- [ ] created_at
-- [ ] id
-- [ ] name
+- [X] created_at
+- [X] id
+- [X] name
 
 #### Methods
 
-- [ ] add
+- [X] add
 - [ ] clarify
 - [ ] delete
 - [ ] list
@@ -324,6 +324,12 @@ plan project add "Arrumar a torneira" \
   --area Casa \
   --due-date 2026-03-31
 ```
+
+### Features
+
+- [ ] Autocomplete/completion
+- [X] Colors
+- [ ] Install
 
 ## Terminal User Interface
 

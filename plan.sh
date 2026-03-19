@@ -13,9 +13,9 @@ source ./libs/utils/color.sh
 source ./libs/utils/config.sh
 source ./libs/utils/datetime.sh
 source ./libs/utils/dependencies.sh
-# source ./libs/utils/help.sh # Each help message should be in it's related object, right?
 source ./libs/utils/log.sh
 source ./libs/utils/system.sh
+source ./libs/utils/validate.sh
 
 # Database
 source ./libs/database/database.sh
@@ -34,7 +34,7 @@ source ./libs/objects/purpose.sh      # Horizon 5
 source ./libs/objects/principle.sh    # Horizon 5
 
 # Workflow
-#source ./libs/workflow/capture.sh    # Step 1 - Is it needed?
+source ./libs/workflow/capture.sh     # Step 1
 source ./libs/workflow/clarify.sh     # Step 2
 source ./libs/workflow/organize.sh    # Step 3
 source ./libs/workflow/reflect.sh     # Step 4
@@ -45,14 +45,14 @@ source ./libs/workflow/decision.sh    # Ranking System
 # Script #
 ##########
 
-log_message debug "Starting ${system_long_name}"
+log_print debug "Starting ${system_long_name}"
 
 # Getting user args
 if [[ "${1}" ]]; then
-  log_message debug "User args: $@"
+  log_print debug "User args: $@"
   user_arg="${1}"; shift # Capturing first arg
 else
-  log_message debug "No user args provided - calling help message"
+  log_print debug "No user args provided - calling help message"
   system_get_help
 fi
 
@@ -100,7 +100,7 @@ case "${user_arg}" in
     ;;
   # Workflow
   "capture")
-    inbox_add "$@"
+    capture_main "$@"
     ;;
   "clarify")
     clarify_main
@@ -119,7 +119,7 @@ case "${user_arg}" in
     ;;
   # Other
   *)
-    log_message warn "Unknown command (${user_arg})"
+    log_print warn "Unknown command (${user_arg})"
     system_get_help
     ;;
 esac
