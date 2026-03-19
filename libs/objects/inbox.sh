@@ -27,7 +27,7 @@ function inbox_add() {
   database_run box "INSERT INTO inbox (name) VALUES ('$this_inbox_item');" ; database_run_rc=$?
 
   if [[ $database_run_rc -eq 0 ]] ; then
-    log_print info "Item added to inbox"
+    log_print info "Item added to inbox (${this_inbox_item})"
   else
     log_print error "Failed to add item to inbox"
   fi
@@ -52,8 +52,10 @@ function inbox_add_help() {
 
 function inbox_delete() {
 
+  # Start
   log_print debug "Starting Inbox Delete"
 
+  # Checking args
   if [[ "${1}" ]]; then
     user_args="$@"
     log_print debug "User args: ${user_args}"
@@ -62,10 +64,19 @@ function inbox_delete() {
     inbox_delete_help
   fi
 
+  # Getting args
   this_inbox_id="$1" && validate_database_id inbox "${this_inbox_id}"
 
+  # Extra information
+  this_inbox_item=$(database_run csv "SELECT name FROM inbox WHERE id = ${this_inbox_id};")
+
+  # Confirmation
+  log_print user "Are you sure you want to delete inbox item ${this_inbox_id} (${this_inbox_item})?"
+
+  # Execution
   database_run box "DELETE FROM inbox WHERE id = $this_inbox_id;" ; database_run_rc=$?
 
+  # Checking result
   if [[ $database_run_rc -eq 0 ]] ; then
     log_print info "Item ${this_inbox_id} deleted from inbox"
   else
