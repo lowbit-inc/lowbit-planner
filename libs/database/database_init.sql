@@ -7,15 +7,11 @@ CREATE TABLE meta (
 
 INSERT INTO meta VALUES ("db_schema", "1");
 
--- Objects --
-
----- Ground ----
-
------- Inbox ------
+-- Objects:Ground:Inbox --
 
 CREATE TABLE inbox (
-  id INTEGER PRIMARY KEY,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  id INTEGER PRIMARY KEY,
   name TEXT NOT NULL
 );
 
@@ -23,6 +19,26 @@ CREATE VIEW inbox_view AS
 SELECT inbox.id AS ID, inbox.name AS Name
 FROM inbox
 ORDER BY ID ASC;
+
+-- Objects:Ground:Task --
+
+CREATE TABLE task (
+  completed_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  due_date TEXT,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE,
+  -- project_id INTEGER,
+  start_date TEXT,
+  status TEXT DEFAULT "To Do"
+  -- FOREIGN KEY (project_id) REFERENCES project (id)
+);
+
+-- CREATE VIEW task_view AS
+-- SELECT task.id AS id, task.name AS name, project.name AS project, task.deadline AS deadline, task.state AS state
+-- FROM task
+-- LEFT JOIN project ON task.project_id = project.id
+-- WHERE state <> 'Done' ORDER BY deadline ASC NULLS LAST, state DESC;
 
 -------------------------------- Other --------------------------------
 
@@ -90,30 +106,12 @@ SELECT project.id AS id, project.name AS name, area.name AS area, project.deadli
 FROM project
 LEFT JOIN area ON project.area_id = area.id;
 
-CREATE TABLE task (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT UNIQUE,
-  project_id INTEGER,
-  deadline TEXT,
-  completion_date TEXT,
-  state TEXT DEFAULT "Pending",
-  FOREIGN KEY (project_id) REFERENCES project (id)
-);
 
-INSERT INTO task (name, project_id, deadline) VALUES ("Complete this task", 1, DATE('now', '+1 day'));
-INSERT INTO task (name) VALUES ("Procrastinate");
-
-CREATE VIEW task_view AS
-SELECT task.id AS id, task.name AS name, project.name AS project, task.deadline AS deadline, task.state AS state
-FROM task
-LEFT JOIN project ON task.project_id = project.id
-WHERE state <> 'Done' ORDER BY deadline ASC NULLS LAST, state DESC;
-
-CREATE VIEW task_log AS
-SELECT task.id AS id, task.name AS name, project.name AS project, task.deadline AS deadline, task.completion_date AS completion_date
-FROM task
-LEFT JOIN project ON task.project_id = project.id
-WHERE state == 'Done' ORDER BY completion_date ASC;
+-- CREATE VIEW task_log AS
+-- SELECT task.id AS id, task.name AS name, project.name AS project, task.deadline AS deadline, task.completion_date AS completion_date
+-- FROM task
+-- LEFT JOIN project ON task.project_id = project.id
+-- WHERE state == 'Done' ORDER BY completion_date ASC;
 
 CREATE TABLE recurring (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

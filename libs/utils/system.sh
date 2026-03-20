@@ -25,6 +25,7 @@ function system_get_help() {
   printf "\n"
   printf "${color_bold}SYSTEM COMMANDS:${color_reset}\n"
   printf "  help            ${color_gray}This help message${color_reset}\n"
+  printf "  install         ${color_gray}Installs this CLI to /usr/local/bin/plan${color_reset}\n"
   printf "  version         ${color_gray}Get CLI version${color_reset}\n"
   printf "\n"
   printf "${color_bold}WORKFLOW COMMANDS:${color_reset}\n"
@@ -38,4 +39,9 @@ function system_get_help() {
 
 function system_get_version() {
   echo "${system_short_name} ${system_version}"
+}
+
+function system_install() {
+  log_print user "This will install ${system_short_name} as ${color_underline}plan${color_reset} in ${color_bold}/usr/local/bin${color_reset} using ${color_bold}sudo${color_reset}. Proceed?"
+  ln -s $SCRIPT_DIR/$system_basename /usr/local/bin/plan
 }

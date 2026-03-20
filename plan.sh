@@ -4,42 +4,45 @@
 # Date: 2025-11-01
 # Description: A GTD-inspired task management tool for the terminal.
 
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || realpath "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+
 ########
 # Libs #
 ########
 
 # Utils
-source ./libs/utils/color.sh
-source ./libs/utils/config.sh
-source ./libs/utils/datetime.sh
-source ./libs/utils/dependencies.sh
-source ./libs/utils/log.sh
-source ./libs/utils/system.sh
-source ./libs/utils/validate.sh
+source ${SCRIPT_DIR}/libs/utils/color.sh
+source ${SCRIPT_DIR}/libs/utils/config.sh
+source ${SCRIPT_DIR}/libs/utils/datetime.sh
+source ${SCRIPT_DIR}/libs/utils/dependencies.sh
+source ${SCRIPT_DIR}/libs/utils/log.sh
+source ${SCRIPT_DIR}/libs/utils/system.sh
+source ${SCRIPT_DIR}/libs/utils/validate.sh
 
 # Database
-source ./libs/database/database.sh
+source ${SCRIPT_DIR}/libs/database/database.sh
 
 # Objects
-source ./libs/objects/inbox.sh        # Ground
-source ./libs/objects/task.sh         # Ground
-source ./libs/objects/recurring.sh    # Ground
-source ./libs/objects/habit.sh        # Ground
-source ./libs/objects/collection.sh   # Ground
-source ./libs/objects/project.sh      # Horizon 1
-source ./libs/objects/area.sh         # Horizon 2
-source ./libs/objects/goal.sh         # Horizon 3
-source ./libs/objects/vision.sh       # Horizon 4
-source ./libs/objects/purpose.sh      # Horizon 5
-source ./libs/objects/principle.sh    # Horizon 5
+source ${SCRIPT_DIR}/libs/objects/inbox.sh        # Ground
+source ${SCRIPT_DIR}/libs/objects/task.sh         # Ground
+source ${SCRIPT_DIR}/libs/objects/recurring.sh    # Ground
+source ${SCRIPT_DIR}/libs/objects/habit.sh        # Ground
+source ${SCRIPT_DIR}/libs/objects/collection.sh   # Ground
+source ${SCRIPT_DIR}/libs/objects/project.sh      # Horizon 1
+source ${SCRIPT_DIR}/libs/objects/area.sh         # Horizon 2
+source ${SCRIPT_DIR}/libs/objects/goal.sh         # Horizon 3
+source ${SCRIPT_DIR}/libs/objects/vision.sh       # Horizon 4
+source ${SCRIPT_DIR}/libs/objects/purpose.sh      # Horizon 5
+source ${SCRIPT_DIR}/libs/objects/principle.sh    # Horizon 5
 
 # Workflow
-source ./libs/workflow/capture.sh     # Step 1
-source ./libs/workflow/clarify.sh     # Step 2
-source ./libs/workflow/organize.sh    # Step 3
-source ./libs/workflow/reflect.sh     # Step 4
-source ./libs/workflow/engage.sh      # Step 5
-source ./libs/workflow/decision.sh    # Ranking System
+source ${SCRIPT_DIR}/libs/workflow/capture.sh     # Step 1
+source ${SCRIPT_DIR}/libs/workflow/clarify.sh     # Step 2
+source ${SCRIPT_DIR}/libs/workflow/organize.sh    # Step 3
+source ${SCRIPT_DIR}/libs/workflow/reflect.sh     # Step 4
+source ${SCRIPT_DIR}/libs/workflow/engage.sh      # Step 5
+source ${SCRIPT_DIR}/libs/workflow/decision.sh    # Ranking System
 
 ##########
 # Script #

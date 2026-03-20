@@ -3,9 +3,9 @@
 ## Global Commands
 
 - [X] help
-- [-] install
-- [-] search
-- [ ] version
+- [X] install
+- [ ] search
+- [X] version
 
 ## Global Args
 
@@ -29,8 +29,8 @@
 
 - [X] add
 - [ ] clarify
-- [ ] delete
-- [ ] list
+- [X] delete
+- [X] list
 
 ### Task (Next Action)
 
@@ -41,7 +41,7 @@
 - [ ] due_date
 - [ ] id
 - [ ] name
-- [ ] project
+- [ ] project_id
 - [ ] start_date
 - [ ] status
 
