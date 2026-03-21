@@ -50,7 +50,7 @@ function help_print_inbox_add() {
   printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} inbox add ${color_blue}ITEM_NAME${color_reset}\n"
   printf "\n"
   printf "${color_bold}ARGUMENTS:${color_reset}\n"
-  printf "  ITEM_NAME  ${color_gray}Item or idea to add to inbox${color_reset}\n"
+  printf "  ${color_blue}ITEM_NAME  ${color_gray}Item or idea to add to inbox${color_reset}\n"
   printf "\n"
 }
 
@@ -64,7 +64,7 @@ function help_print_inbox_delete() {
   printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} inbox delete ${color_blue}ITEM_ID${color_reset}\n"
   printf "\n"
   printf "${color_bold}ARGUMENTS:${color_reset}\n"
-  printf "  ITEM_ID  ${color_gray}ID of inbox item to delete${color_reset}\n"
+  printf "  ${color_blue}ITEM_ID  ${color_gray}ID of inbox item to delete${color_reset}\n"
   printf "\n"
 }
 function help_print_main() {
@@ -121,11 +121,11 @@ function help_print_task_add() {
   printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} task add ${color_blue}TASK_NAME [ARGS]${color_reset}\n"
   printf "\n"
   printf "${color_bold}REQUIRED ARGUMENTS:${color_reset}\n"
-  printf "  TASK_NAME                   ${color_gray}Name or description${color_reset}\n"
+  printf "  ${color_blue}TASK_NAME                   ${color_gray}Name or description${color_reset}\n"
   printf "\n"
   printf "${color_bold}OPTIONAL ARGUMENTS:${color_reset}\n"
-  printf "  --start-date YYYY-MM-DD     ${color_gray}When task is able to be done${color_reset}\n"
-  printf "  --due-date   YYYY-MM-DD     ${color_gray}Deadline${color_reset}\n"
-  printf "  --project    PROJECT_NAME   ${color_gray}Related project${color_reset}\n"
+  printf "  --start-date ${color_blue}YYYY-MM-DD     ${color_gray}When task is able to be done${color_reset}\n"
+  printf "  --due-date   ${color_blue}YYYY-MM-DD     ${color_gray}Deadline${color_reset}\n"
+  printf "  --project    ${color_blue}PROJECT_NAME   ${color_gray}Related project${color_reset}\n"
   printf "\n"
 }
