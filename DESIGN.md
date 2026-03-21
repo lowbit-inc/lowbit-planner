@@ -1,6 +1,6 @@
 # System
 
-## Global Commands
+## System Commands
 
 - [X] help
 - [X] install
@@ -273,7 +273,7 @@
 
 ## Capture
 
-- [ ] inbox add
+- [X] inbox add
 
 ## Clarify
 

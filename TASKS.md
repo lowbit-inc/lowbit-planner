@@ -1,0 +1,126 @@
+# Tasks
+
+## System Commands
+- [X] Implement system command `help`
+- [X] Implement system command `install`
+- [ ] Implement system command `search`
+- [X] Implement system command `version`
+
+## Global Args
+- [ ] Implement global arg `debug`
+- [ ] Implement global arg `nocolor`
+- [ ] Implement global arg `noprompt`
+
+## Libs
+- [X] Review lib `color.sh`
+- [X] Review lib `database.sh`
+- [X] Review lib `datetime.sh`
+- [X] Review lib `dependencies.sh`
+- [X] Review lib `log.sh`
+- [X] Review lib `system.sh`
+- [X] Review lib `validate.sh`
+- [X] Implement Unit Tests system
+- [ ] Implement generic *CRUD methods*
+- [ ] Implement Config Management system
+- [ ] Implement Ranking feature (`decision`)
+
+## Objects
+- [X] Review **inbox** data structure
+- [X] Implement Ground command `inbox add`
+- [X] Implement Ground command `inbox delete`
+- [X] Implement Ground command `inbox list`
+- [ ] Review **task** data structure
+- [ ] Implement Ground command `task add`
+- [ ] Implement Ground command `task complete`
+- [ ] Implement Ground command `task delete`
+- [ ] Implement Ground command `task edit`
+- [ ] Implement Ground command `task list`
+- [ ] Implement Ground command `task search`
+- [ ] Implement Ground command `task start`
+- [ ] Implement Ground command `task stop`
+- [ ] Review **recurring** data structure
+- [ ] Implement Ground command `recurring add`
+- [ ] Implement Ground command `recurring complete`
+- [ ] Implement Ground command `recurring delete`
+- [ ] Implement Ground command `recurring edit`
+- [ ] Implement Ground command `recurring list`
+- [ ] Implement Ground command `recurring search`
+- [ ] Review **habit** data structure
+- [ ] Implement Ground command `habit add`
+- [ ] Implement Ground command `habit complete`
+- [ ] Implement Ground command `habit delete`
+- [ ] Implement Ground command `habit edit`
+- [ ] Implement Ground command `habit list`
+- [ ] Implement Ground command `habit search`
+- [ ] Implement Ground command `habit start`
+- [ ] Implement Ground command `habit stop`
+- [ ] Review **collection** data structure
+- [ ] Implement Ground command `collection add`
+- [ ] Implement Ground command `collection decide`
+- [ ] Implement Ground command `collection delete`
+- [ ] Implement Ground command `collection edit`
+- [ ] Implement Ground command `collection list`
+- [ ] Implement Ground command `collection search`
+- [ ] Review **collection item** data structure
+- [ ] Implement Ground command `collection-item add`
+- [ ] Implement Ground command `collection-item complete`
+- [ ] Implement Ground command `collection-item delete`
+- [ ] Implement Ground command `collection-item edit`
+- [ ] Implement Ground command `collection-item list`
+- [ ] Implement Ground command `collection-item search`
+- [ ] Implement Ground command `collection-item start`
+- [ ] Implement Ground command `collection-item stop`
+- [ ] Review **project** data structure
+- [ ] Implement Horizon 1 command `project add`
+- [ ] Implement Horizon 1 command `project complete`
+- [ ] Implement Horizon 1 command `project decide`
+- [ ] Implement Horizon 1 command `project delete`
+- [ ] Implement Horizon 1 command `project edit`
+- [ ] Implement Horizon 1 command `project list`
+- [ ] Implement Horizon 1 command `project search`
+- [ ] Implement Horizon 1 command `project start`
+- [ ] Implement Horizon 1 command `project stop`
+- [ ] Review **area** data structure
+- [ ] Implement Horizon 2 commmand `area add`
+- [ ] Implement Horizon 2 commmand `area delete`
+- [ ] Implement Horizon 2 commmand `area edit`
+- [ ] Implement Horizon 2 commmand `area list`
+- [ ] Review **goal** data structure
+- [ ] Implement Horizon 3 command `goal add`
+- [ ] Implement Horizon 3 command `goal complete`
+- [ ] Implement Horizon 3 command `goal decide`
+- [ ] Implement Horizon 3 command `goal delete`
+- [ ] Implement Horizon 3 command `goal edit`
+- [ ] Implement Horizon 3 command `goal list`
+- [ ] Implement Horizon 3 command `goal search`
+- [ ] Implement Horizon 3 command `goal start`
+- [ ] Implement Horizon 3 command `goal stop`
+- [ ] Review **vision** data structure
+- [ ] Implement Horizon 4 command `vision add`
+- [ ] Implement Horizon 4 command `vision complete`
+- [ ] Implement Horizon 4 command `vision decide`
+- [ ] Implement Horizon 4 command `vision delete`
+- [ ] Implement Horizon 4 command `vision edit`
+- [ ] Implement Horizon 4 command `vision list`
+- [ ] Implement Horizon 4 command `vision search`
+- [ ] Implement Horizon 4 command `vision start`
+- [ ] Implement Horizon 4 command `vision stop`
+- [ ] Review **purpose** data structure
+- [ ] Implement Horizon 5 command `purpose add`
+- [ ] Implement Horizon 5 command `purpose delete`
+- [ ] Implement Horizon 5 command `purpose edit`
+- [ ] Implement Horizon 5 command `purpose list`
+- [ ] Implement Horizon 5 command `purpose search`
+- [ ] Review **principle** data structure
+- [ ] Implement Horizon 5 command `principle add`
+- [ ] Implement Horizon 5 command `principle delete`
+- [ ] Implement Horizon 5 command `principle edit`
+- [ ] Implement Horizon 5 command `principle list`
+- [ ] Implement Horizon 5 command `principle search`
+
+## Workflows
+- [X] Implement workflow command 1 `capture`
+- [ ] Implement workflow command 2 `clarify`
+- [ ] Implement workflow command 3 `organize`
+- [ ] Implement workflow command 4 `reflect`
+- [ ] Implement workflow command 5 `engage`
