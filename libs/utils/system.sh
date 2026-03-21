@@ -21,7 +21,7 @@ function system_get_help() {
   printf "  A ${color_underline}life planner${color_reset} tool to use without leaving the terminal.\n"
   printf "\n"
   printf "${color_bold}USAGE:${color_reset}\n"
-  printf "  ${color_underline}${system_basename}${color_reset} ${color_bold}${color_red}COMMAND${color_reset} ${color_gray}[${color_bold}${color_green}SUBCOMMAND${color_reset}${color_gray}] [${color_bold}${color_blue}ARGUMENTS${color_reset}${color_gray}]${color_reset}\n"
+  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS] ${color_red}<COMMAND> ${color_green}[SUBCOMMAND] ${color_blue}[ARGS]${color_reset}\n"
   printf "\n"
   printf "${color_bold}SYSTEM COMMANDS:${color_reset}\n"
   printf "  help            ${color_gray}This help message${color_reset}\n"
