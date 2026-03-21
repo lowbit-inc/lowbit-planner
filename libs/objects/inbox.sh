@@ -19,7 +19,7 @@ function inbox_add() {
     log_print debug "User args: ${user_args}"
   else
     log_print debug "No user arg provided - calling help message"
-    inbox_add_help
+    help_get_message inbox_add
   fi
 
   this_inbox_item="${user_args}"
@@ -34,22 +34,6 @@ function inbox_add() {
 
 }
 
-function inbox_add_help() {
-  log_print debug "Getting help message: inbox add"
-  printf "${color_bold}${system_long_name} - Inbox Add${color_reset}\n"
-  printf "\n"
-  printf "${color_bold}DESCRIPTION:${color_reset}\n"
-  printf "  Add items to the inbox.\n"
-  printf "\n"
-  printf "${color_bold}USAGE:${color_reset}\n"
-  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} inbox add ${color_blue}ITEM_NAME${color_reset}\n"
-  printf "\n"
-  printf "${color_bold}ARGUMENTS:${color_reset}\n"
-  printf "  ITEM_NAME  ${color_gray}Item or idea to add to inbox${color_reset}\n"
-  printf "\n"
-  exit 0
-}
-
 function inbox_delete() {
 
   # Start
@@ -61,7 +45,7 @@ function inbox_delete() {
     log_print debug "User args: ${user_args}"
   else
     log_print debug "No user arg provided - calling help message"
-    inbox_delete_help
+    help_get_message inbox_delete
   fi
 
   # Getting args
@@ -85,41 +69,6 @@ function inbox_delete() {
 
 }
 
-function inbox_delete_help() {
-  log_print debug "Getting help message: inbox delete"
-  printf "${color_bold}${system_long_name} - Inbox Delete${color_reset}\n"
-  printf "\n"
-  printf "${color_bold}DESCRIPTION:${color_reset}\n"
-  printf "  Removes items from the inbox.\n"
-  printf "\n"
-  printf "${color_bold}USAGE:${color_reset}\n"
-  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} inbox delete ${color_blue}ITEM_ID${color_reset}\n"
-  printf "\n"
-  printf "${color_bold}ARGUMENTS:${color_reset}\n"
-  printf "  ITEM_ID  ${color_gray}ID of inbox item to delete${color_reset}\n"
-  printf "\n"
-  exit 0
-}
-
-function inbox_help() {
-  log_print debug "Getting help message: inbox"
-  printf "${color_bold}${system_long_name} - Inbox${color_reset}\n"
-  printf "\n"
-  printf "${color_bold}DESCRIPTION:${color_reset}\n"
-  printf "  The place to capture your ideas.\n"
-  printf "\n"
-  printf "${color_bold}USAGE:${color_reset}\n"
-  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} inbox ${color_green}SUBCOMMAND ${color_blue}[ARGS]${color_reset}\n"
-  printf "\n"
-  printf "${color_bold}SUBCOMMANDS:${color_reset}\n"
-  printf "  add ${color_blue}ITEM_NAME${color_reset}\n"
-  printf "  clarify\n"
-  printf "  delete ${color_blue}ITEM_ID${color_reset}\n"
-  printf "  list\n"
-  printf "\n"
-  exit 0
-}
-
 function inbox_list() {
   database_run "box" "SELECT * FROM inbox_view"
 }
@@ -133,7 +82,7 @@ function inbox_main() {
     log_print debug "User arg: ${user_arg}"
   else
     log_print debug "No User arg provided - calling help message"
-    inbox_help
+    help_get_message inbox
   fi
 
   case "${user_arg}" in
@@ -147,14 +96,14 @@ function inbox_main() {
       inbox_delete "$@"
       ;;
     "help")
-      inbox_help
+      help_get_message inbox
       ;;
     "list")
       inbox_list
       ;;
     *)
       log_print warn "Unknown command (${user_arg})"
-      inbox_help
+      help_get_message inbox
       ;;
   esac
 }

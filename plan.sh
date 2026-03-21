@@ -16,6 +16,7 @@ source ${SCRIPT_DIR}/libs/utils/color.sh
 source ${SCRIPT_DIR}/libs/utils/config.sh
 source ${SCRIPT_DIR}/libs/utils/datetime.sh
 source ${SCRIPT_DIR}/libs/utils/dependencies.sh
+source ${SCRIPT_DIR}/libs/utils/help.sh
 source ${SCRIPT_DIR}/libs/utils/log.sh
 source ${SCRIPT_DIR}/libs/utils/system.sh
 source ${SCRIPT_DIR}/libs/utils/validate.sh
@@ -56,13 +57,13 @@ if [[ "${1}" ]]; then
   user_arg="${1}"; shift # Capturing first arg
 else
   log_print debug "No user args provided - calling help message"
-  system_get_help
+  help_get_message main
 fi
 
 case "${user_arg}" in
   # System
   "help"|"-h"|"--help")
-    system_get_help
+    help_get_message main
     ;;
   "install")
     system_install
@@ -123,6 +124,6 @@ case "${user_arg}" in
   # Other
   *)
     log_print warn "Unknown command (${user_arg})"
-    system_get_help
+    help_get_message main
     ;;
 esac

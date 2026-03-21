@@ -19,7 +19,7 @@ function task_add() {
     log_print debug "User args: ${user_args}"
   else
     log_print debug "No user arg provided - calling help message"
-    task_add_help
+    help_get_message task_add
   fi
 
   echo "Oi!"
@@ -96,28 +96,8 @@ function taskAdd() {
   
 }
 
-function task_help() {
-  log_print debug "Getting help message: task"
-  printf "${color_bold}${system_long_name} - Task${color_reset}\n"
-  printf "\n"
-  printf "${color_bold}DESCRIPTION:${color_reset}\n"
-  printf "  Manage tasks (next actions).\n"
-  printf "\n"
-  printf "${color_bold}USAGE:${color_reset}\n"
-  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} task ${color_green}SUBCOMMAND ${color_blue}[ARGS]${color_reset}\n"
-  printf "\n"
-  printf "${color_bold}SUBCOMMANDS:${color_reset}\n"
-  printf "  add ${color_blue}TASK_NAME [ARGS]${color_reset}\n"
-  printf "  complete ${color_blue}TASK_ID${color_reset}\n"
-  printf "  delete ${color_blue}TASK_ID${color_reset}\n"
-  printf "  edit ${color_blue}TASK_ID${color_reset}\n"
-  printf "  list ${color_blue}[--completed|--all]${color_reset}\n"
-  printf "  search ${color_blue}PATTERN${color_reset}\n"
-  printf "  start ${color_blue}TASK_ID${color_reset}\n"
-  printf "  stop ${color_blue}TASK_ID${color_reset}\n"
-  printf "\n"
-  exit 0
-}
+
+
 
 function task_main() {
 
@@ -128,7 +108,7 @@ function task_main() {
     log_print debug "User arg: ${user_arg}"
   else
     log_print debug "No User arg provided - calling help message"
-    task_help
+    help_get_message task
   fi
 
   case "${user_arg}" in
@@ -145,7 +125,7 @@ function task_main() {
       task_edit "$1"
       ;;
     "help")
-      task_help
+      help_get_message task
       ;;
     "list")
       task_list
@@ -160,7 +140,7 @@ function task_main() {
       task_stop "$1"
       ;;
     *)
-      task_help
+      help_get_message task
       ;;
   esac
 }
