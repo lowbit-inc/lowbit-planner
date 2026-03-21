@@ -29,7 +29,7 @@
 - [X] Implement Ground command `inbox add`
 - [X] Implement Ground command `inbox delete`
 - [X] Implement Ground command `inbox list`
-- [ ] Review **task** data structure
+- [-] Review **task** data structure
 - [ ] Implement Ground command `task add`
 - [ ] Implement Ground command `task complete`
 - [ ] Implement Ground command `task delete`

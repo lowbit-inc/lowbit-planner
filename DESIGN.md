@@ -28,7 +28,7 @@
 #### Methods
 
 - [X] add
-- [ ] clarify
+- [-] clarify
 - [X] delete
 - [X] list
 
@@ -36,14 +36,14 @@
 
 #### Properties
 
-- [ ] completed_at
-- [ ] created_at
-- [ ] due_date
-- [ ] id
-- [ ] name
-- [ ] project_id
-- [ ] start_date
-- [ ] status
+- [X] completed_at
+- [X] created_at
+- [X] due_date
+- [X] id
+- [X] name
+- [-] project_id
+- [X] start_date
+- [X] status
 
 #### Methods
 
@@ -314,6 +314,11 @@
 # Tests
 
 ## Unit Tests
+
+# Status
+- Pending
+- In Progress
+- Done
 
 # Interfaces
 

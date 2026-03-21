@@ -16,21 +16,21 @@ CREATE TABLE inbox (
 );
 
 CREATE VIEW inbox_view AS
-SELECT inbox.id AS ID, inbox.name AS Name
+SELECT inbox.id AS id, inbox.name AS name
 FROM inbox
-ORDER BY ID ASC;
+ORDER BY id ASC;
 
 -- Objects:Ground:Task --
 
 CREATE TABLE task (
-  completed_at TEXT NOT NULL,
+  completed_at TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   due_date TEXT,
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT UNIQUE,
-  -- project_id INTEGER,
+  name TEXT NOT NULL UNIQUE,
   start_date TEXT,
-  status TEXT DEFAULT "To Do"
+  status TEXT NOT NULL DEFAULT "Pending"
+  -- project_id INTEGER,
   -- FOREIGN KEY (project_id) REFERENCES project (id)
 );
 
@@ -42,69 +42,69 @@ CREATE TABLE task (
 
 -------------------------------- Other --------------------------------
 
-CREATE TABLE collection (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT UNIQUE
-);
+-- CREATE TABLE collection (
+--   id INTEGER PRIMARY KEY AUTOINCREMENT,
+--   name TEXT UNIQUE
+-- );
 
-INSERT INTO collection (name) VALUES ("Books");
-INSERT INTO collection (name) VALUES ("Games");
+-- INSERT INTO collection (name) VALUES ("Books");
+-- INSERT INTO collection (name) VALUES ("Games");
 
-CREATE TABLE collection_item (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT UNIQUE,
-  collection_id INTEGER NOT NULL,
-  state TEXT DEFAULT "Pending",
-  completion_date TEXT,
-  position INTEGER DEFAULT 0,
-  FOREIGN KEY (collection_id) REFERENCES collection (id)
-);
+-- CREATE TABLE collection_item (
+--   id INTEGER PRIMARY KEY AUTOINCREMENT,
+--   name TEXT UNIQUE,
+--   collection_id INTEGER NOT NULL,
+--   state TEXT DEFAULT "Pending",
+--   completion_date TEXT,
+--   position INTEGER DEFAULT 0,
+--   FOREIGN KEY (collection_id) REFERENCES collection (id)
+-- );
 
-INSERT INTO collection_item (name, collection_id) VALUES ("Neuromancer",1);
-INSERT INTO collection_item (name, collection_id) VALUES ("Animal Crossing: New Horizon",2);
-INSERT INTO collection_item (name, collection_id) VALUES ("Persona 5: Royal",2);
-INSERT INTO collection_item (name, collection_id) VALUES ("Pokémon Midori",2);
+-- INSERT INTO collection_item (name, collection_id) VALUES ("Neuromancer",1);
+-- INSERT INTO collection_item (name, collection_id) VALUES ("Animal Crossing: New Horizon",2);
+-- INSERT INTO collection_item (name, collection_id) VALUES ("Persona 5: Royal",2);
+-- INSERT INTO collection_item (name, collection_id) VALUES ("Pokémon Midori",2);
 
-CREATE TABLE collection_item_decision (
-  collection_id INTEGER NOT NULL,
-  collection_item_id1 INTEGER NOT NULL,
-  collection_item_id2 INTEGER NOT NULL,
-  collection_item_id_choice INTEGER,
-  FOREIGN KEY (collection_id) REFERENCES collection (id),
-  FOREIGN KEY (collection_item_id1) REFERENCES collection_item (id),
-  FOREIGN KEY (collection_item_id2) REFERENCES collection_item (id),
-  PRIMARY KEY (collection_id, collection_item_id1, collection_item_id2)
-);
+-- CREATE TABLE collection_item_decision (
+--   collection_id INTEGER NOT NULL,
+--   collection_item_id1 INTEGER NOT NULL,
+--   collection_item_id2 INTEGER NOT NULL,
+--   collection_item_id_choice INTEGER,
+--   FOREIGN KEY (collection_id) REFERENCES collection (id),
+--   FOREIGN KEY (collection_item_id1) REFERENCES collection_item (id),
+--   FOREIGN KEY (collection_item_id2) REFERENCES collection_item (id),
+--   PRIMARY KEY (collection_id, collection_item_id1, collection_item_id2)
+-- );
 
-CREATE TABLE area (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT UNIQUE
-);
+-- CREATE TABLE area (
+--   id INTEGER PRIMARY KEY AUTOINCREMENT,
+--   name TEXT UNIQUE
+-- );
 
-INSERT INTO area (name) VALUES ("Personal");
-INSERT INTO area (name) VALUES ("Work");
+-- INSERT INTO area (name) VALUES ("Personal");
+-- INSERT INTO area (name) VALUES ("Work");
 
 ---- Idea: try to consolidade the amount of objects for the areas
 -- CREATE VIEW area_view AS
 -- SELECT area.name AS name, projects, goals, visions
 -- FROM area;
 
-CREATE TABLE project (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT UNIQUE,
-  area_id INTEGER,
-  deadline TEXT,
-  position INTEGER DEFAULT 0,
-  FOREIGN KEY (area_id) REFERENCES area (id)
-);
+-- CREATE TABLE project (
+--   id INTEGER PRIMARY KEY AUTOINCREMENT,
+--   name TEXT UNIQUE,
+--   area_id INTEGER,
+--   deadline TEXT,
+--   position INTEGER DEFAULT 0,
+--   FOREIGN KEY (area_id) REFERENCES area (id)
+-- );
 
-INSERT INTO project (name, area_id, deadline) VALUES ("Learn lowbit-planner", 1, DATE('now', '+3 days'));
-INSERT INTO project (name, area_id, deadline) VALUES ("Cool project for my boss", 2, DATE('now', '+7 days'));
+-- INSERT INTO project (name, area_id, deadline) VALUES ("Learn lowbit-planner", 1, DATE('now', '+3 days'));
+-- INSERT INTO project (name, area_id, deadline) VALUES ("Cool project for my boss", 2, DATE('now', '+7 days'));
 
-CREATE VIEW project_view AS
-SELECT project.id AS id, project.name AS name, area.name AS area, project.deadline AS deadline, project.position AS position
-FROM project
-LEFT JOIN area ON project.area_id = area.id;
+-- CREATE VIEW project_view AS
+-- SELECT project.id AS id, project.name AS name, area.name AS area, project.deadline AS deadline, project.position AS position
+-- FROM project
+-- LEFT JOIN area ON project.area_id = area.id;
 
 
 -- CREATE VIEW task_log AS
@@ -113,63 +113,63 @@ LEFT JOIN area ON project.area_id = area.id;
 -- LEFT JOIN project ON task.project_id = project.id
 -- WHERE state == 'Done' ORDER BY completion_date ASC;
 
-CREATE TABLE recurring (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT UNIQUE,
-  recurrence TEXT,
-  completion_date TEXT,
-  state TEXT DEFAULT "Pending"
-);
+-- CREATE TABLE recurring (
+--   id INTEGER PRIMARY KEY AUTOINCREMENT,
+--   name TEXT UNIQUE,
+--   recurrence TEXT,
+--   completion_date TEXT,
+--   state TEXT DEFAULT "Pending"
+-- );
 
-CREATE VIEW recurring_log AS
-SELECT id, name, recurrence, completion_date, state
-FROM recurring
-WHERE state == 'Done';
+-- CREATE VIEW recurring_log AS
+-- SELECT id, name, recurrence, completion_date, state
+-- FROM recurring
+-- WHERE state == 'Done';
 
-INSERT INTO recurring (name, recurrence) VALUES ("Pay the bills", "monthly");
+-- INSERT INTO recurring (name, recurrence) VALUES ("Pay the bills", "monthly");
 
-CREATE TABLE habit (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT UNIQUE,
-  recurrence TEXT,
-  completion_date TEXT,
-  state TEXT DEFAULT "Pending"
-);
+-- CREATE TABLE habit (
+--   id INTEGER PRIMARY KEY AUTOINCREMENT,
+--   name TEXT UNIQUE,
+--   recurrence TEXT,
+--   completion_date TEXT,
+--   state TEXT DEFAULT "Pending"
+-- );
 
-CREATE VIEW habit_log AS
-SELECT id, name, recurrence, completion_date, state
-FROM habit
-WHERE state == 'Done';
+-- CREATE VIEW habit_log AS
+-- SELECT id, name, recurrence, completion_date, state
+-- FROM habit
+-- WHERE state == 'Done';
 
-INSERT INTO habit (name, recurrence) VALUES ("Drink water", "daily");
+-- INSERT INTO habit (name, recurrence) VALUES ("Drink water", "daily");
 
-CREATE TABLE goal (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT UNIQUE,
-  area_id INTEGER,
-  deadline TEXT,
-  position INTEGER DEFAULT 0,
-  FOREIGN KEY (area_id) REFERENCES area (id)
-);
+-- CREATE TABLE goal (
+--   id INTEGER PRIMARY KEY AUTOINCREMENT,
+--   name TEXT UNIQUE,
+--   area_id INTEGER,
+--   deadline TEXT,
+--   position INTEGER DEFAULT 0,
+--   FOREIGN KEY (area_id) REFERENCES area (id)
+-- );
 
-INSERT INTO goal (name, area_id) VALUES ("Move to new home", 1);
+-- INSERT INTO goal (name, area_id) VALUES ("Move to new home", 1);
 
-CREATE VIEW goal_view AS
-SELECT goal.id AS id, goal.name AS name, area.name AS area, goal.deadline AS deadline, goal.position AS position
-FROM goal
-LEFT JOIN area ON goal.area_id = area.id;
+-- CREATE VIEW goal_view AS
+-- SELECT goal.id AS id, goal.name AS name, area.name AS area, goal.deadline AS deadline, goal.position AS position
+-- FROM goal
+-- LEFT JOIN area ON goal.area_id = area.id;
 
-CREATE TABLE vision (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT UNIQUE,
-  area_id INTEGER,
-  position INTEGER DEFAULT 0,
-  FOREIGN KEY (area_id) REFERENCES area (id)
-);
+-- CREATE TABLE vision (
+--   id INTEGER PRIMARY KEY AUTOINCREMENT,
+--   name TEXT UNIQUE,
+--   area_id INTEGER,
+--   position INTEGER DEFAULT 0,
+--   FOREIGN KEY (area_id) REFERENCES area (id)
+-- );
 
-INSERT INTO vision (name, area_id) VALUES ("Learn Karate", 1);
+-- INSERT INTO vision (name, area_id) VALUES ("Learn Karate", 1);
 
-CREATE VIEW vision_view AS
-SELECT vision.id AS id, vision.name AS name, area.name AS area, vision.position AS position
-FROM vision
-LEFT JOIN area ON vision.area_id = area.id;
+-- CREATE VIEW vision_view AS
+-- SELECT vision.id AS id, vision.name AS name, area.name AS area, vision.position AS position
+-- FROM vision
+-- LEFT JOIN area ON vision.area_id = area.id;
