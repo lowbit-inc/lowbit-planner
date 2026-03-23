@@ -25,6 +25,7 @@ source ${SCRIPT_DIR}/libs/utils/validate.sh
 source ${SCRIPT_DIR}/libs/database/database.sh
 
 # Objects
+source ${SCRIPT_DIR}/libs/objects/generic.sh      # Basic template
 source ${SCRIPT_DIR}/libs/objects/inbox.sh        # Ground
 source ${SCRIPT_DIR}/libs/objects/task.sh         # Ground
 source ${SCRIPT_DIR}/libs/objects/recurring.sh    # Ground

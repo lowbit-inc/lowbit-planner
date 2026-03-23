@@ -14,6 +14,7 @@ function task_add() {
 
   log_print debug "Starting Task Add"
 
+  # Reading args
   if [[ "${1}" ]]; then
     user_args="$@"
     log_print debug "User args: ${user_args}"
@@ -22,82 +23,70 @@ function task_add() {
     help_get_message task_add
   fi
 
-  echo "Oi!"
-  exit 0
+  # Getting positional args
+  this_task_name="$1" ; log_print debug "Task name: ${this_task_name}" ; shift
 
-  # Mapping args
-  # this_inbox_item="${user_args}"
-  
-  # database_run box "INSERT INTO inbox (name) VALUES ('$this_inbox_item');" ; database_run_rc=$?
-
-  # if [[ $database_run_rc -eq 0 ]] ; then
-  #   log_print info "Item added to inbox (${this_inbox_item})"
-  # else
-  #   log_print error "Failed to add item to inbox"
-  # fi
-
-}
-
-function taskAdd() {
-
-  # Getting args
+  # Getting all other args
   while [[ "$@" ]] ; do
     this_arg="${1}"
+    log_print debug "Got arg: ${this_arg}"
 
     case "${this_arg}" in
-      "--deadline")
+      "--due-date")
         shift
         if [[ "${1}" ]] ; then
-          this_task_deadline="'${1}'"
+          this_task_due_date="${1}" && validate_date "${this_task_due_date}"
+          log_print debug "Task Due Date: ${this_task_due_date}"
         else
-          echo "Error: missing task deadline"
-          exit 1
+          log_print error "Missing value for due date"
         fi
         ;;
-      "--name")
+      # "--project")
+      #   shift
+      #   if [[ "${1}" ]] ; then
+      #     this_task_project="${1}" && validate_database_record "project" "name" "${this_task_project}"
+      #     log_print debug "Task Project: ${this_task_project}"
+      #   else
+      #     log_print error "Missing value for project"
+      #   fi
+      #   ;;
+      "--start-date")
         shift
         if [[ "${1}" ]] ; then
-          this_task_name="'${1}'"
+          this_task_start_date="${1}" && validate_date "${this_task_start_date}"
+          log_print debug "Task Start Date: ${this_task_start_date}"
         else
-          echo "Error: missing task name"
-          exit 1
+          log_print error "Missing value for start date"
         fi
         ;;
-      "--project")
-        shift
-        if [[ "${1}" ]] ; then
-          this_task_project="${1}"
-        else
-          echo "Error: missing task project"
-          exit 1
-        fi
-        ;;
+      *)
+        log_print debug "Unknown arg - ignoring"
     esac
 
+    # Next arg
     shift
+  
   done
 
-  # Validating input
-  if [[ ! ${this_task_name} ]]; then
-    echo "Error: missing task name"
-    exit 1
+  # Validating required args
+  ## Only the positional...
+
+  # Adding object
+  generic_add "tasks" "name" "'${this_task_name}'" "${this_task_name}"
+
+  # Settings properties
+  ## Due Date
+  if [[ $this_task_due_date ]]; then
+    generic_set_property "tasks" "name" "'${this_task_name}'" "due_date" "'${this_task_due_date}'"
+  fi
+  ## Project
+  # Soon...
+  ## Start Date
+  if [[ $this_task_start_date ]]; then
+    generic_set_property "tasks" "name" "'${this_task_name}'" "start_date" "'${this_task_start_date}'"
   fi
 
-  if [[ ${this_task_project} ]]; then
-    this_project_id=$(database_run "csv" "SELECT id FROM project WHERE name='${this_task_project}'")
-    if [[ ! $this_project_id ]] ; then
-      echo "Error: invalid project name."
-      exit 1
-    fi
-  fi
-
-  # Inserting
-  database_run "box" "INSERT INTO task (name, project_id, deadline) VALUES (${this_task_name}, ${this_project_id:-NULL}, ${this_task_deadline:-NULL});"
-  
 }
-
-
-
 
 function task_main() {
 
@@ -128,7 +117,7 @@ function task_main() {
       help_get_message task
       ;;
     "list")
-      task_list
+      generic_list tasks_view
       ;;
     "search")
       task_search "$1"

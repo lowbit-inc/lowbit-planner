@@ -24,13 +24,14 @@ function inbox_add() {
 
   this_inbox_item="${user_args}"
 
-  database_run box "INSERT INTO inbox (name) VALUES ('$this_inbox_item');" ; database_run_rc=$?
+  generic_add "inbox" "name" "'${this_inbox_item}'" "${this_inbox_item}"
+  # database_run box "INSERT INTO inbox (name) VALUES ('$this_inbox_item');" ; database_run_rc=$?
 
-  if [[ $database_run_rc -eq 0 ]] ; then
-    log_print info "Item added to inbox (${this_inbox_item})"
-  else
-    log_print error "Failed to add item to inbox"
-  fi
+  # if [[ $database_run_rc -eq 0 ]] ; then
+  #   log_print info "Item added to inbox (${this_inbox_item})"
+  # else
+  #   log_print error "Failed to add item to inbox"
+  # fi
 
 }
 
@@ -99,7 +100,7 @@ function inbox_main() {
       help_get_message inbox
       ;;
     "list")
-      inbox_list
+      generic_list inbox_view
       ;;
     *)
       log_print warn "Unknown command (${user_arg})"
