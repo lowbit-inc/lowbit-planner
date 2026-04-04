@@ -22,7 +22,7 @@ ORDER BY id ASC;
 
 -- Objects:Ground:Task --
 
-CREATE TABLE task (
+CREATE TABLE tasks (
   completed_at TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   due_date TEXT,
@@ -34,9 +34,9 @@ CREATE TABLE task (
   -- FOREIGN KEY (project_id) REFERENCES project (id)
 );
 
--- CREATE VIEW task_view AS
--- SELECT task.id AS id, task.name AS name, project.name AS project, task.deadline AS deadline, task.state AS state
--- FROM task
+CREATE VIEW tasks_view AS
+SELECT tasks.id AS id, tasks.name AS name, tasks.start_date AS start_date, tasks.due_date AS due_date, tasks.status AS status
+FROM tasks;
 -- LEFT JOIN project ON task.project_id = project.id
 -- WHERE state <> 'Done' ORDER BY deadline ASC NULLS LAST, state DESC;
 

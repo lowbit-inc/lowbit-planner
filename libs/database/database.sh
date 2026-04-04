@@ -21,7 +21,7 @@ function database_check(){
 
 function database_init(){
   mkdir -p "${database_dir}"
-  sqlite3 "${database_path}" < ./libs/database/database_init.sql
+  sqlite3 "${database_path}" < ${SCRIPT_DIR}/libs/database/database_init.sql
 }
 
 function database_run(){

@@ -47,7 +47,7 @@
 
 #### Methods
 
-- [ ] add
+- [-] add
 - [ ] complete
 - [ ] delete
 - [ ] edit

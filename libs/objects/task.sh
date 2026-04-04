@@ -1,62 +1,142 @@
 #!/bin/bash
 
-function taskAdd() {
+##############
+# Properties #
+##############
 
-  # Getting args
+# N/A
+
+###########
+# Methods #
+###########
+
+function task_add() {
+
+  log_print debug "Starting Task Add"
+
+  # Reading args
+  if [[ "${1}" ]]; then
+    user_args="$@"
+    log_print debug "User args: ${user_args}"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message task_add
+  fi
+
+  # Getting positional args
+  this_task_name="$1" ; log_print debug "Task name: ${this_task_name}" ; shift
+
+  # Getting all other args
   while [[ "$@" ]] ; do
     this_arg="${1}"
+    log_print debug "Got arg: ${this_arg}"
 
     case "${this_arg}" in
-      "--deadline")
+      "--due-date")
         shift
         if [[ "${1}" ]] ; then
-          this_task_deadline="'${1}'"
+          this_task_due_date="${1}" && validate_date "${this_task_due_date}"
+          log_print debug "Task Due Date: ${this_task_due_date}"
         else
-          echo "Error: missing task deadline"
-          exit 1
+          log_print error "Missing value for due date"
         fi
         ;;
-      "--name")
+      # "--project")
+      #   shift
+      #   if [[ "${1}" ]] ; then
+      #     this_task_project="${1}" && validate_database_record "project" "name" "${this_task_project}"
+      #     log_print debug "Task Project: ${this_task_project}"
+      #   else
+      #     log_print error "Missing value for project"
+      #   fi
+      #   ;;
+      "--start-date")
         shift
         if [[ "${1}" ]] ; then
-          this_task_name="'${1}'"
+          this_task_start_date="${1}" && validate_date "${this_task_start_date}"
+          log_print debug "Task Start Date: ${this_task_start_date}"
         else
-          echo "Error: missing task name"
-          exit 1
+          log_print error "Missing value for start date"
         fi
         ;;
-      "--project")
-        shift
-        if [[ "${1}" ]] ; then
-          this_task_project="${1}"
-        else
-          echo "Error: missing task project"
-          exit 1
-        fi
-        ;;
+      *)
+        log_print debug "Unknown arg - ignoring"
     esac
 
+    # Next arg
     shift
+  
   done
 
-  # Validating input
-  if [[ ! ${this_task_name} ]]; then
-    echo "Error: missing task name"
-    exit 1
+  # Validating required args
+  ## Only the positional...
+
+  # Adding object
+  generic_add "tasks" "name" "'${this_task_name}'" "${this_task_name}"
+
+  # Settings properties
+  ## Due Date
+  if [[ $this_task_due_date ]]; then
+    generic_set_property "tasks" "name" "'${this_task_name}'" "due_date" "'${this_task_due_date}'"
+  fi
+  ## Project
+  # Soon...
+  ## Start Date
+  if [[ $this_task_start_date ]]; then
+    generic_set_property "tasks" "name" "'${this_task_name}'" "start_date" "'${this_task_start_date}'"
   fi
 
-  if [[ ${this_task_project} ]]; then
-    this_project_id=$(database_run "csv" "SELECT id FROM project WHERE name='${this_task_project}'")
-    if [[ ! $this_project_id ]] ; then
-      echo "Error: invalid project name."
-      exit 1
-    fi
-  fi
-
-  # Inserting
-  database_run "box" "INSERT INTO task (name, project_id, deadline) VALUES (${this_task_name}, ${this_project_id:-NULL}, ${this_task_deadline:-NULL});"
-  
 }
+
+function task_main() {
+
+  log_print debug "Starting Task Main"
+
+  if [[ "${1}" ]]; then
+    user_arg="${1}" ; shift
+    log_print debug "User arg: ${user_arg}"
+  else
+    log_print debug "No User arg provided - calling help message"
+    help_get_message task
+  fi
+
+  case "${user_arg}" in
+    "add")
+      task_add "$@"
+      ;;
+    "complete")
+      task_complete "$1"
+      ;;
+    "delete")
+      task_delete "$1"
+      ;;
+    "edit")
+      task_edit "$1"
+      ;;
+    "help")
+      help_get_message task
+      ;;
+    "list")
+      generic_list tasks_view
+      ;;
+    "search")
+      task_search "$1"
+      ;;
+    "start")
+      task_start "$1"
+      ;;
+    "stop")
+      task_stop "$1"
+      ;;
+    *)
+      help_get_message task
+      ;;
+  esac
+}
+
+#######
+# Old #
+#######
 
 function taskComplete() {
   if [[ "$1" ]] ; then
@@ -80,23 +160,6 @@ function taskDelete() {
   fi
 }
 
-function taskHelp() {
-  echo "${help_banner} - Tasks"
-  echo
-  echo "Actions:"
-  echo "  ${help_basename} add --name TASK_NAME [--project PROJECT_NAME] [--deadline DATE]"
-  echo "  ${help_basename} complete TASK_ID"
-  echo "  ${help_basename} delete TASK_ID"
-  echo "  ${help_basename} help (this message)"
-  echo "  ${help_basename} list"
-  echo "  ${help_basename} list-completed"
-  echo "  ${help_basename} rename OLD_TASK_NAME NEW_TASK_NAME"
-  echo "  ${help_basename} set-deadline TASK_ID [DATE]"
-  echo "  ${help_basename} set-project TASK_ID [PROJECT_NAME]"
-  echo "  ${help_basename} start TASK_ID"
-  echo "  ${help_basename} stop TASK_ID"
-  echo
-}
 
 function taskList() {
   database_run "box" "SELECT * FROM task_view;"
@@ -106,56 +169,6 @@ function taskListCompleted() {
   database_run "box" "SELECT * FROM task_log;"
 }
 
-function taskMain() {
-  usr_command="$1"
-  
-  case "${usr_command}" in
-    "add")
-      shift
-      taskAdd "$@"
-      ;;
-    "complete")
-      shift
-      taskComplete "$1"
-      ;;
-    "delete")
-      shift
-      taskDelete "$1"
-      ;;
-    "help")
-      taskHelp
-      ;;
-    "list")
-      taskList
-      ;;
-    "list-completed")
-      taskListCompleted
-      ;;
-    "rename")
-      shift
-      taskRename "$@"
-      ;;
-    "set-deadline")
-      shift
-      taskSetDeadline "$@"
-      ;;
-    "set-project")
-      shift
-      taskSetProject "$@"
-      ;;
-    "start")
-      shift
-      taskStart "$1"
-      ;;
-    "stop")
-      shift
-      taskStop "$1"
-      ;;
-    *)
-      taskHelp
-      ;;
-  esac
-}
 
 function taskRename() {
   this_old_task_name="$1"

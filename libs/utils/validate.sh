@@ -23,6 +23,17 @@ function validate_database_id() {
   fi
 }
 
+function validate_date() {
+  this_date="$1"
+
+  if [[ "$this_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+    log_print debug "Validation: ${this_date} is a valid date"
+  else
+    log_print error "Invalid date format ($this_date) - use YYYY-MM-DD"
+  fi
+
+}
+
 function validate_number() {
   this_number="$1"
 
