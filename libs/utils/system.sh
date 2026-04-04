@@ -19,5 +19,10 @@ function system_get_version() {
 
 function system_install() {
   log_print user "This will install ${system_short_name} as ${color_underline}plan${color_reset} in ${color_bold}/usr/local/bin${color_reset} using ${color_bold}sudo${color_reset}. Proceed?"
-  ln -s $SCRIPT_DIR/$system_basename /usr/local/bin/plan
+  if [[ -L /usr/local/bin/plan ]]; then
+    log_print warn "Symlink /usr/local/bin/plan already exists — removing before reinstall"
+    sudo rm /usr/local/bin/plan
+  fi
+  sudo ln -s $SCRIPT_DIR/$system_basename /usr/local/bin/plan
+  log_print info "Installed as /usr/local/bin/plan"
 }

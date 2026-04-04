@@ -6,7 +6,7 @@
 
 database_dir="${HOME}/.lowbit-planner"
 database_file="plan.db"
-database_path="${database_dir}/${database_file}"
+database_path="${LBPLAN_DB_PATH:-${database_dir}/${database_file}}"
 
 ###########
 # Methods #

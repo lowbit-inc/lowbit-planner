@@ -38,9 +38,9 @@ function validate_number() {
   this_number="$1"
 
   if [[ "${this_number}" =~ ^[0-9]+$ ]]; then
-    log_print debug "Validation: Value $this_id is a number $this_table"
+    log_print debug "Validation: Value ${this_number} is a number"
   else
-    log_print error "\'$this_id\' is not a number"
+    log_print error "'${this_number}' is not a number"
   fi
 
 }

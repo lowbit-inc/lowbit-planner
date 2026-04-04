@@ -114,7 +114,7 @@ case "${user_arg}" in
     engage_main
     ;;
   "organize")
-    clarify_main
+    organize_main "$@"
     ;;
   "reflect")
     reflect_main

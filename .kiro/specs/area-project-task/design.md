@@ -57,11 +57,13 @@ Responsável pela definição do schema completo. Nenhuma lógica de aplicação
 Funções exportadas:
 ```
 area_add()    — adiciona área (name obrigatório, description opcional)
-area_delete() — deleta área por ID (com confirmação)
-area_edit()   — edita campos via generic_set_property
+area_delete() — deleta área por NAME (com confirmação)
+area_edit()   — edita campos por NAME via generic_set_property
 area_list()   — lista via generic_list areas_view
 area_main()   — router interno do objeto
 ```
+
+> Nota: Area usa `name` como identificador na interface CLI. O `id` existe internamente no banco apenas para FKs. Nenhum comando de area expõe ou aceita `id` como argumento.
 
 ### 3. `libs/objects/project.sh`
 
@@ -181,9 +183,9 @@ CREATE TABLE areas (
 );
 
 CREATE VIEW areas_view AS
-SELECT id, name, description
+SELECT name, description
 FROM areas
-ORDER BY id ASC;
+ORDER BY name ASC;
 ```
 
 #### Tabela `projects`
@@ -192,8 +194,8 @@ ORDER BY id ASC;
 CREATE TABLE projects (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   name         TEXT NOT NULL UNIQUE,
-  area_id      INTEGER,
-  goal         TEXT,
+  area_id      INTEGER NOT NULL,
+  goal_id      INTEGER,          -- nullable: vínculo com Goal (Horizonte 3), implementado futuramente
   status       TEXT NOT NULL DEFAULT 'Pending',
   ranking      INTEGER DEFAULT 0,
   start_date   TEXT,
@@ -257,16 +259,41 @@ LEFT JOIN projects ON tasks.project_id = projects.id;
 function area_add() { ... }
 ```
 
+#### `area_delete()`
+
+```bash
+# Uso: area_delete NAME
+# Fluxo:
+#   1. Verifica arg NAME (obrigatório) → help se ausente
+#   2. Verifica que NAME existe: SELECT id FROM areas WHERE name = NAME
+#   3. log_print user "Confirmar deleção de NAME?"
+#   4. database_run box "DELETE FROM areas WHERE name = NAME"
+#   5. log_print info "Area NAME deleted"
+function area_delete() { ... }
+```
+
+#### `area_edit()`
+
+```bash
+# Uso: area_edit NAME [--name NEW_NAME] [--description NEW_DESC]
+# Fluxo:
+#   1. Verifica arg NAME (obrigatório) → help se ausente
+#   2. Verifica que NAME existe: SELECT id FROM areas WHERE name = NAME
+#   3. Para cada flag fornecida: generic_set_property areas name NAME {field} '{value}'
+function area_edit() { ... }
+```
+
 #### `project_add()`
 
 ```bash
-# Uso: project_add NAME [--area AREA_ID] [--goal TEXT] [--start-date DATE] [--due-date DATE]
+# Uso: project_add NAME --area AREA_NAME [--start-date DATE] [--due-date DATE]
 # Fluxo:
 #   1. Verifica arg posicional NAME (obrigatório) → help se ausente
-#   2. Parseia flags opcionais
-#   3. validate_database_id areas AREA_ID (se fornecido)
+#   2. Parseia flags; --area é OBRIGATÓRIO → log_print error se ausente
+#   3. Resolve AREA_NAME → area_id via SELECT id FROM areas WHERE name = AREA_NAME
+#      Se não encontrado: log_print error e encerrar
 #   4. validate_date DATE (se fornecido)
-#   5. Monta INSERT único com todos os campos
+#   5. Monta INSERT único com todos os campos (goal_id omitido por ora)
 #   6. Chama generic_add
 function project_add() { ... }
 ```
@@ -354,13 +381,13 @@ function task_add() { ... }
 
 ### Property 3: Area edit updates field
 
-*For any* existing area ID and any new value for an editable field (name or description), executing `area edit ID --field VALUE` should result in the field being updated in the database.
+*For any* existing area name and any new value for an editable field (name or description), executing `area edit NAME --field VALUE` should result in the field being updated in the database.
 
 **Validates: Requirements 4.7, 4.8**
 
 ### Property 4: Area delete removes record
 
-*For any* existing area ID, executing `area delete ID` (confirming) should result in that ID no longer appearing in `area list`.
+*For any* existing area name, executing `area delete NAME` (confirming) should result in that name no longer appearing in `area list`.
 
 **Validates: Requirements 4.5**
 
@@ -370,11 +397,13 @@ function task_add() { ... }
 
 **Validates: Requirements 5.1**
 
-### Property 6: Project area FK validation
+### Property 6: Project area name validation
 
-*For any* AREA_ID that does not exist in the `areas` table, executing `plan project add NAME --area AREA_ID` should produce an error message and not insert any record.
+*For any* AREA_NAME that does not exist in the `areas` table, executing `plan project add NAME --area AREA_NAME` should produce an error message and not insert any record.
 
-**Validates: Requirements 5.2, 5.3**
+*For any* `plan project add NAME` executed without `--area`, the system should produce an error message and not insert any record.
+
+**Validates: Requirements 5.2, 5.3, 5.4**
 
 ### Property 7: Date format validation
 
@@ -448,7 +477,7 @@ Todos os erros seguem o padrão existente: `log_print error "mensagem"` que impr
 | ID não encontrado no banco | `log_print error "ID X not found in {table}"` |
 | Formato de data inválido | `log_print error "Invalid date format (X) - use YYYY-MM-DD"` |
 | Valor não numérico onde número esperado | `log_print error "'X' is not a number"` |
-| FK inválida (area_id, project_id) | `log_print error "ID X not found in {table}"` (via validate_database_id) |
+| FK inválida (area por nome, project_id) | `log_print error "Area 'X' not found"` ou `log_print error "ID X not found in projects"` |
 | Falha no INSERT/UPDATE/DELETE | `log_print error "Failed to ..."` |
 
 ---

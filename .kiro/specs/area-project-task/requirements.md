@@ -26,6 +26,7 @@ Além dos três objetos principais, este spec também cobre a correção de bugs
 - **Status**: Estado de ciclo de vida de um objeto — valores válidos: `Pending`, `In Progress`, `Done`
 - **FK**: Foreign Key — chave estrangeira no banco de dados SQLite
 - **ID**: Identificador inteiro único gerado automaticamente pelo banco (AUTOINCREMENT)
+- **Area Name Identifier**: Para o objeto Area, o `name` é usado como identificador na interface CLI (em vez do `id`), pois áreas são estáveis e poucas. O `id` existe internamente apenas para FKs.
 
 ---
 
@@ -38,7 +39,7 @@ Além dos três objetos principais, este spec também cobre a correção de bugs
 #### Acceptance Criteria
 
 1. THE Schema SHALL definir a tabela `areas` com os campos: `id INTEGER PRIMARY KEY AUTOINCREMENT`, `name TEXT NOT NULL UNIQUE`, `description TEXT`, `created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP`
-2. THE Schema SHALL definir a view `areas_view` que seleciona `id`, `name`, `description` da tabela `areas`, ordenada por `id ASC`
+2. THE Schema SHALL definir a view `areas_view` que seleciona apenas `name` e `description` da tabela `areas` (sem `id`), ordenada por `name ASC`
 3. WHEN o banco de dados é inicializado, THE Database SHALL criar a tabela `areas` e a view `areas_view` sem erros
 
 ---
@@ -49,7 +50,7 @@ Além dos três objetos principais, este spec também cobre a correção de bugs
 
 #### Acceptance Criteria
 
-1. THE Schema SHALL definir a tabela `projects` com os campos: `id INTEGER PRIMARY KEY AUTOINCREMENT`, `name TEXT NOT NULL UNIQUE`, `area_id INTEGER`, `goal TEXT`, `status TEXT NOT NULL DEFAULT 'Pending'`, `ranking INTEGER DEFAULT 0`, `start_date TEXT`, `due_date TEXT`, `created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP`, `completed_at TEXT`
+1. THE Schema SHALL definir a tabela `projects` com os campos: `id INTEGER PRIMARY KEY AUTOINCREMENT`, `name TEXT NOT NULL UNIQUE`, `area_id INTEGER NOT NULL`, `goal_id INTEGER`, `status TEXT NOT NULL DEFAULT 'Pending'`, `ranking INTEGER DEFAULT 0`, `start_date TEXT`, `due_date TEXT`, `created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP`, `completed_at TEXT`
 2. THE Schema SHALL definir `FOREIGN KEY (area_id) REFERENCES areas (id)` na tabela `projects`
 3. THE Schema SHALL definir a view `projects_view` que seleciona `projects.id`, `projects.name`, `areas.name AS area`, `projects.status`, `projects.start_date`, `projects.due_date`, `projects.ranking` via LEFT JOIN com `areas`
 4. WHEN o banco de dados é inicializado, THE Database SHALL criar a tabela `projects` e a view `projects_view` sem erros
@@ -79,10 +80,10 @@ Além dos três objetos principais, este spec também cobre a correção de bugs
 2. WHEN o usuário executa `plan area add NAME --description DESC`, THE System SHALL inserir o registro com o campo `description` preenchido
 3. WHEN o usuário executa `plan area add` sem argumentos, THE System SHALL exibir a mensagem de help `area_add` e encerrar com código 0
 4. WHEN o usuário executa `plan area list`, THE System SHALL exibir todos os registros da view `areas_view` em formato tabular
-5. WHEN o usuário executa `plan area delete ID`, THE System SHALL solicitar confirmação via `log_print user`, deletar o registro correspondente e exibir confirmação
-6. WHEN o usuário executa `plan area delete ID` com um ID inexistente, THE Validator SHALL emitir erro via `log_print error` e encerrar
-7. WHEN o usuário executa `plan area edit ID --name NEW_NAME`, THE System SHALL atualizar o campo `name` do registro via `generic_set_property`
-8. WHEN o usuário executa `plan area edit ID --description NEW_DESC`, THE System SHALL atualizar o campo `description` do registro via `generic_set_property`
+5. WHEN o usuário executa `plan area delete NAME`, THE System SHALL solicitar confirmação via `log_print user`, deletar o registro correspondente e exibir confirmação
+6. WHEN o usuário executa `plan area delete NAME` com um nome inexistente, THE Validator SHALL emitir erro via `log_print error` e encerrar
+7. WHEN o usuário executa `plan area edit NAME --name NEW_NAME`, THE System SHALL atualizar o campo `name` do registro via `generic_set_property`
+8. WHEN o usuário executa `plan area edit NAME --description NEW_DESC`, THE System SHALL atualizar o campo `description` do registro via `generic_set_property`
 9. WHEN o usuário executa `plan area` sem subcomando, THE System SHALL exibir a mensagem de help `area` e encerrar com código 0
 
 ---
@@ -94,11 +95,12 @@ Além dos três objetos principais, este spec também cobre a correção de bugs
 #### Acceptance Criteria
 
 1. WHEN o usuário executa `plan project add NAME`, THE System SHALL inserir um registro na tabela `projects` com `name` e `status = 'Pending'` e exibir confirmação
-2. WHEN o usuário executa `plan project add NAME --area AREA_ID`, THE Validator SHALL verificar que `AREA_ID` existe na tabela `areas` antes de inserir
-3. IF o `AREA_ID` fornecido não existir na tabela `areas`, THEN THE Validator SHALL emitir erro via `log_print error` e encerrar
+2. WHEN o usuário executa `plan project add NAME --area AREA_NAME`, THE Validator SHALL verificar que `AREA_NAME` existe na tabela `areas` (por nome) antes de inserir
+3. IF o `AREA_NAME` fornecido não existir na tabela `areas`, THEN THE Validator SHALL emitir erro via `log_print error` e encerrar
+4. IF o usuário executa `plan project add NAME` sem `--area`, THEN THE System SHALL emitir erro via `log_print error` informando que área é obrigatória
 4. WHEN o usuário executa `plan project add NAME --due-date DATE`, THE Validator SHALL verificar que `DATE` está no formato `YYYY-MM-DD` antes de inserir
 5. WHEN o usuário executa `plan project add NAME --start-date DATE`, THE Validator SHALL verificar que `DATE` está no formato `YYYY-MM-DD` antes de inserir
-6. WHEN o usuário executa `plan project add NAME --goal GOAL_TEXT`, THE System SHALL inserir o registro com o campo `goal` preenchido
+6. WHEN o usuário executa `plan project add NAME --area AREA_NAME`, THE System SHALL inserir o registro sem campo `goal_id` (vínculo com Goal será implementado futuramente via spec de Horizonte 3)
 7. WHEN o usuário executa `plan project list`, THE System SHALL exibir todos os registros da view `projects_view` em formato tabular
 8. WHEN o usuário executa `plan project delete ID`, THE System SHALL solicitar confirmação, deletar o registro e exibir confirmação
 9. WHEN o usuário executa `plan project start ID`, THE System SHALL atualizar `status` para `'In Progress'` via `generic_set_property`

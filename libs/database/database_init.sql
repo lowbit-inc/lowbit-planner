@@ -20,25 +20,72 @@ SELECT inbox.id AS id, inbox.name AS name
 FROM inbox
 ORDER BY id ASC;
 
+-- Objects:Horizon2:Area --
+
+CREATE TABLE areas (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  name        TEXT NOT NULL UNIQUE,
+  description TEXT,
+  created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE VIEW areas_view AS
+SELECT name, description
+FROM areas
+ORDER BY name ASC;
+
+-- Objects:Horizon1:Project --
+
+CREATE TABLE projects (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  name         TEXT NOT NULL UNIQUE,
+  area_id      INTEGER NOT NULL,
+  goal_id      INTEGER,
+  status       TEXT NOT NULL DEFAULT 'Pending',
+  ranking      INTEGER DEFAULT 0,
+  start_date   TEXT,
+  due_date     TEXT,
+  created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at TEXT,
+  FOREIGN KEY (area_id) REFERENCES areas (id)
+);
+
+CREATE VIEW projects_view AS
+SELECT
+  projects.id         AS id,
+  projects.name       AS name,
+  areas.name          AS area,
+  projects.status     AS status,
+  projects.start_date AS start_date,
+  projects.due_date   AS due_date,
+  projects.ranking    AS ranking
+FROM projects
+LEFT JOIN areas ON projects.area_id = areas.id;
+
 -- Objects:Ground:Task --
 
 CREATE TABLE tasks (
   completed_at TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  due_date TEXT,
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
-  start_date TEXT,
-  status TEXT NOT NULL DEFAULT "Pending"
-  -- project_id INTEGER,
-  -- FOREIGN KEY (project_id) REFERENCES project (id)
+  created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  due_date     TEXT,
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  name         TEXT NOT NULL UNIQUE,
+  project_id   INTEGER,
+  start_date   TEXT,
+  status       TEXT NOT NULL DEFAULT 'Pending',
+  FOREIGN KEY (project_id) REFERENCES projects (id)
 );
 
 CREATE VIEW tasks_view AS
-SELECT tasks.id AS id, tasks.name AS name, tasks.start_date AS start_date, tasks.due_date AS due_date, tasks.status AS status
-FROM tasks;
--- LEFT JOIN project ON task.project_id = project.id
--- WHERE state <> 'Done' ORDER BY deadline ASC NULLS LAST, state DESC;
+SELECT
+  tasks.id         AS id,
+  tasks.name       AS name,
+  projects.name    AS project,
+  tasks.start_date AS start_date,
+  tasks.due_date   AS due_date,
+  tasks.status     AS status
+FROM tasks
+LEFT JOIN projects ON tasks.project_id = projects.id;
 
 -------------------------------- Other --------------------------------
 
