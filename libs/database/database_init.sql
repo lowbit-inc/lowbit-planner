@@ -56,12 +56,13 @@ SELECT
   visions.name        AS name,
   areas.name          AS area,
   visions.description AS description,
-  visions.status      AS status,
   visions.start_date  AS start_date,
   visions.due_date    AS due_date,
-  visions.ranking     AS ranking
+  visions.ranking     AS ranking,
+  visions.status      AS status
 FROM visions
-LEFT JOIN areas ON visions.area_id = areas.id;
+LEFT JOIN areas ON visions.area_id = areas.id
+ORDER BY CASE WHEN visions.status = 'In Progress' THEN 0 ELSE 1 END, visions.ranking DESC, visions.name ASC;
 
 -- Objects:Horizon3:Goal --
 
@@ -86,13 +87,14 @@ SELECT
   goals.name       AS name,
   areas.name       AS area,
   visions.name     AS vision,
-  goals.status     AS status,
   goals.start_date AS start_date,
   goals.due_date   AS due_date,
-  goals.ranking    AS ranking
+  goals.ranking    AS ranking,
+  goals.status     AS status
 FROM goals
 LEFT JOIN areas   ON goals.area_id   = areas.id
-LEFT JOIN visions ON goals.vision_id = visions.id;
+LEFT JOIN visions ON goals.vision_id = visions.id
+ORDER BY CASE WHEN goals.status = 'In Progress' THEN 0 ELSE 1 END, goals.ranking DESC, goals.name ASC;
 
 -- Objects:Horizon1:Project --
 
@@ -116,13 +118,14 @@ SELECT
   projects.name       AS name,
   areas.name          AS area,
   goals.name          AS goal,
-  projects.status     AS status,
   projects.start_date AS start_date,
   projects.due_date   AS due_date,
-  projects.ranking    AS ranking
+  projects.ranking    AS ranking,
+  projects.status     AS status
 FROM projects
 LEFT JOIN areas ON projects.area_id = areas.id
-LEFT JOIN goals ON projects.goal_id = goals.id;
+LEFT JOIN goals ON projects.goal_id = goals.id
+ORDER BY CASE WHEN projects.status = 'In Progress' THEN 0 ELSE 1 END, projects.ranking DESC, projects.name ASC;
 
 -- Objects:Ground:Task --
 
@@ -147,7 +150,8 @@ SELECT
   tasks.due_date   AS due_date,
   tasks.status     AS status
 FROM tasks
-LEFT JOIN projects ON tasks.project_id = projects.id;
+LEFT JOIN projects ON tasks.project_id = projects.id
+ORDER BY tasks.name ASC;
 
 -------------------------------- Other --------------------------------
 
