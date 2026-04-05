@@ -80,5 +80,15 @@ test_command_output "Goal - list" "./plan.sh goal list" "Aprender Rust"
 test_command_output "Project edit - set goal by name" "./plan.sh project edit 1 --goal 'Aprender Rust'" "Updated"
 test_command_output "Project list - shows goal column" "./plan.sh project list" "Aprender Rust"
 
+# Task vision-crud 6.1: Vision example tests
+test_command_output "Vision - help" "./plan.sh vision" "Lowbit Planner - Vision"
+test_command_output "Vision - add" "./plan.sh vision add 'Ser fluente em japonês' --area Casa" "Item added to visions"
+test_command_output "Vision - list" "./plan.sh vision list" "Ser fluente em japonês"
+
+# Task vision-crud 6.2: Goal --vision integration tests
+test_command_output "Goal add with --vision" "./plan.sh goal add 'Dominar Kanji' --area Casa --vision 'Ser fluente em japonês'" "Item added to goals"
+test_command_output "Goal list shows vision column" "./plan.sh goal list" "Ser fluente em japonês"
+test_command_output "Goal edit --vision by name" "./plan.sh goal edit 2 --vision 'Ser fluente em japonês'" "Updated"
+
 # End
 log_print info "End of test scenarios - ${color_bold}${color_green}All Passed${color_reset}"

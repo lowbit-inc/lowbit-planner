@@ -34,6 +34,35 @@ SELECT name, description
 FROM areas
 ORDER BY name ASC;
 
+-- Objects:Horizon4:Vision --
+
+CREATE TABLE visions (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  name         TEXT NOT NULL UNIQUE,
+  area_id      INTEGER NOT NULL,
+  description  TEXT,
+  status       TEXT NOT NULL DEFAULT 'Pending',
+  ranking      INTEGER DEFAULT 0,
+  start_date   TEXT,
+  due_date     TEXT,
+  created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at TEXT,
+  FOREIGN KEY (area_id) REFERENCES areas (id)
+);
+
+CREATE VIEW visions_view AS
+SELECT
+  visions.id          AS id,
+  visions.name        AS name,
+  areas.name          AS area,
+  visions.description AS description,
+  visions.status      AS status,
+  visions.start_date  AS start_date,
+  visions.due_date    AS due_date,
+  visions.ranking     AS ranking
+FROM visions
+LEFT JOIN areas ON visions.area_id = areas.id;
+
 -- Objects:Horizon3:Goal --
 
 CREATE TABLE IF NOT EXISTS goals (
@@ -50,17 +79,20 @@ CREATE TABLE IF NOT EXISTS goals (
   FOREIGN KEY (area_id) REFERENCES areas (id)
 );
 
+DROP VIEW IF EXISTS goals_view;
 CREATE VIEW IF NOT EXISTS goals_view AS
 SELECT
   goals.id         AS id,
   goals.name       AS name,
   areas.name       AS area,
+  visions.name     AS vision,
   goals.status     AS status,
   goals.start_date AS start_date,
   goals.due_date   AS due_date,
   goals.ranking    AS ranking
 FROM goals
-LEFT JOIN areas ON goals.area_id = areas.id;
+LEFT JOIN areas   ON goals.area_id   = areas.id
+LEFT JOIN visions ON goals.vision_id = visions.id;
 
 -- Objects:Horizon1:Project --
 

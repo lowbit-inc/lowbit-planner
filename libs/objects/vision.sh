@@ -1,117 +1,346 @@
 #!/bin/bash
 
-function visionAdd() {
+##############
+# Properties #
+##############
 
-  # Getting args
+# N/A
+
+###########
+# Methods #
+###########
+
+function vision_add() {
+
+  log_print debug "Starting Vision Add"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message vision_add
+  fi
+
+  # Getting positional arg
+  this_vision_name="$1" ; log_print debug "Vision name: ${this_vision_name}" ; shift
+
+  # Getting flags
   while [[ "$@" ]] ; do
     this_arg="${1}"
+    log_print debug "Got arg: ${this_arg}"
 
     case "${this_arg}" in
       "--area")
         shift
         if [[ "${1}" ]] ; then
-          this_vision_area="${1}"
+          this_vision_area_name="${1}"
+          log_print debug "Area name: ${this_vision_area_name}"
         else
-          echo "Error: missing vision area"
-          exit 1
+          log_print error "Missing value for --area"
         fi
         ;;
-      "--name")
+      "--description")
         shift
         if [[ "${1}" ]] ; then
-          this_vision_name="'${1}'"
+          this_vision_description="${1}"
+          log_print debug "Description: ${this_vision_description}"
         else
-          echo "Error: missing vision name"
-          exit 1
+          log_print error "Missing value for --description"
         fi
+        ;;
+      "--start-date")
+        shift
+        if [[ "${1}" ]] ; then
+          this_vision_start_date="${1}"
+          log_print debug "Start date: ${this_vision_start_date}"
+        else
+          log_print error "Missing value for --start-date"
+        fi
+        ;;
+      "--due-date")
+        shift
+        if [[ "${1}" ]] ; then
+          this_vision_due_date="${1}"
+          log_print debug "Due date: ${this_vision_due_date}"
+        else
+          log_print error "Missing value for --due-date"
+        fi
+        ;;
+      *)
+        log_print debug "Unknown arg - ignoring"
         ;;
     esac
 
     shift
   done
 
-  # Validating input
-  if [[ ! ${this_vision_name} ]]; then
-    echo "Error: missing vision name"
-    exit 1
+  # Validate --area is provided (required)
+  if [[ ! "${this_vision_area_name}" ]]; then
+    help_get_message vision_add
   fi
 
-  if [[ ${this_vision_area} ]]; then
-    this_area_id=$(database_run "csv" "SELECT id FROM area WHERE name='${this_vision_area}'")
-    if [[ ! $this_area_id ]] ; then
-      echo "Error: invalid area name."
-      exit 1
-    fi
+  # Resolve area name to area_id
+  this_vision_area_id=$(database_run csv "SELECT id FROM areas WHERE name = '${this_vision_area_name}';")
+  if [[ ! "${this_vision_area_id}" ]]; then
+    log_print error "Area '${this_vision_area_name}' not found"
   fi
 
-  # Inserting
-  database_run "box" "INSERT INTO vision (name, area_id) VALUES (${this_vision_name}, ${this_area_id:-NULL});"
-  
+  if [[ "${this_vision_start_date}" ]]; then
+    validate_date "${this_vision_start_date}"
+  fi
+  if [[ "${this_vision_due_date}" ]]; then
+    validate_date "${this_vision_due_date}"
+  fi
+
+  # Build fields and values for INSERT
+  this_fields="name, area_id"
+  this_values="'${this_vision_name}', ${this_vision_area_id}"
+
+  if [[ "${this_vision_description}" ]]; then
+    this_fields="${this_fields}, description"
+    this_values="${this_values}, '${this_vision_description}'"
+  fi
+
+  if [[ "${this_vision_start_date}" ]]; then
+    this_fields="${this_fields}, start_date"
+    this_values="${this_values}, '${this_vision_start_date}'"
+  fi
+
+  if [[ "${this_vision_due_date}" ]]; then
+    this_fields="${this_fields}, due_date"
+    this_values="${this_values}, '${this_vision_due_date}'"
+  fi
+
+  generic_add "visions" "${this_fields}" "${this_values}" "${this_vision_name}"
+
 }
 
-function visionDelete() {
-  this_vision_id="$1"
 
-  if [[ $this_vision_id ]] ; then
-    database_run "box" "DELETE FROM vision WHERE id = $this_vision_id;"
+function vision_delete() {
+
+  log_print debug "Starting Vision Delete"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
   else
-    echo "Error: missing vision ID."
-    exit 1
+    log_print debug "No user arg provided - calling help message"
+    help_get_message vision
   fi
+
+  # Getting positional arg
+  this_vision_id="$1" ; log_print debug "Vision ID: ${this_vision_id}"
+
+  # Validate ID
+  validate_database_id visions "${this_vision_id}"
+
+  # Fetch name for confirmation
+  this_vision_name=$(database_run csv "SELECT name FROM visions WHERE id = ${this_vision_id};")
+
+  generic_delete "visions" "id" "${this_vision_id}" "${this_vision_name}"
+
 }
 
-function visionHelp() {
-  echo "${help_banner} - Visions"
-  echo
-  echo "Actions:"
-  echo "  ${help_basename} add --name VISION_NAME [--area AREA_NAME]"
-  echo "  ${help_basename} delete VISION_ID"
-  echo "  ${help_basename} help (this message)"
-  echo "  ${help_basename} list"
-  echo "  ${help_basename} rename OLD_VISION_NAME NEW_VISION_NAME"
-  echo
+function vision_list() {
+
+  log_print debug "Starting Vision List"
+
+  generic_list visions_view "status != 'Done'"
+
 }
 
-function visionList() {
-  database_run "box" "SELECT * FROM vision_view ORDER BY name ASC"
+function vision_edit() {
+
+  log_print debug "Starting Vision Edit"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message vision_edit
+  fi
+
+  # Getting positional arg
+  this_vision_id="$1" ; log_print debug "Vision ID: ${this_vision_id}" ; shift
+
+  # Validate ID
+  validate_database_id visions "${this_vision_id}"
+
+  # Getting optional flags
+  while [[ "$@" ]] ; do
+    this_arg="${1}"
+    log_print debug "Got arg: ${this_arg}"
+
+    case "${this_arg}" in
+      "--name")
+        shift
+        if [[ "${1}" ]] ; then
+          generic_set_property visions id "${this_vision_id}" name "'${1}'"
+        else
+          log_print error "Missing value for --name"
+        fi
+        ;;
+      "--area")
+        shift
+        if [[ "${1}" ]] ; then
+          this_edit_area_id=$(database_run csv "SELECT id FROM areas WHERE name = '${1}';")
+          if [[ ! "${this_edit_area_id}" ]]; then
+            log_print error "Area '${1}' not found"
+          fi
+          generic_set_property visions id "${this_vision_id}" area_id "${this_edit_area_id}"
+        else
+          log_print error "Missing value for --area"
+        fi
+        ;;
+      "--description")
+        shift
+        if [[ "${1}" ]] ; then
+          generic_set_property visions id "${this_vision_id}" description "'${1}'"
+        else
+          log_print error "Missing value for --description"
+        fi
+        ;;
+      "--start-date")
+        shift
+        if [[ "${1}" ]] ; then
+          validate_date "${1}"
+          generic_set_property visions id "${this_vision_id}" start_date "'${1}'"
+        else
+          log_print error "Missing value for --start-date"
+        fi
+        ;;
+      "--due-date")
+        shift
+        if [[ "${1}" ]] ; then
+          validate_date "${1}"
+          generic_set_property visions id "${this_vision_id}" due_date "'${1}'"
+        else
+          log_print error "Missing value for --due-date"
+        fi
+        ;;
+      *)
+        log_print debug "Unknown arg - ignoring"
+        ;;
+    esac
+
+    shift
+  done
+
 }
 
-function visionMain() {
-  usr_command="$1"
-  
-  case "${usr_command}" in
+function vision_start() {
+
+  log_print debug "Starting Vision Start"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message vision
+  fi
+
+  this_vision_id="$1" ; log_print debug "Vision ID: ${this_vision_id}"
+
+  validate_database_id visions "${this_vision_id}"
+  generic_set_status "visions" "${this_vision_id}" "In Progress"
+
+}
+
+function vision_stop() {
+
+  log_print debug "Starting Vision Stop"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message vision
+  fi
+
+  this_vision_id="$1" ; log_print debug "Vision ID: ${this_vision_id}"
+
+  validate_database_id visions "${this_vision_id}"
+  generic_set_status "visions" "${this_vision_id}" "Pending"
+
+}
+
+function vision_complete() {
+
+  log_print debug "Starting Vision Complete"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message vision
+  fi
+
+  this_vision_id="$1" ; log_print debug "Vision ID: ${this_vision_id}"
+
+  validate_database_id visions "${this_vision_id}"
+  generic_complete "visions" "${this_vision_id}"
+
+}
+
+function vision_search() {
+
+  log_print debug "Starting Vision Search"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message vision
+  fi
+
+  this_vision_pattern="$1" ; log_print debug "Search pattern: ${this_vision_pattern}"
+
+  database_run box "SELECT * FROM visions_view WHERE name LIKE '%${this_vision_pattern}%'"
+
+}
+
+function vision_main() {
+
+  log_print debug "Starting Vision Main"
+
+  if [[ "${1}" ]]; then
+    user_arg="${1}" ; shift
+    log_print debug "User arg: ${user_arg}"
+  else
+    log_print debug "No User arg provided - calling help message"
+    help_get_message vision
+  fi
+
+  case "${user_arg}" in
     "add")
-      shift
-      visionAdd "$@"
+      vision_add "$@"
+      ;;
+    "complete")
+      vision_complete "$@"
       ;;
     "delete")
-      shift
-      visionDelete "$1"
+      vision_delete "$@"
       ;;
-    "help")
-      visionHelp
+    "edit")
+      vision_edit "$@"
       ;;
     "list")
-      visionList
+      vision_list
       ;;
-    "rename")
-      shift
-      visionRename "$@"
+    "search")
+      vision_search "$@"
+      ;;
+    "start")
+      vision_start "$@"
+      ;;
+    "stop")
+      vision_stop "$@"
+      ;;
+    "help")
+      help_get_message vision
       ;;
     *)
-      visionHelp
+      help_get_message vision
       ;;
   esac
-}
 
-function visionRename() {
-  this_old_vision_name="$1"
-  this_new_vision_name="$2"
-
-  if [[ $this_new_vision_name ]] ; then
-    database_run "box" "UPDATE vision SET name='$this_new_vision_name' WHERE name='$this_old_vision_name';"
-  else
-    echo "Error: missing required args."
-    exit 1
-  fi
 }

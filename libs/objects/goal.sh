@@ -39,6 +39,15 @@ function goal_add() {
           log_print error "Missing value for --area"
         fi
         ;;
+      "--vision")
+        shift
+        if [[ "${1}" ]] ; then
+          this_goal_vision_name="${1}"
+          log_print debug "Vision name: ${this_goal_vision_name}"
+        else
+          log_print error "Missing value for --vision"
+        fi
+        ;;
       "--start-date")
         shift
         if [[ "${1}" ]] ; then
@@ -76,6 +85,14 @@ function goal_add() {
     log_print error "Area '${this_goal_area_name}' not found"
   fi
 
+  # Resolve vision name to vision_id (optional)
+  if [[ "${this_goal_vision_name}" ]]; then
+    this_goal_vision_id=$(database_run csv "SELECT id FROM visions WHERE name = '${this_goal_vision_name}';")
+    if [[ ! "${this_goal_vision_id}" ]]; then
+      log_print error "Vision '${this_goal_vision_name}' not found"
+    fi
+  fi
+
   if [[ "${this_goal_start_date}" ]]; then
     validate_date "${this_goal_start_date}"
   fi
@@ -95,6 +112,11 @@ function goal_add() {
   if [[ "${this_goal_due_date}" ]]; then
     this_fields="${this_fields}, due_date"
     this_values="${this_values}, '${this_goal_due_date}'"
+  fi
+
+  if [[ "${this_goal_vision_id}" ]]; then
+    this_fields="${this_fields}, vision_id"
+    this_values="${this_values}, ${this_goal_vision_id}"
   fi
 
   generic_add "goals" "${this_fields}" "${this_values}" "${this_goal_name}"
@@ -174,6 +196,18 @@ function goal_edit() {
           generic_set_property goals id "${this_goal_id}" area_id "${this_edit_area_id}"
         else
           log_print error "Missing value for --area"
+        fi
+        ;;
+      "--vision")
+        shift
+        if [[ "${1}" ]] ; then
+          this_edit_vision_id=$(database_run csv "SELECT id FROM visions WHERE name = '${1}';")
+          if [[ ! "${this_edit_vision_id}" ]]; then
+            log_print error "Vision '${1}' not found"
+          fi
+          generic_set_property goals id "${this_goal_id}" vision_id "${this_edit_vision_id}"
+        else
+          log_print error "Missing value for --vision"
         fi
         ;;
       "--start-date")
