@@ -125,17 +125,7 @@ function task_delete() {
   # Fetch name for confirmation
   this_task_name=$(database_run csv "SELECT name FROM tasks WHERE id = ${this_task_id};")
 
-  # Confirmation
-  log_print user "Are you sure you want to delete task ${this_task_id} (${this_task_name})?"
-
-  # Execution
-  database_run box "DELETE FROM tasks WHERE id = ${this_task_id};" ; database_run_rc=$?
-
-  if [[ $database_run_rc -eq 0 ]]; then
-    log_print info "Item ${this_task_id} deleted from tasks"
-  else
-    log_print error "Failed to delete item from tasks"
-  fi
+  generic_delete "tasks" "id" "${this_task_id}" "${this_task_name}"
 
 }
 
@@ -147,7 +137,7 @@ function task_edit() {
     log_print debug "User args: $@"
   else
     log_print debug "No user arg provided - calling help message"
-    help_get_message task
+    help_get_message task_edit
   fi
 
   # Getting positional arg
@@ -224,8 +214,7 @@ function task_start() {
   this_task_id="$1" ; log_print debug "Task ID: ${this_task_id}"
 
   validate_database_id tasks "${this_task_id}"
-
-  generic_set_property tasks id "${this_task_id}" status "'In Progress'"
+  generic_set_status "tasks" "${this_task_id}" "In Progress"
 
 }
 
@@ -243,8 +232,7 @@ function task_stop() {
   this_task_id="$1" ; log_print debug "Task ID: ${this_task_id}"
 
   validate_database_id tasks "${this_task_id}"
-
-  generic_set_property tasks id "${this_task_id}" status "'Pending'"
+  generic_set_status "tasks" "${this_task_id}" "Pending"
 
 }
 
@@ -262,9 +250,7 @@ function task_complete() {
   this_task_id="$1" ; log_print debug "Task ID: ${this_task_id}"
 
   validate_database_id tasks "${this_task_id}"
-
-  generic_set_property tasks id "${this_task_id}" status "'Done'"
-  generic_set_property tasks id "${this_task_id}" completed_at "DATE('now', 'localtime')"
+  generic_complete "tasks" "${this_task_id}"
 
 }
 
@@ -314,7 +300,7 @@ function task_main() {
       help_get_message task
       ;;
     "list")
-      generic_list tasks_view
+      generic_list tasks_view "status != 'Done'"
       ;;
     "search")
       task_search "$@"

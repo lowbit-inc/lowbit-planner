@@ -76,14 +76,7 @@ function area_delete() {
     log_print error "Area '${this_area_name}' not found"
   fi
 
-  # Confirmation
-  log_print user "Are you sure you want to delete area '${this_area_name}'?"
-
-  # Execution
-  database_run box "DELETE FROM areas WHERE name = '${this_area_name}';"
-
-  # Confirmation message
-  log_print info "Area '${this_area_name}' deleted"
+  generic_delete "areas" "name" "'${this_area_name}'" "${this_area_name}"
 
 }
 

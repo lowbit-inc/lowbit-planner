@@ -1,126 +1,323 @@
 #!/bin/bash
 
-function goalAdd() {
+##############
+# Properties #
+##############
 
-  # Getting args
+# N/A
+
+###########
+# Methods #
+###########
+
+function goal_add() {
+
+  log_print debug "Starting Goal Add"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message goal_add
+  fi
+
+  # Getting positional arg
+  this_goal_name="$1" ; log_print debug "Goal name: ${this_goal_name}" ; shift
+
+  # Getting flags
   while [[ "$@" ]] ; do
     this_arg="${1}"
+    log_print debug "Got arg: ${this_arg}"
 
     case "${this_arg}" in
       "--area")
         shift
         if [[ "${1}" ]] ; then
-          this_goal_area="${1}"
+          this_goal_area_name="${1}"
+          log_print debug "Area name: ${this_goal_area_name}"
         else
-          echo "Error: missing goal area"
-          exit 1
+          log_print error "Missing value for --area"
         fi
         ;;
-      "--deadline")
+      "--start-date")
         shift
         if [[ "${1}" ]] ; then
-          this_goal_deadline="'${1}'"
+          this_goal_start_date="${1}"
+          log_print debug "Start date: ${this_goal_start_date}"
         else
-          echo "Error: missing goal deadline"
-          exit 1
+          log_print error "Missing value for --start-date"
         fi
         ;;
-      "--name")
+      "--due-date")
         shift
         if [[ "${1}" ]] ; then
-          this_goal_name="'${1}'"
+          this_goal_due_date="${1}"
+          log_print debug "Due date: ${this_goal_due_date}"
         else
-          echo "Error: missing goal name"
-          exit 1
+          log_print error "Missing value for --due-date"
         fi
+        ;;
+      *)
+        log_print debug "Unknown arg - ignoring"
         ;;
     esac
 
     shift
   done
 
-  # Validating input
-  if [[ ! ${this_goal_name} ]]; then
-    echo "Error: missing goal name"
-    exit 1
+  # Validate --area is provided (required)
+  if [[ ! "${this_goal_area_name}" ]]; then
+    log_print error "Missing required flag --area AREA_NAME"
   fi
 
-  if [[ ${this_goal_area} ]]; then
-    this_area_id=$(database_run "csv" "SELECT id FROM area WHERE name='${this_goal_area}'")
-    if [[ ! $this_area_id ]] ; then
-      echo "Error: invalid area name."
-      exit 1
-    fi
+  # Resolve area name to area_id
+  this_goal_area_id=$(database_run csv "SELECT id FROM areas WHERE name = '${this_goal_area_name}';")
+  if [[ ! "${this_goal_area_id}" ]]; then
+    log_print error "Area '${this_goal_area_name}' not found"
   fi
 
-  # Inserting
-  database_run "box" "INSERT INTO goal (name, area_id, deadline) VALUES (${this_goal_name}, ${this_area_id:-NULL}, ${this_goal_deadline:-NULL});"
-  
+  if [[ "${this_goal_start_date}" ]]; then
+    validate_date "${this_goal_start_date}"
+  fi
+  if [[ "${this_goal_due_date}" ]]; then
+    validate_date "${this_goal_due_date}"
+  fi
+
+  # Build fields and values for INSERT
+  this_fields="name, area_id"
+  this_values="'${this_goal_name}', ${this_goal_area_id}"
+
+  if [[ "${this_goal_start_date}" ]]; then
+    this_fields="${this_fields}, start_date"
+    this_values="${this_values}, '${this_goal_start_date}'"
+  fi
+
+  if [[ "${this_goal_due_date}" ]]; then
+    this_fields="${this_fields}, due_date"
+    this_values="${this_values}, '${this_goal_due_date}'"
+  fi
+
+  generic_add "goals" "${this_fields}" "${this_values}" "${this_goal_name}"
+
 }
 
-function goalDelete() {
-  this_goal_id="$1"
+function goal_delete() {
 
-  if [[ $this_goal_id ]] ; then
-    database_run "box" "DELETE FROM goal WHERE id = $this_goal_id;"
+  log_print debug "Starting Goal Delete"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
   else
-    echo "Error: missing goal ID."
-    exit 1
+    log_print debug "No user arg provided - calling help message"
+    help_get_message goal
   fi
+
+  # Getting positional arg
+  this_goal_id="$1" ; log_print debug "Goal ID: ${this_goal_id}"
+
+  # Validate ID
+  validate_database_id goals "${this_goal_id}"
+
+  # Fetch name for confirmation
+  this_goal_name=$(database_run csv "SELECT name FROM goals WHERE id = ${this_goal_id};")
+
+  generic_delete "goals" "id" "${this_goal_id}" "${this_goal_name}"
+
 }
 
-function goalHelp() {
-  echo "${help_banner} - Goals"
-  echo
-  echo "Actions:"
-  echo "  ${help_basename} add --name GOAL_NAME [--area AREA_NAME] [--deadline DATE]"
-  echo "  ${help_basename} delete GOAL_ID"
-  echo "  ${help_basename} help (this message)"
-  echo "  ${help_basename} list"
-  echo "  ${help_basename} rename OLD_GOAL_NAME NEW_GOAL_NAME"
-  echo
+function goal_list() {
+
+  log_print debug "Starting Goal List"
+
+  generic_list goals_view "status != 'Done'"
+
 }
 
-function goalList() {
-  database_run "box" "SELECT * FROM goal_view ORDER BY deadline ASC NULLS LAST"
+function goal_edit() {
+
+  log_print debug "Starting Goal Edit"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message goal_edit
+  fi
+
+  # Getting positional arg
+  this_goal_id="$1" ; log_print debug "Goal ID: ${this_goal_id}" ; shift
+
+  # Validate ID
+  validate_database_id goals "${this_goal_id}"
+
+  # Getting optional flags
+  while [[ "$@" ]] ; do
+    this_arg="${1}"
+    log_print debug "Got arg: ${this_arg}"
+
+    case "${this_arg}" in
+      "--name")
+        shift
+        if [[ "${1}" ]] ; then
+          generic_set_property goals id "${this_goal_id}" name "'${1}'"
+        else
+          log_print error "Missing value for --name"
+        fi
+        ;;
+      "--area")
+        shift
+        if [[ "${1}" ]] ; then
+          this_edit_area_id=$(database_run csv "SELECT id FROM areas WHERE name = '${1}';")
+          if [[ ! "${this_edit_area_id}" ]]; then
+            log_print error "Area '${1}' not found"
+          fi
+          generic_set_property goals id "${this_goal_id}" area_id "${this_edit_area_id}"
+        else
+          log_print error "Missing value for --area"
+        fi
+        ;;
+      "--start-date")
+        shift
+        if [[ "${1}" ]] ; then
+          validate_date "${1}"
+          generic_set_property goals id "${this_goal_id}" start_date "'${1}'"
+        else
+          log_print error "Missing value for --start-date"
+        fi
+        ;;
+      "--due-date")
+        shift
+        if [[ "${1}" ]] ; then
+          validate_date "${1}"
+          generic_set_property goals id "${this_goal_id}" due_date "'${1}'"
+        else
+          log_print error "Missing value for --due-date"
+        fi
+        ;;
+      *)
+        log_print debug "Unknown arg - ignoring"
+        ;;
+    esac
+
+    shift
+  done
+
 }
 
-function goalMain() {
-  usr_command="$1"
-  
-  case "${usr_command}" in
+function goal_start() {
+
+  log_print debug "Starting Goal Start"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message goal
+  fi
+
+  this_goal_id="$1" ; log_print debug "Goal ID: ${this_goal_id}"
+
+  validate_database_id goals "${this_goal_id}"
+  generic_set_status "goals" "${this_goal_id}" "In Progress"
+
+}
+
+function goal_stop() {
+
+  log_print debug "Starting Goal Stop"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message goal
+  fi
+
+  this_goal_id="$1" ; log_print debug "Goal ID: ${this_goal_id}"
+
+  validate_database_id goals "${this_goal_id}"
+  generic_set_status "goals" "${this_goal_id}" "Pending"
+
+}
+
+function goal_complete() {
+
+  log_print debug "Starting Goal Complete"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message goal
+  fi
+
+  this_goal_id="$1" ; log_print debug "Goal ID: ${this_goal_id}"
+
+  validate_database_id goals "${this_goal_id}"
+  generic_complete "goals" "${this_goal_id}"
+
+}
+
+function goal_search() {
+
+  log_print debug "Starting Goal Search"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message goal
+  fi
+
+  this_goal_pattern="$1" ; log_print debug "Search pattern: ${this_goal_pattern}"
+
+  database_run box "SELECT * FROM goals_view WHERE name LIKE '%${this_goal_pattern}%'"
+
+}
+
+function goal_main() {
+
+  log_print debug "Starting Goal Main"
+
+  if [[ "${1}" ]]; then
+    user_arg="${1}" ; shift
+    log_print debug "User arg: ${user_arg}"
+  else
+    log_print debug "No User arg provided - calling help message"
+    help_get_message goal
+  fi
+
+  case "${user_arg}" in
     "add")
-      shift
-      goalAdd "$@"
+      goal_add "$@"
+      ;;
+    "complete")
+      goal_complete "$@"
       ;;
     "delete")
-      shift
-      goalDelete "$1"
+      goal_delete "$@"
       ;;
-    "help")
-      goalHelp
+    "edit")
+      goal_edit "$@"
       ;;
     "list")
-      goalList
+      goal_list
       ;;
-    "rename")
-      shift
-      goalRename "$@"
+    "search")
+      goal_search "$@"
+      ;;
+    "start")
+      goal_start "$@"
+      ;;
+    "stop")
+      goal_stop "$@"
+      ;;
+    "help")
+      help_get_message goal
       ;;
     *)
-      goalHelp
+      help_get_message goal
       ;;
   esac
-}
 
-function goalRename() {
-  this_old_goal_name="$1"
-  this_new_goal_name="$2"
-
-  if [[ $this_new_goal_name ]] ; then
-    database_run "box" "UPDATE goal SET name='$this_new_goal_name' WHERE name='$this_old_goal_name';"
-  else
-    echo "Error: missing required args."
-    exit 1
-  fi
 }

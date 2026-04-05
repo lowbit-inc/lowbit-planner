@@ -34,11 +34,39 @@ SELECT name, description
 FROM areas
 ORDER BY name ASC;
 
+-- Objects:Horizon3:Goal --
+
+CREATE TABLE IF NOT EXISTS goals (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  name         TEXT NOT NULL,
+  area_id      INTEGER,
+  vision_id    INTEGER,
+  status       TEXT NOT NULL DEFAULT 'Pending',
+  ranking      INTEGER DEFAULT 0,
+  start_date   TEXT,
+  due_date     TEXT,
+  created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at TEXT,
+  FOREIGN KEY (area_id) REFERENCES areas (id)
+);
+
+CREATE VIEW IF NOT EXISTS goals_view AS
+SELECT
+  goals.id         AS id,
+  goals.name       AS name,
+  areas.name       AS area,
+  goals.status     AS status,
+  goals.start_date AS start_date,
+  goals.due_date   AS due_date,
+  goals.ranking    AS ranking
+FROM goals
+LEFT JOIN areas ON goals.area_id = areas.id;
+
 -- Objects:Horizon1:Project --
 
 CREATE TABLE projects (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  name         TEXT NOT NULL UNIQUE,
+  name         TEXT NOT NULL,
   area_id      INTEGER NOT NULL,
   goal_id      INTEGER,
   status       TEXT NOT NULL DEFAULT 'Pending',
@@ -50,17 +78,19 @@ CREATE TABLE projects (
   FOREIGN KEY (area_id) REFERENCES areas (id)
 );
 
-CREATE VIEW projects_view AS
+CREATE VIEW IF NOT EXISTS projects_view AS
 SELECT
   projects.id         AS id,
   projects.name       AS name,
   areas.name          AS area,
+  goals.name          AS goal,
   projects.status     AS status,
   projects.start_date AS start_date,
   projects.due_date   AS due_date,
   projects.ranking    AS ranking
 FROM projects
-LEFT JOIN areas ON projects.area_id = areas.id;
+LEFT JOIN areas ON projects.area_id = areas.id
+LEFT JOIN goals ON projects.goal_id = goals.id;
 
 -- Objects:Ground:Task --
 
@@ -69,7 +99,7 @@ CREATE TABLE tasks (
   created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   due_date     TEXT,
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  name         TEXT NOT NULL UNIQUE,
+  name         TEXT NOT NULL,
   project_id   INTEGER,
   start_date   TEXT,
   status       TEXT NOT NULL DEFAULT 'Pending',

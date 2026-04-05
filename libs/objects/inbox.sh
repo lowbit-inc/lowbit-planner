@@ -55,18 +55,7 @@ function inbox_delete() {
   # Extra information
   this_inbox_item=$(database_run csv "SELECT name FROM inbox WHERE id = ${this_inbox_id};")
 
-  # Confirmation
-  log_print user "Are you sure you want to delete inbox item ${this_inbox_id} (${this_inbox_item})?"
-
-  # Execution
-  database_run box "DELETE FROM inbox WHERE id = $this_inbox_id;" ; database_run_rc=$?
-
-  # Checking result
-  if [[ $database_run_rc -eq 0 ]] ; then
-    log_print info "Item ${this_inbox_id} deleted from inbox"
-  else
-    log_print error "Failed to delete item from inbox"
-  fi
+  generic_delete "inbox" "id" "${this_inbox_id}" "${this_inbox_item}"
 
 }
 

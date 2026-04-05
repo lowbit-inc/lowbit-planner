@@ -39,6 +39,15 @@ function project_add() {
           log_print error "Missing value for --area"
         fi
         ;;
+      "--goal")
+        shift
+        if [[ "${1}" ]] ; then
+          this_project_goal_name="${1}"
+          log_print debug "Goal name: ${this_project_goal_name}"
+        else
+          log_print error "Missing value for --goal"
+        fi
+        ;;
       "--start-date")
         shift
         if [[ "${1}" ]] ; then
@@ -76,6 +85,14 @@ function project_add() {
     log_print error "Area '${this_project_area_name}' not found"
   fi
 
+  # Resolve goal name to goal_id if provided
+  if [[ "${this_project_goal_name}" ]]; then
+    this_project_goal_id=$(database_run csv "SELECT id FROM goals WHERE name = '${this_project_goal_name}';")
+    if [[ ! "${this_project_goal_id}" ]]; then
+      log_print error "Goal '${this_project_goal_name}' not found"
+    fi
+  fi
+
   # Validate dates if provided
   if [[ "${this_project_start_date}" ]]; then
     validate_date "${this_project_start_date}"
@@ -87,6 +104,11 @@ function project_add() {
   # Build fields and values for INSERT
   this_fields="name, area_id"
   this_values="'${this_project_name}', ${this_project_area_id}"
+
+  if [[ "${this_project_goal_id}" ]]; then
+    this_fields="${this_fields}, goal_id"
+    this_values="${this_values}, ${this_project_goal_id}"
+  fi
 
   if [[ "${this_project_start_date}" ]]; then
     this_fields="${this_fields}, start_date"
@@ -122,17 +144,7 @@ function project_delete() {
   # Fetch name for confirmation
   this_project_name=$(database_run csv "SELECT name FROM projects WHERE id = ${this_project_id};")
 
-  # Confirmation
-  log_print user "Are you sure you want to delete project ${this_project_id} (${this_project_name})?"
-
-  # Execution
-  database_run box "DELETE FROM projects WHERE id = ${this_project_id};" ; database_run_rc=$?
-
-  if [[ $database_run_rc -eq 0 ]]; then
-    log_print info "Item ${this_project_id} deleted from projects"
-  else
-    log_print error "Failed to delete item from projects"
-  fi
+  generic_delete "projects" "id" "${this_project_id}" "${this_project_name}"
 
 }
 
@@ -140,7 +152,7 @@ function project_list() {
 
   log_print debug "Starting Project List"
 
-  generic_list projects_view
+  generic_list projects_view "status != 'Done'"
 
 }
 
@@ -152,7 +164,7 @@ function project_edit() {
     log_print debug "User args: $@"
   else
     log_print debug "No user arg provided - calling help message"
-    help_get_message project
+    help_get_message project_edit
   fi
 
   # Getting positional arg
@@ -178,7 +190,11 @@ function project_edit() {
       "--goal")
         shift
         if [[ "${1}" ]] ; then
-          generic_set_property projects id "${this_project_id}" goal_id "${1}"
+          this_edit_goal_id=$(database_run csv "SELECT id FROM goals WHERE name = '${1}';")
+          if [[ ! "${this_edit_goal_id}" ]]; then
+            log_print error "Goal '${1}' not found"
+          fi
+          generic_set_property projects id "${this_project_id}" goal_id "${this_edit_goal_id}"
         else
           log_print error "Missing value for --goal"
         fi
@@ -237,8 +253,7 @@ function project_start() {
   this_project_id="$1" ; log_print debug "Project ID: ${this_project_id}"
 
   validate_database_id projects "${this_project_id}"
-
-  generic_set_property projects id "${this_project_id}" status "'In Progress'"
+  generic_set_status "projects" "${this_project_id}" "In Progress"
 
 }
 
@@ -256,8 +271,7 @@ function project_stop() {
   this_project_id="$1" ; log_print debug "Project ID: ${this_project_id}"
 
   validate_database_id projects "${this_project_id}"
-
-  generic_set_property projects id "${this_project_id}" status "'Pending'"
+  generic_set_status "projects" "${this_project_id}" "Pending"
 
 }
 
@@ -275,9 +289,7 @@ function project_complete() {
   this_project_id="$1" ; log_print debug "Project ID: ${this_project_id}"
 
   validate_database_id projects "${this_project_id}"
-
-  generic_set_property projects id "${this_project_id}" status "'Done'"
-  generic_set_property projects id "${this_project_id}" completed_at "DATE('now', 'localtime')"
+  generic_complete "projects" "${this_project_id}"
 
 }
 

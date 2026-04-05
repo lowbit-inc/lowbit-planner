@@ -71,5 +71,14 @@ test_command_output "Task - list shows project column" "./plan.sh task list" "Ar
 # Task 11.5: Organize routing test
 test_command_output "Organize routes correctly" "./plan.sh organize" "Lowbit Planner"
 
+# Task 6.1: Goal example tests (depends on Area "Casa" from 11.1)
+test_command_output "Goal - help" "./plan.sh goal" "Lowbit Planner - Goal"
+test_command_output "Goal - add" "./plan.sh goal add 'Aprender Rust' --area Casa" "Item added to goals"
+test_command_output "Goal - list" "./plan.sh goal list" "Aprender Rust"
+
+# Task 6.2: project edit --goal by name
+test_command_output "Project edit - set goal by name" "./plan.sh project edit 1 --goal 'Aprender Rust'" "Updated"
+test_command_output "Project list - shows goal column" "./plan.sh project list" "Aprender Rust"
+
 # End
 log_print info "End of test scenarios - ${color_bold}${color_green}All Passed${color_reset}"
