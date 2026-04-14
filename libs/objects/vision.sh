@@ -144,7 +144,16 @@ function vision_list() {
 
   log_print debug "Starting Vision List"
 
-  generic_list visions_view "status != 'Done'"
+  this_status_value=""
+  while [[ "$@" ]] ; do
+    case "${1}" in
+      "--status") shift ; this_status_value="${1}" ;;
+    esac
+    shift
+  done
+
+  this_status_filter=$(generic_build_status_filter "${this_status_value}")
+  generic_list visions_view "${this_status_filter}"
 
 }
 
@@ -324,7 +333,7 @@ function vision_main() {
       vision_edit "$@"
       ;;
     "list")
-      vision_list
+      vision_list "$@"
       ;;
     "search")
       vision_search "$@"

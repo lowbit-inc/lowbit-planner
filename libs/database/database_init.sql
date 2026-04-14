@@ -5,7 +5,22 @@ CREATE TABLE meta (
   value TEXT
 );
 
-INSERT INTO meta VALUES ("db_schema", "1");
+INSERT INTO meta VALUES ("db_schema", "3");
+
+-- Workflow:Reflect:Reviews --
+
+CREATE TABLE reviews (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  horizon          TEXT NOT NULL UNIQUE,
+  last_reviewed_at TEXT
+);
+
+INSERT INTO reviews (horizon) VALUES ('ground');
+INSERT INTO reviews (horizon) VALUES ('horizon1');
+INSERT INTO reviews (horizon) VALUES ('horizon2');
+INSERT INTO reviews (horizon) VALUES ('horizon3');
+INSERT INTO reviews (horizon) VALUES ('horizon4');
+INSERT INTO reviews (horizon) VALUES ('horizon5');
 
 -- Objects:Ground:Inbox --
 
@@ -42,6 +57,7 @@ CREATE TABLE visions (
   area_id      INTEGER NOT NULL,
   description  TEXT,
   status       TEXT NOT NULL DEFAULT 'Pending',
+  position     INTEGER DEFAULT 0,
   ranking      INTEGER DEFAULT 0,
   start_date   TEXT,
   due_date     TEXT,
@@ -72,6 +88,7 @@ CREATE TABLE IF NOT EXISTS goals (
   area_id      INTEGER,
   vision_id    INTEGER,
   status       TEXT NOT NULL DEFAULT 'Pending',
+  position     INTEGER DEFAULT 0,
   ranking      INTEGER DEFAULT 0,
   start_date   TEXT,
   due_date     TEXT,
@@ -104,6 +121,7 @@ CREATE TABLE projects (
   area_id      INTEGER NOT NULL,
   goal_id      INTEGER,
   status       TEXT NOT NULL DEFAULT 'Pending',
+  position     INTEGER DEFAULT 0,
   ranking      INTEGER DEFAULT 0,
   start_date   TEXT,
   due_date     TEXT,
@@ -153,136 +171,99 @@ FROM tasks
 LEFT JOIN projects ON tasks.project_id = projects.id
 ORDER BY tasks.name ASC;
 
--------------------------------- Other --------------------------------
+-- Objects:Horizon5:Purpose --
 
--- CREATE TABLE collection (
---   id INTEGER PRIMARY KEY AUTOINCREMENT,
---   name TEXT UNIQUE
--- );
+CREATE TABLE purposes (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
--- INSERT INTO collection (name) VALUES ("Books");
--- INSERT INTO collection (name) VALUES ("Games");
+CREATE VIEW purposes_view AS
+SELECT id, name
+FROM purposes
+ORDER BY name ASC;
 
--- CREATE TABLE collection_item (
---   id INTEGER PRIMARY KEY AUTOINCREMENT,
---   name TEXT UNIQUE,
---   collection_id INTEGER NOT NULL,
---   state TEXT DEFAULT "Pending",
---   completion_date TEXT,
---   position INTEGER DEFAULT 0,
---   FOREIGN KEY (collection_id) REFERENCES collection (id)
--- );
+-- Objects:Horizon5:Principle --
 
--- INSERT INTO collection_item (name, collection_id) VALUES ("Neuromancer",1);
--- INSERT INTO collection_item (name, collection_id) VALUES ("Animal Crossing: New Horizon",2);
--- INSERT INTO collection_item (name, collection_id) VALUES ("Persona 5: Royal",2);
--- INSERT INTO collection_item (name, collection_id) VALUES ("Pokémon Midori",2);
+CREATE TABLE principles (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
--- CREATE TABLE collection_item_decision (
---   collection_id INTEGER NOT NULL,
---   collection_item_id1 INTEGER NOT NULL,
---   collection_item_id2 INTEGER NOT NULL,
---   collection_item_id_choice INTEGER,
---   FOREIGN KEY (collection_id) REFERENCES collection (id),
---   FOREIGN KEY (collection_item_id1) REFERENCES collection_item (id),
---   FOREIGN KEY (collection_item_id2) REFERENCES collection_item (id),
---   PRIMARY KEY (collection_id, collection_item_id1, collection_item_id2)
--- );
+CREATE VIEW principles_view AS
+SELECT id, name
+FROM principles
+ORDER BY name ASC;
 
--- CREATE TABLE area (
---   id INTEGER PRIMARY KEY AUTOINCREMENT,
---   name TEXT UNIQUE
--- );
+-- Objects:Ground:Recurring --
 
--- INSERT INTO area (name) VALUES ("Personal");
--- INSERT INTO area (name) VALUES ("Work");
+CREATE TABLE recurrings (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  name         TEXT NOT NULL UNIQUE,
+  recurrence   TEXT NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'Pending',
+  created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at TEXT
+);
 
----- Idea: try to consolidade the amount of objects for the areas
--- CREATE VIEW area_view AS
--- SELECT area.name AS name, projects, goals, visions
--- FROM area;
+CREATE VIEW recurrings_view AS
+SELECT id, name, recurrence, status
+FROM recurrings
+ORDER BY CASE WHEN status = 'In Progress' THEN 0 WHEN status = 'Pending' THEN 1 ELSE 2 END, name ASC;
 
--- CREATE TABLE project (
---   id INTEGER PRIMARY KEY AUTOINCREMENT,
---   name TEXT UNIQUE,
---   area_id INTEGER,
---   deadline TEXT,
---   position INTEGER DEFAULT 0,
---   FOREIGN KEY (area_id) REFERENCES area (id)
--- );
+-- Objects:Ground:Habit --
 
--- INSERT INTO project (name, area_id, deadline) VALUES ("Learn lowbit-planner", 1, DATE('now', '+3 days'));
--- INSERT INTO project (name, area_id, deadline) VALUES ("Cool project for my boss", 2, DATE('now', '+7 days'));
+CREATE TABLE habits (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  name         TEXT NOT NULL UNIQUE,
+  recurrence   TEXT NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'Pending',
+  created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at TEXT
+);
 
--- CREATE VIEW project_view AS
--- SELECT project.id AS id, project.name AS name, area.name AS area, project.deadline AS deadline, project.position AS position
--- FROM project
--- LEFT JOIN area ON project.area_id = area.id;
+CREATE VIEW habits_view AS
+SELECT id, name, recurrence, status
+FROM habits
+ORDER BY CASE WHEN status = 'In Progress' THEN 0 WHEN status = 'Pending' THEN 1 ELSE 2 END, name ASC;
 
+-- Objects:Ground:Collection --
 
--- CREATE VIEW task_log AS
--- SELECT task.id AS id, task.name AS name, project.name AS project, task.deadline AS deadline, task.completion_date AS completion_date
--- FROM task
--- LEFT JOIN project ON task.project_id = project.id
--- WHERE state == 'Done' ORDER BY completion_date ASC;
+CREATE TABLE collections (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
--- CREATE TABLE recurring (
---   id INTEGER PRIMARY KEY AUTOINCREMENT,
---   name TEXT UNIQUE,
---   recurrence TEXT,
---   completion_date TEXT,
---   state TEXT DEFAULT "Pending"
--- );
+CREATE VIEW collections_view AS
+SELECT id, name
+FROM collections
+ORDER BY name ASC;
 
--- CREATE VIEW recurring_log AS
--- SELECT id, name, recurrence, completion_date, state
--- FROM recurring
--- WHERE state == 'Done';
+-- Objects:Ground:Collection Item --
 
--- INSERT INTO recurring (name, recurrence) VALUES ("Pay the bills", "monthly");
+CREATE TABLE collection_items (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  name          TEXT NOT NULL,
+  collection_id INTEGER NOT NULL,
+  status        TEXT NOT NULL DEFAULT 'Pending',
+  position      INTEGER DEFAULT 0,
+  ranking       INTEGER DEFAULT 0,
+  created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at  TEXT,
+  FOREIGN KEY (collection_id) REFERENCES collections (id)
+);
 
--- CREATE TABLE habit (
---   id INTEGER PRIMARY KEY AUTOINCREMENT,
---   name TEXT UNIQUE,
---   recurrence TEXT,
---   completion_date TEXT,
---   state TEXT DEFAULT "Pending"
--- );
-
--- CREATE VIEW habit_log AS
--- SELECT id, name, recurrence, completion_date, state
--- FROM habit
--- WHERE state == 'Done';
-
--- INSERT INTO habit (name, recurrence) VALUES ("Drink water", "daily");
-
--- CREATE TABLE goal (
---   id INTEGER PRIMARY KEY AUTOINCREMENT,
---   name TEXT UNIQUE,
---   area_id INTEGER,
---   deadline TEXT,
---   position INTEGER DEFAULT 0,
---   FOREIGN KEY (area_id) REFERENCES area (id)
--- );
-
--- INSERT INTO goal (name, area_id) VALUES ("Move to new home", 1);
-
--- CREATE VIEW goal_view AS
--- SELECT goal.id AS id, goal.name AS name, area.name AS area, goal.deadline AS deadline, goal.position AS position
--- FROM goal
--- LEFT JOIN area ON goal.area_id = area.id;
-
--- CREATE TABLE vision (
---   id INTEGER PRIMARY KEY AUTOINCREMENT,
---   name TEXT UNIQUE,
---   area_id INTEGER,
---   position INTEGER DEFAULT 0,
---   FOREIGN KEY (area_id) REFERENCES area (id)
--- );
-
--- INSERT INTO vision (name, area_id) VALUES ("Learn Karate", 1);
-
--- CREATE VIEW vision_view AS
--- SELECT vision.id AS id, vision.name AS name, area.name AS area, vision.position AS position
--- FROM vision
--- LEFT JOIN area ON vision.area_id = area.id;
+CREATE VIEW collection_items_view AS
+SELECT
+  collection_items.id     AS id,
+  collection_items.name   AS name,
+  collections.name        AS collection,
+  collection_items.position AS position,
+  collection_items.ranking  AS ranking,
+  collection_items.status AS status
+FROM collection_items
+LEFT JOIN collections ON collection_items.collection_id = collections.id
+ORDER BY CASE WHEN collection_items.status = 'In Progress' THEN 0 WHEN collection_items.status = 'Pending' THEN 1 ELSE 2 END, collection_items.position DESC, collection_items.name ASC;

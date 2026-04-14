@@ -35,8 +35,12 @@ function log_print() {
       printf "${color_gray}[${this_timestamp}] [${color_bright_blue}$this_log_level ${color_gray}]${color_reset} $this_log_message\n"
       ;;
     "user")
-      printf "${color_gray}[${this_timestamp}] [${color_bright_magenta}$this_log_level${color_gray} ]${color_reset} $this_log_message${color_gray} - [ENTER] to confirm, [CTRL+c] to cancel${color_reset}\n"
-      read
+      if [[ "${LBPLAN_NOPROMPT}" == "true" ]]; then
+        printf "${color_gray}[${this_timestamp}] [${color_bright_magenta}$this_log_level${color_gray} ]${color_reset} $this_log_message${color_gray} - auto-confirmed (noprompt)${color_reset}\n"
+      else
+        printf "${color_gray}[${this_timestamp}] [${color_bright_magenta}$this_log_level${color_gray} ]${color_reset} $this_log_message${color_gray} - [ENTER] to confirm, [CTRL+c] to cancel${color_reset}\n"
+        read
+      fi
       ;;
     "warn")
       printf "${color_gray}[${this_timestamp}] [${color_bright_yellow}$this_log_level ${color_gray}]${color_reset} $this_log_message\n"

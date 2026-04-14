@@ -151,7 +151,16 @@ function goal_list() {
 
   log_print debug "Starting Goal List"
 
-  generic_list goals_view "status != 'Done'"
+  this_status_value=""
+  while [[ "$@" ]] ; do
+    case "${1}" in
+      "--status") shift ; this_status_value="${1}" ;;
+    esac
+    shift
+  done
+
+  this_status_filter=$(generic_build_status_filter "${this_status_value}")
+  generic_list goals_view "${this_status_filter}"
 
 }
 
@@ -335,7 +344,7 @@ function goal_main() {
       goal_edit "$@"
       ;;
     "list")
-      goal_list
+      goal_list "$@"
       ;;
     "search")
       goal_search "$@"
