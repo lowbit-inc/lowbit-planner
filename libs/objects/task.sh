@@ -271,6 +271,27 @@ function task_search() {
 
 }
 
+function task_list() {
+
+  log_print debug "Starting Task List"
+
+  # Parse --status flag
+  this_status_value=""
+  while [[ "$@" ]] ; do
+    case "${1}" in
+      "--status")
+        shift
+        this_status_value="${1}"
+        ;;
+    esac
+    shift
+  done
+
+  this_status_filter=$(generic_build_status_filter "${this_status_value}")
+  generic_list tasks_view "${this_status_filter}"
+
+}
+
 function task_main() {
 
   log_print debug "Starting Task Main"
@@ -300,7 +321,7 @@ function task_main() {
       help_get_message task
       ;;
     "list")
-      generic_list tasks_view "status != 'Done'"
+      task_list "$@"
       ;;
     "search")
       task_search "$@"

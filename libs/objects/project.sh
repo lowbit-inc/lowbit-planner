@@ -152,7 +152,16 @@ function project_list() {
 
   log_print debug "Starting Project List"
 
-  generic_list projects_view "status != 'Done'"
+  this_status_value=""
+  while [[ "$@" ]] ; do
+    case "${1}" in
+      "--status") shift ; this_status_value="${1}" ;;
+    esac
+    shift
+  done
+
+  this_status_filter=$(generic_build_status_filter "${this_status_value}")
+  generic_list projects_view "${this_status_filter}"
 
 }
 
@@ -336,7 +345,7 @@ function project_main() {
       project_edit "$@"
       ;;
     "list")
-      project_list
+      project_list "$@"
       ;;
     "search")
       project_search "$@"

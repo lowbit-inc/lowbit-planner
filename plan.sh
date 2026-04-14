@@ -31,6 +31,7 @@ source ${SCRIPT_DIR}/libs/objects/task.sh         # Ground
 source ${SCRIPT_DIR}/libs/objects/recurring.sh    # Ground
 source ${SCRIPT_DIR}/libs/objects/habit.sh        # Ground
 source ${SCRIPT_DIR}/libs/objects/collection.sh   # Ground
+source ${SCRIPT_DIR}/libs/objects/item.sh         # Ground
 source ${SCRIPT_DIR}/libs/objects/project.sh      # Horizon 1
 source ${SCRIPT_DIR}/libs/objects/area.sh         # Horizon 2
 source ${SCRIPT_DIR}/libs/objects/goal.sh         # Horizon 3
@@ -49,6 +50,32 @@ source ${SCRIPT_DIR}/libs/workflow/decision.sh    # Ranking System
 ##########
 # Script #
 ##########
+
+# Parse global args before dispatching
+args=()
+while [[ "$#" -gt 0 ]]; do
+  case "${1}" in
+    "--debug")
+      DEBUG="true"
+      ;;
+    "--nocolor")
+      color_reset="" ; color_bold="" ; color_underline=""
+      color_black="" ; color_red="" ; color_green="" ; color_yellow=""
+      color_blue="" ; color_magenta="" ; color_cyan="" ; color_white=""
+      color_gray="" ; color_bright_red="" ; color_bright_green=""
+      color_bright_yellow="" ; color_bright_blue="" ; color_bright_magenta=""
+      color_bright_cyan="" ; color_bright_white=""
+      ;;
+    "--noprompt")
+      LBPLAN_NOPROMPT="true"
+      ;;
+    *)
+      args+=("${1}")
+      ;;
+  esac
+  shift
+done
+set -- "${args[@]}"
 
 log_print debug "Starting ${system_long_name}"
 
@@ -69,6 +96,9 @@ case "${user_arg}" in
   "install")
     system_install
     ;;
+  "search")
+    system_search "$@"
+    ;;
   "version"|"-v"|"--version")
     system_get_version
     ;;
@@ -87,6 +117,9 @@ case "${user_arg}" in
     ;;
   "inbox")
     inbox_main "$@"
+    ;;
+  "item")
+    item_main "$@"
     ;;
   "principle")
     principle_main "$@"
@@ -117,7 +150,7 @@ case "${user_arg}" in
     organize_main "$@"
     ;;
   "reflect")
-    reflect_main
+    reflect_main "$@"
     ;;
   "vision")
     vision_main "$@"

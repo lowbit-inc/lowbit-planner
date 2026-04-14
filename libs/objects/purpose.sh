@@ -1,52 +1,157 @@
 #!/bin/bash
-purposeFile="purpose.txt"
-purposePath="${database_dir}/${purposeFile}"
 
-function purposeCheck(){
-  if [[ ! -f "${database_dir}/${purposeFile}" ]] ; then
-    echo "Purpose file not found. Initializing..."
-    purposeInit
-    echo
+##############
+# Properties #
+##############
+
+# N/A
+
+###########
+# Methods #
+###########
+
+function purpose_add() {
+
+  log_print debug "Starting Purpose Add"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message purpose_add
   fi
-}
 
-function purposeHelp() {
-  echo "${help_banner} - Purpose"
-  echo
-  echo "Actions:"
-  echo "  ${help_basename} edit"
-  echo "  ${help_basename} help (this message)"
-  echo "  ${help_basename} view"
-  echo
-}
+  # Getting positional arg
+  this_purpose_name="$1" ; log_print debug "Purpose name: ${this_purpose_name}"
 
-function purposeInit() {
-
-  touch "${purposePath}"
-  echo "# Principles \n" > "${purposePath}"
+  generic_add "purposes" "name" "'${this_purpose_name}'" "${this_purpose_name}"
 
 }
 
-function purposeList() {
-  database_run "box" "SELECT * FROM purpose_view ORDER BY name ASC"
+function purpose_delete() {
+
+  log_print debug "Starting Purpose Delete"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message purpose
+  fi
+
+  # Getting positional arg
+  this_purpose_id="$1" ; log_print debug "Purpose ID: ${this_purpose_id}"
+
+  # Validate ID
+  validate_database_id purposes "${this_purpose_id}"
+
+  # Fetch name for confirmation
+  this_purpose_name=$(database_run csv "SELECT name FROM purposes WHERE id = ${this_purpose_id};")
+
+  generic_delete "purposes" "id" "${this_purpose_id}" "${this_purpose_name}"
+
 }
 
-function purposeMain() {
-  usr_command="$1"
-  
-  case "${usr_command}" in
+function purpose_edit() {
+
+  log_print debug "Starting Purpose Edit"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message purpose_edit
+  fi
+
+  # Getting positional arg
+  this_purpose_id="$1" ; log_print debug "Purpose ID: ${this_purpose_id}" ; shift
+
+  # Validate ID
+  validate_database_id purposes "${this_purpose_id}"
+
+  # Getting optional flags
+  while [[ "$@" ]] ; do
+    this_arg="${1}"
+    log_print debug "Got arg: ${this_arg}"
+
+    case "${this_arg}" in
+      "--name")
+        shift
+        if [[ "${1}" ]] ; then
+          generic_set_property purposes id "${this_purpose_id}" name "'${1}'"
+        else
+          log_print error "Missing value for --name"
+        fi
+        ;;
+      *)
+        log_print debug "Unknown arg - ignoring"
+        ;;
+    esac
+
+    shift
+  done
+
+}
+
+function purpose_list() {
+
+  log_print debug "Starting Purpose List"
+
+  generic_list purposes_view
+
+}
+
+function purpose_search() {
+
+  log_print debug "Starting Purpose Search"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message purpose
+  fi
+
+  this_purpose_pattern="$1" ; log_print debug "Search pattern: ${this_purpose_pattern}"
+
+  database_run box "SELECT * FROM purposes_view WHERE name LIKE '%${this_purpose_pattern}%'"
+
+}
+
+function purpose_main() {
+
+  log_print debug "Starting Purpose Main"
+
+  if [[ "${1}" ]]; then
+    user_arg="${1}" ; shift
+    log_print debug "User arg: ${user_arg}"
+  else
+    log_print debug "No User arg provided - calling help message"
+    help_get_message purpose
+  fi
+
+  case "${user_arg}" in
+    "add")
+      purpose_add "$@"
+      ;;
+    "delete")
+      purpose_delete "$@"
+      ;;
     "edit")
-      shift
-      purposeDelete "$1"
+      purpose_edit "$@"
       ;;
     "help")
-      purposeHelp
+      help_get_message purpose
       ;;
-    "view")
-      purposeList
+    "list")
+      purpose_list
+      ;;
+    "search")
+      purpose_search "$@"
       ;;
     *)
-      purposeHelp
+      help_get_message purpose
       ;;
   esac
+
 }

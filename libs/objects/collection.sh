@@ -1,268 +1,150 @@
 #!/bin/bash
 
-function collectionAdd() {
-  this_collection_name="$@"
+##############
+# Properties #
+##############
 
-  if [[ $this_collection_name ]] ; then
-    database_run "box" "INSERT INTO collection (name) VALUES ('$this_collection_name');"
+# N/A
+
+###########
+# Methods #
+###########
+
+function collection_add() {
+
+  log_print debug "Starting Collection Add"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
   else
-    echo "Error: missing collection name."
-    exit 1
+    log_print debug "No user arg provided - calling help message"
+    help_get_message collection_add
   fi
+
+  this_collection_name="$1" ; log_print debug "Collection name: ${this_collection_name}"
+
+  generic_add "collections" "name" "'${this_collection_name}'" "${this_collection_name}"
+
 }
 
-function collectionAddItem() {
+function collection_delete() {
 
-  if [[ $2 ]] ; then
-    this_collection_name="$1"
-    this_collection_item_name="$2"
+  log_print debug "Starting Collection Delete"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
   else
-    echo "Error: missing required argument."
-    exit 1
+    log_print debug "No user arg provided - calling help message"
+    help_get_message collection
   fi
 
-  # Validating collection name
-  if [[ ${this_collection_name} ]]; then
-    this_collection_id=$(database_run "csv" "SELECT id FROM collection WHERE name='${this_collection_name}'")
-    if [[ ! $this_collection_id ]] ; then
-      echo "Error: invalid collection name."
-      exit 1
-    fi
-  fi
+  this_collection_id="$1" ; log_print debug "Collection ID: ${this_collection_id}"
 
-  database_run "box" "INSERT INTO collection_item (name, collection_id) VALUES ('$this_collection_item_name', '$this_collection_id');"
+  validate_database_id collections "${this_collection_id}"
+
+  this_collection_name=$(database_run csv "SELECT name FROM collections WHERE id = ${this_collection_id};")
+
+  generic_delete "collections" "id" "${this_collection_id}" "${this_collection_name}"
 
 }
 
-function collectionComplete() {
-  if [[ "$1" ]] ; then
-    this_collection_item_id="$1"
+function collection_edit() {
+
+  log_print debug "Starting Collection Edit"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
   else
-    echo "Error: missing collection item ID."
-    exit 1
+    log_print debug "No user arg provided - calling help message"
+    help_get_message collection_edit
   fi
 
-  database_run "box" "UPDATE collection_item SET state = 'Done', completion_date = DATE('now', 'localtime') WHERE id = $this_collection_item_id;"
+  this_collection_id="$1" ; log_print debug "Collection ID: ${this_collection_id}" ; shift
+
+  validate_database_id collections "${this_collection_id}"
+
+  while [[ "$@" ]] ; do
+    this_arg="${1}"
+    log_print debug "Got arg: ${this_arg}"
+
+    case "${this_arg}" in
+      "--name")
+        shift
+        if [[ "${1}" ]] ; then
+          generic_set_property collections id "${this_collection_id}" name "'${1}'"
+        else
+          log_print error "Missing value for --name"
+        fi
+        ;;
+      *)
+        log_print debug "Unknown arg - ignoring"
+        ;;
+    esac
+
+    shift
+  done
+
 }
 
-function collectionDecide() {
+function collection_list() {
 
-  # Parsing args
-  if [[ $1 ]] ; then
-    this_collection_name="$1"
+  log_print debug "Starting Collection List"
+
+  generic_list collections_view
+
+}
+
+function collection_search() {
+
+  log_print debug "Starting Collection Search"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
   else
-    echo "Error: missing collection name."
-    exit 1
+    log_print debug "No user arg provided - calling help message"
+    help_get_message collection
   fi
 
-  # Validating collection name
-  this_collection_id=$(database_run "csv" "SELECT id FROM collection WHERE name = '${this_collection_name}'")
-  if [[ ! "${this_collection_id}" ]] ; then
-    echo "Error: invalid collection name."
-    exit 1
-  fi
+  this_collection_pattern="$1" ; log_print debug "Search pattern: ${this_collection_pattern}"
 
-  decisionGenerateList $this_collection_id
-  decisionMakeChoice $this_collection_id
+  database_run box "SELECT * FROM collections_view WHERE name LIKE '%${this_collection_pattern}%'"
 
 }
 
-function collectionDelete() {
-  this_collection_name="$1"
+function collection_main() {
 
-  if [[ $this_collection_name ]] ; then
-    database_run "box" "DELETE FROM collection WHERE name = '$this_collection_name';"
+  log_print debug "Starting Collection Main"
+
+  if [[ "${1}" ]]; then
+    user_arg="${1}" ; shift
+    log_print debug "User arg: ${user_arg}"
   else
-    echo "Error: missing collection name."
-    exit 1
-  fi
-}
-
-function collectionDeleteItem() {
-
-  if [[ $1 ]] ; then
-    this_collection_item_id="$1"
-  else
-    echo "Error: missing collection item ID."
-    exit 1
+    log_print debug "No User arg provided - calling help message"
+    help_get_message collection
   fi
 
-  database_run "box" "DELETE FROM collection_item WHERE id = '$this_collection_item_id';"
-
-}
-
-function collectionForget() {
-
-  # Parsing args
-  if [[ $1 ]] ; then
-    this_collection_name="$1"
-  else
-    echo "Error: missing collection name."
-    exit 1
-  fi
-
-  # Validating collection name
-  this_collection_id=$(database_run "csv" "SELECT id FROM collection WHERE name = '${this_collection_name}'")
-  if [[ ! "${this_collection_id}" ]] ; then
-    echo "Error: invalid collection name."
-    exit 1
-  fi
-
-  decisionForget $this_collection_id
-
-}
-
-function collectionHelp() {
-  echo "${help_banner} - Collections"
-  echo
-  echo "Collections:"
-  echo "  ${help_basename} add COLLECTION_NAME"
-  echo "  ${help_basename} decide COLLECTION_NAME"
-  echo "  ${help_basename} delete COLLECTION_NAME"
-  echo "  ${help_basename} forget COLLECTION_NAME"
-  echo "  ${help_basename} help (this message)"
-  echo "  ${help_basename} list"
-  echo "  ${help_basename} rename OLD_COLLECTION_NAME NEW_COLLECTION_NAME"
-  echo
-  echo "Items:"
-  echo "  ${help_basename} add-item COLLECTION_NAME ITEM_NAME"
-  echo "  ${help_basename} complete ITEM_ID"
-  echo "  ${help_basename} delete-item ITEM_ID"
-  echo "  ${help_basename} list-item COLLECTION_NAME"
-  echo "  ${help_basename} rename-item OLD_ITEM_NAME NEW_ITEM_NAME"
-  echo "  ${help_basename} start ITEM_ID"
-  echo "  ${help_basename} stop ITEM_ID"
-  echo
-}
-
-function collectionList() {
-  database_run "box" "SELECT name FROM collection ORDER BY name"
-}
-
-function collectionListItem() {
-
-  if [[ "${1}" ]] ; then
-    this_collection_name="${1}"
-  else
-    echo "Error: missing collection name."
-    exit 1
-  fi
-
-  this_collection_id=$(database_run "csv" "SELECT id FROM collection WHERE name='${this_collection_name}'")
-  if [[ ! $this_collection_id ]] ; then
-    echo "Error: invalid collection name."
-    exit 1
-  fi
-
-  database_run "box" "SELECT id, name, position, completion_date, state FROM collection_item WHERE collection_id=$this_collection_id ORDER BY position DESC;"
-}
-
-function collectionMain() {
-  usr_command="$1"
-  
-  case "${usr_command}" in
+  case "${user_arg}" in
     "add")
-      shift
-      collectionAdd "$@"
-      ;;
-    "add-item")
-      shift
-      collectionAddItem "$@"
-      ;;
-    "complete")
-      shift
-      collectionComplete "$1"
-      ;;
-    "decide")
-      shift
-      collectionDecide "$1"
+      collection_add "$@"
       ;;
     "delete")
-      shift
-      collectionDelete "$1"
+      collection_delete "$@"
       ;;
-    "delete-item")
-      shift
-      collectionDeleteItem "$1"
-      ;;
-    "forget")
-      shift
-      collectionForget "$1"
+    "edit")
+      collection_edit "$@"
       ;;
     "help")
-      collectionHelp
+      help_get_message collection
       ;;
     "list")
-      collectionList
+      collection_list
       ;;
-    "list-item")
-      shift
-      collectionListItem "$1"
-      ;;
-    "rename")
-      shift
-      collectionRename "$@"
-      ;;
-    "rename-item")
-      shift
-      collectionRenameItem "$@"
-      ;;
-    "start")
-      shift
-      collectionItemStart "$1"
-      ;;
-    "stop")
-      shift
-      collectionItemStop "$1"
+    "search")
+      collection_search "$@"
       ;;
     *)
-      collectionHelp
+      help_get_message collection
       ;;
   esac
-}
 
-function collectionRename() {
-  this_old_collection_name="$1"
-  this_new_collection_name="$2"
-
-  if [[ $this_new_collection_name ]] ; then
-    database_run "box" "UPDATE collection SET name='$this_new_collection_name' WHERE name='$this_old_collection_name';"
-  else
-    echo "Error: missing required args."
-    exit 1
-  fi
-}
-
-function collectionRenameItem() {
-  this_old_collection_item_name="$1"
-  this_new_collection_item_name="$2"
-
-  if [[ $this_new_collection_item_name ]] ; then
-    database_run "box" "UPDATE collection_item SET name='$this_new_collection_item_name' WHERE name='$this_old_collection_item_name';"
-  else
-    echo "Error: missing required args."
-    exit 1
-  fi
-}
-
-function collectionItemStart() {
-  if [[ "$1" ]] ; then
-    this_collection_item_id="$1"
-  else
-    echo "Error: missing collection item ID."
-    exit 1
-  fi
-
-  database_run "box" "UPDATE collection_item SET state = 'Started' WHERE id = $this_collection_item_id;"
-}
-
-function collectionItemStop() {
-  if [[ "$1" ]] ; then
-    this_collection_item_id="$1"
-  else
-    echo "Error: missing collection item ID."
-    exit 1
-  fi
-
-  database_run "box" "UPDATE collection_item SET state = 'Pending' WHERE id = $this_collection_item_id;"
 }
