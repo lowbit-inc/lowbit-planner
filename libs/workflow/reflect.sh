@@ -139,7 +139,7 @@ function reflect_run_review() {
   esac
 
   # Mark review as done
-  database_run box "UPDATE reviews SET last_reviewed_at = datetime('now') WHERE horizon = '${this_horizon}';"
+  database_run box "UPDATE reviews SET last_reviewed_at = datetime('now', 'localtime') WHERE horizon = '${this_horizon}';"
   printf "${color_green}Review of ${this_label} marked as complete.${color_reset}\n"
   printf "\n"
 }
