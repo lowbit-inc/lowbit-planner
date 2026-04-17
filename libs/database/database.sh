@@ -28,8 +28,18 @@ function database_run(){
   this_mode="$1" ; shift  # First arg
   this_query="$@"         # All the rest
 
-  sqlite3 "--${this_mode}" "${database_path}" "${this_query}" ; sqlite3_rc=$?
+  if [[ "${this_mode}" == "box" ]]; then
+    this_term_width="${COLUMNS:-0}"
+    if [[ $this_term_width -eq 0 ]]; then
+      this_term_width=$(tput cols 2>/dev/null || echo 0)
+    fi
+    if [[ $this_term_width -gt 0 && $this_term_width -lt $config_min_terminal_width ]]; then
+      sqlite3 "--line" "${database_path}" "${this_query}" | grep -v '=\s*$'
+      return ${PIPESTATUS[0]}
+    fi
+  fi
 
+  sqlite3 "--${this_mode}" "${database_path}" "${this_query}" ; sqlite3_rc=$?
   return $sqlite3_rc
 }
 
