@@ -22,9 +22,41 @@ function principle_add() {
   fi
 
   # Getting positional arg
-  this_principle_name="$1" ; log_print debug "Principle name: ${this_principle_name}"
+  this_principle_name="$1" ; log_print debug "Principle name: ${this_principle_name}" ; shift
 
-  generic_add "principles" "name" "'${this_principle_name}'" "${this_principle_name}"
+  # Getting flags
+  while [[ "$@" ]] ; do
+    this_arg="${1}"
+    log_print debug "Got arg: ${this_arg}"
+
+    case "${this_arg}" in
+      "--description")
+        shift
+        if [[ "${1}" ]] ; then
+          this_principle_description="${1}"
+          log_print debug "Description: ${this_principle_description}"
+        else
+          log_print error "Missing value for --description"
+        fi
+        ;;
+      *)
+        log_print debug "Unknown arg - ignoring"
+        ;;
+    esac
+
+    shift
+  done
+
+  # Build fields and values for INSERT
+  this_fields="name"
+  this_values="'${this_principle_name}'"
+
+  if [[ "${this_principle_description}" ]]; then
+    this_fields="${this_fields}, description"
+    this_values="${this_values}, '${this_principle_description}'"
+  fi
+
+  generic_add "principles" "${this_fields}" "${this_values}" "${this_principle_name}"
 
 }
 
@@ -81,6 +113,14 @@ function principle_edit() {
           generic_set_property principles id "${this_principle_id}" name "'${1}'"
         else
           log_print error "Missing value for --name"
+        fi
+        ;;
+      "--description")
+        shift
+        if [[ "${1}" ]] ; then
+          generic_set_property principles id "${this_principle_id}" description "'${1}'"
+        else
+          log_print error "Missing value for --description"
         fi
         ;;
       *)

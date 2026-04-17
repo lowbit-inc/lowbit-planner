@@ -48,6 +48,15 @@ function project_add() {
           log_print error "Missing value for --goal"
         fi
         ;;
+      "--description")
+        shift
+        if [[ "${1}" ]] ; then
+          this_project_description="${1}"
+          log_print debug "Description: ${this_project_description}"
+        else
+          log_print error "Missing value for --description"
+        fi
+        ;;
       "--start-date")
         shift
         if [[ "${1}" ]] ; then
@@ -108,6 +117,11 @@ function project_add() {
   if [[ "${this_project_goal_id}" ]]; then
     this_fields="${this_fields}, goal_id"
     this_values="${this_values}, ${this_project_goal_id}"
+  fi
+
+  if [[ "${this_project_description}" ]]; then
+    this_fields="${this_fields}, description"
+    this_values="${this_values}, '${this_project_description}'"
   fi
 
   if [[ "${this_project_start_date}" ]]; then
@@ -218,6 +232,14 @@ function project_edit() {
           generic_set_property projects id "${this_project_id}" area_id "${this_edit_area_id}"
         else
           log_print error "Missing value for --area"
+        fi
+        ;;
+      "--description")
+        shift
+        if [[ "${1}" ]] ; then
+          generic_set_property projects id "${this_project_id}" description "'${1}'"
+        else
+          log_print error "Missing value for --description"
         fi
         ;;
       "--start-date")
