@@ -155,6 +155,7 @@ function project_list() {
   this_status_value=""
   while [[ "$@" ]] ; do
     case "${1}" in
+      "--help"|"-h") help_get_message project_list ;;
       "--status") shift ; this_status_value="${1}" ;;
     esac
     shift

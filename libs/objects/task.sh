@@ -275,10 +275,13 @@ function task_list() {
 
   log_print debug "Starting Task List"
 
-  # Parse --status flag
+  # Parse flags
   this_status_value=""
   while [[ "$@" ]] ; do
     case "${1}" in
+      "--help"|"-h")
+        help_get_message task_list
+        ;;
       "--status")
         shift
         this_status_value="${1}"

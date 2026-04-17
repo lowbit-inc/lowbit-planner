@@ -81,18 +81,18 @@ function generic_list() {
 function generic_build_status_filter() {
   # Usage: generic_build_status_filter VALUE
   # Returns a SQL WHERE clause fragment for status filtering
-  # Values: "pending", "in progress", "done", "all"
+  # Values: "Pending", "In Progress", "Done", "all"
   # Default (no value): status != 'Done'
   local this_status_value="${1}"
 
   case "${this_status_value}" in
-    "pending")
+    "Pending")
       echo "status = 'Pending'"
       ;;
-    "in progress"|"in_progress"|"inprogress")
+    "In Progress")
       echo "status = 'In Progress'"
       ;;
-    "done"|"completed")
+    "Done")
       echo "status = 'Done'"
       ;;
     "all")

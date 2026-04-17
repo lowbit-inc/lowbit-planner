@@ -147,6 +147,9 @@ function item_list() {
     log_print debug "Got arg: ${this_arg}"
 
     case "${this_arg}" in
+      "--help"|"-h")
+        help_get_message item_list
+        ;;
       "--collection")
         shift
         if [[ "${1}" ]] ; then
