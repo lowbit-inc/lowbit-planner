@@ -219,12 +219,12 @@ log_print info "--------------------------------"
 
 # Status filter tests (uses task ID 1 = "Comprar pecas" which is Pending)
 test_command_output "Status filter - task list --status all" "./plan.sh task list --status all" "Comprar"
-test_command_output "Status filter - task list --status pending" "./plan.sh task list --status pending" "Comprar"
+test_command_output "Status filter - task list --status Pending" "./plan.sh task list --status Pending" "Comprar"
 
-# Create a task and complete it to test --status done
-test_command_output "Status filter - add task for done test" "./plan.sh task add 'Tarefa para filtro done'" "Item added to tasks"
+# Create a task and complete it to test --status Done
+test_command_output "Status filter - add task for Done test" "./plan.sh task add 'Tarefa para filtro done'" "Item added to tasks"
 echo "" | ./plan.sh task complete 4 >/dev/null 2>&1
-test_command_output "Status filter - task list --status done shows completed" "./plan.sh task list --status done" "Tarefa para filtro done"
+test_command_output "Status filter - task list --status Done shows completed" "./plan.sh task list --status Done" "Tarefa para filtro done"
 
 # Default list should NOT show completed task
 log_print info "--------------------------------"

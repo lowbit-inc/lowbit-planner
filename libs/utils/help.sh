@@ -298,6 +298,28 @@ function help_print_project_add() {
   printf "\n"
 }
 
+function help_print_task_list() {
+  printf "${color_bold}${system_long_name} - Task List${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}DESCRIPTION:${color_reset}\n"
+  printf "  List tasks, optionally filtered by status.\n"
+  printf "\n"
+  printf "${color_bold}USAGE:${color_reset}\n"
+  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} task list ${color_blue}[--status STATUS]${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}OPTIONAL ARGUMENTS:${color_reset}\n"
+  printf "  --status ${color_blue}STATUS         ${color_gray}Filter by status (see values below)${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}STATUS VALUES:${color_reset}\n"
+  printf "  ${color_blue}Pending${color_reset}        ${color_gray}Show only pending tasks${color_reset}\n"
+  printf "  ${color_blue}\"In Progress\"${color_reset}  ${color_gray}Show only in-progress tasks (use quotes)${color_reset}\n"
+  printf "  ${color_blue}Done${color_reset}           ${color_gray}Show only completed tasks${color_reset}\n"
+  printf "  ${color_blue}all${color_reset}            ${color_gray}Show every task regardless of status${color_reset}\n"
+  printf "\n"
+  printf "  ${color_gray}Default (no --status flag): show all tasks except Done.${color_reset}\n"
+  printf "\n"
+}
+
 function help_print_task_edit() {
   printf "${color_bold}${system_long_name} - Task Edit${color_reset}\n"
   printf "\n"
