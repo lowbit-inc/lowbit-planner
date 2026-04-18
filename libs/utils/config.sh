@@ -15,6 +15,7 @@ config_timezone=null
 config_noprompt=false
 config_nocolor=false
 config_debug=false
+config_min_terminal_width=100
 
 ###########
 # Methods #

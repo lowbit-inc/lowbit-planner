@@ -335,9 +335,10 @@ function help_print_goal_add() {
   printf "  --area       ${color_blue}AREA_NAME     ${color_gray}Area this goal belongs to${color_reset}\n"
   printf "\n"
   printf "${color_bold}OPTIONAL ARGUMENTS:${color_reset}\n"
-  printf "  --vision     ${color_blue}VISION_NAME   ${color_gray}Vision this goal contributes to${color_reset}\n"
-  printf "  --start-date ${color_blue}YYYY-MM-DD    ${color_gray}When the goal starts${color_reset}\n"
-  printf "  --due-date   ${color_blue}YYYY-MM-DD    ${color_gray}Deadline for the goal${color_reset}\n"
+  printf "  --vision      ${color_blue}VISION_NAME  ${color_gray}Vision this goal contributes to${color_reset}\n"
+  printf "  --description ${color_blue}DESC         ${color_gray}Description of the goal${color_reset}\n"
+  printf "  --start-date  ${color_blue}YYYY-MM-DD   ${color_gray}When the goal starts${color_reset}\n"
+  printf "  --due-date    ${color_blue}YYYY-MM-DD   ${color_gray}Deadline for the goal${color_reset}\n"
   printf "\n"
 }
 
@@ -355,9 +356,32 @@ function help_print_project_add() {
   printf "  --area       ${color_blue}AREA_NAME     ${color_gray}Area this project belongs to${color_reset}\n"
   printf "\n"
   printf "${color_bold}OPTIONAL ARGUMENTS:${color_reset}\n"
-  printf "  --goal       ${color_blue}GOAL_NAME     ${color_gray}Goal this project contributes to${color_reset}\n"
-  printf "  --start-date ${color_blue}YYYY-MM-DD    ${color_gray}When the project starts${color_reset}\n"
-  printf "  --due-date   ${color_blue}YYYY-MM-DD    ${color_gray}Deadline for the project${color_reset}\n"
+  printf "  --goal        ${color_blue}GOAL_NAME    ${color_gray}Goal this project contributes to${color_reset}\n"
+  printf "  --description ${color_blue}DESC         ${color_gray}Description of the project${color_reset}\n"
+  printf "  --start-date  ${color_blue}YYYY-MM-DD   ${color_gray}When the project starts${color_reset}\n"
+  printf "  --due-date    ${color_blue}YYYY-MM-DD   ${color_gray}Deadline for the project${color_reset}\n"
+  printf "\n"
+}
+
+function help_print_task_list() {
+  printf "${color_bold}${system_long_name} - Task List${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}DESCRIPTION:${color_reset}\n"
+  printf "  List tasks, optionally filtered by status.\n"
+  printf "\n"
+  printf "${color_bold}USAGE:${color_reset}\n"
+  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} task list ${color_blue}[--status STATUS]${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}OPTIONAL ARGUMENTS:${color_reset}\n"
+  printf "  --status ${color_blue}STATUS         ${color_gray}Filter by status (see values below)${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}STATUS VALUES:${color_reset}\n"
+  printf "  ${color_blue}Pending${color_reset}        ${color_gray}Show only pending tasks${color_reset}\n"
+  printf "  ${color_blue}\"In Progress\"${color_reset}  ${color_gray}Show only in-progress tasks (use quotes)${color_reset}\n"
+  printf "  ${color_blue}Done${color_reset}           ${color_gray}Show only completed tasks${color_reset}\n"
+  printf "  ${color_blue}all${color_reset}            ${color_gray}Show every task regardless of status${color_reset}\n"
+  printf "\n"
+  printf "  ${color_gray}Default (no --status flag): show all tasks except Done.${color_reset}\n"
   printf "\n"
 }
 
@@ -394,11 +418,12 @@ function help_print_project_edit() {
   printf "  ${color_blue}PROJECT_ID                  ${color_gray}ID of the project to edit${color_reset}\n"
   printf "\n"
   printf "${color_bold}OPTIONAL ARGUMENTS:${color_reset}\n"
-  printf "  --name       ${color_blue}NEW_NAME      ${color_gray}New name for the project${color_reset}\n"
-  printf "  --area       ${color_blue}AREA_NAME     ${color_gray}Link to an area${color_reset}\n"
-  printf "  --goal       ${color_blue}GOAL_NAME     ${color_gray}Link to a goal${color_reset}\n"
-  printf "  --start-date ${color_blue}YYYY-MM-DD    ${color_gray}When the project starts${color_reset}\n"
-  printf "  --due-date   ${color_blue}YYYY-MM-DD    ${color_gray}Deadline for the project${color_reset}\n"
+  printf "  --name        ${color_blue}NEW_NAME     ${color_gray}New name for the project${color_reset}\n"
+  printf "  --area        ${color_blue}AREA_NAME    ${color_gray}Link to an area${color_reset}\n"
+  printf "  --goal        ${color_blue}GOAL_NAME    ${color_gray}Link to a goal${color_reset}\n"
+  printf "  --description ${color_blue}DESC         ${color_gray}Description of the project${color_reset}\n"
+  printf "  --start-date  ${color_blue}YYYY-MM-DD   ${color_gray}When the project starts${color_reset}\n"
+  printf "  --due-date    ${color_blue}YYYY-MM-DD   ${color_gray}Deadline for the project${color_reset}\n"
   printf "\n"
 }
 
@@ -415,11 +440,12 @@ function help_print_goal_edit() {
   printf "  ${color_blue}GOAL_ID                     ${color_gray}ID of the goal to edit${color_reset}\n"
   printf "\n"
   printf "${color_bold}OPTIONAL ARGUMENTS:${color_reset}\n"
-  printf "  --name       ${color_blue}NEW_NAME      ${color_gray}New name for the goal${color_reset}\n"
-  printf "  --area       ${color_blue}AREA_NAME     ${color_gray}Link to an area${color_reset}\n"
-  printf "  --vision     ${color_blue}VISION_NAME   ${color_gray}Link to a vision${color_reset}\n"
-  printf "  --start-date ${color_blue}YYYY-MM-DD    ${color_gray}When the goal starts${color_reset}\n"
-  printf "  --due-date   ${color_blue}YYYY-MM-DD    ${color_gray}Deadline for the goal${color_reset}\n"
+  printf "  --name        ${color_blue}NEW_NAME     ${color_gray}New name for the goal${color_reset}\n"
+  printf "  --area        ${color_blue}AREA_NAME    ${color_gray}Link to an area${color_reset}\n"
+  printf "  --vision      ${color_blue}VISION_NAME  ${color_gray}Link to a vision${color_reset}\n"
+  printf "  --description ${color_blue}DESC         ${color_gray}Description of the goal${color_reset}\n"
+  printf "  --start-date  ${color_blue}YYYY-MM-DD   ${color_gray}When the goal starts${color_reset}\n"
+  printf "  --due-date    ${color_blue}YYYY-MM-DD   ${color_gray}Deadline for the goal${color_reset}\n"
   printf "\n"
 }
 
@@ -787,10 +813,13 @@ function help_print_purpose_add() {
   printf "  Add a new life purpose.\n"
   printf "\n"
   printf "${color_bold}USAGE:${color_reset}\n"
-  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} purpose add ${color_blue}PURPOSE_NAME${color_reset}\n"
+  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} purpose add ${color_blue}PURPOSE_NAME [ARGS]${color_reset}\n"
   printf "\n"
   printf "${color_bold}REQUIRED ARGUMENTS:${color_reset}\n"
   printf "  ${color_blue}PURPOSE_NAME                ${color_gray}Name of the purpose${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}OPTIONAL ARGUMENTS:${color_reset}\n"
+  printf "  --description ${color_blue}DESC         ${color_gray}Description of the purpose${color_reset}\n"
   printf "\n"
 }
 
@@ -807,7 +836,8 @@ function help_print_purpose_edit() {
   printf "  ${color_blue}PURPOSE_ID                  ${color_gray}ID of the purpose to edit${color_reset}\n"
   printf "\n"
   printf "${color_bold}OPTIONAL ARGUMENTS:${color_reset}\n"
-  printf "  --name ${color_blue}NEW_NAME              ${color_gray}New name for the purpose${color_reset}\n"
+  printf "  --name        ${color_blue}NEW_NAME     ${color_gray}New name for the purpose${color_reset}\n"
+  printf "  --description ${color_blue}DESC         ${color_gray}Description of the purpose${color_reset}\n"
   printf "\n"
 }
 
@@ -836,10 +866,13 @@ function help_print_principle_add() {
   printf "  Add a new guiding principle.\n"
   printf "\n"
   printf "${color_bold}USAGE:${color_reset}\n"
-  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} principle add ${color_blue}PRINCIPLE_NAME${color_reset}\n"
+  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} principle add ${color_blue}PRINCIPLE_NAME [ARGS]${color_reset}\n"
   printf "\n"
   printf "${color_bold}REQUIRED ARGUMENTS:${color_reset}\n"
   printf "  ${color_blue}PRINCIPLE_NAME              ${color_gray}Name of the principle${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}OPTIONAL ARGUMENTS:${color_reset}\n"
+  printf "  --description ${color_blue}DESC         ${color_gray}Description of the principle${color_reset}\n"
   printf "\n"
 }
 
@@ -856,7 +889,8 @@ function help_print_principle_edit() {
   printf "  ${color_blue}PRINCIPLE_ID                ${color_gray}ID of the principle to edit${color_reset}\n"
   printf "\n"
   printf "${color_bold}OPTIONAL ARGUMENTS:${color_reset}\n"
-  printf "  --name ${color_blue}NEW_NAME              ${color_gray}New name for the principle${color_reset}\n"
+  printf "  --name        ${color_blue}NEW_NAME     ${color_gray}New name for the principle${color_reset}\n"
+  printf "  --description ${color_blue}DESC         ${color_gray}Description of the principle${color_reset}\n"
   printf "\n"
 }
 

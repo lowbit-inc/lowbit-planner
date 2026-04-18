@@ -222,7 +222,7 @@ test_command_output "Status filter - task list --status all" "./plan.sh task lis
 test_command_output "Status filter - task list --status Pending" "./plan.sh task list --status Pending" "Comprar"
 
 # Create a task and complete it to test --status Done
-test_command_output "Status filter - add task for done test" "./plan.sh task add 'Tarefa para filtro done'" "Item added to tasks"
+test_command_output "Status filter - add task for Done test" "./plan.sh task add 'Tarefa para filtro done'" "Item added to tasks"
 echo "" | ./plan.sh task complete 4 >/dev/null 2>&1
 test_command_output "Status filter - task list --status Done shows completed" "./plan.sh task list --status Done" "Tarefa para filtro done"
 

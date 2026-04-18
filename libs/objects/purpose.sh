@@ -22,9 +22,41 @@ function purpose_add() {
   fi
 
   # Getting positional arg
-  this_purpose_name="$1" ; log_print debug "Purpose name: ${this_purpose_name}"
+  this_purpose_name="$1" ; log_print debug "Purpose name: ${this_purpose_name}" ; shift
 
-  generic_add "purposes" "name" "'${this_purpose_name}'" "${this_purpose_name}"
+  # Getting flags
+  while [[ "$@" ]] ; do
+    this_arg="${1}"
+    log_print debug "Got arg: ${this_arg}"
+
+    case "${this_arg}" in
+      "--description")
+        shift
+        if [[ "${1}" ]] ; then
+          this_purpose_description="${1}"
+          log_print debug "Description: ${this_purpose_description}"
+        else
+          log_print error "Missing value for --description"
+        fi
+        ;;
+      *)
+        log_print debug "Unknown arg - ignoring"
+        ;;
+    esac
+
+    shift
+  done
+
+  # Build fields and values for INSERT
+  this_fields="name"
+  this_values="'${this_purpose_name}'"
+
+  if [[ "${this_purpose_description}" ]]; then
+    this_fields="${this_fields}, description"
+    this_values="${this_values}, '${this_purpose_description}'"
+  fi
+
+  generic_add "purposes" "${this_fields}" "${this_values}" "${this_purpose_name}"
 
 }
 
@@ -81,6 +113,14 @@ function purpose_edit() {
           generic_set_property purposes id "${this_purpose_id}" name "'${1}'"
         else
           log_print error "Missing value for --name"
+        fi
+        ;;
+      "--description")
+        shift
+        if [[ "${1}" ]] ; then
+          generic_set_property purposes id "${this_purpose_id}" description "'${1}'"
+        else
+          log_print error "Missing value for --description"
         fi
         ;;
       *)

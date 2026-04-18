@@ -87,6 +87,7 @@ CREATE TABLE IF NOT EXISTS goals (
   name         TEXT NOT NULL,
   area_id      INTEGER,
   vision_id    INTEGER,
+  description  TEXT,
   status       TEXT NOT NULL DEFAULT 'Pending',
   position     INTEGER DEFAULT 0,
   ranking      INTEGER DEFAULT 0,
@@ -100,11 +101,12 @@ CREATE TABLE IF NOT EXISTS goals (
 DROP VIEW IF EXISTS goals_view;
 CREATE VIEW IF NOT EXISTS goals_view AS
 SELECT
-  goals.id         AS id,
-  goals.name       AS name,
-  areas.name       AS area,
-  visions.name     AS vision,
-  goals.start_date AS start_date,
+  goals.id          AS id,
+  goals.name        AS name,
+  areas.name        AS area,
+  visions.name      AS vision,
+  goals.description AS description,
+  goals.start_date  AS start_date,
   goals.due_date   AS due_date,
   goals.ranking    AS ranking,
   goals.status     AS status
@@ -120,6 +122,7 @@ CREATE TABLE projects (
   name         TEXT NOT NULL,
   area_id      INTEGER NOT NULL,
   goal_id      INTEGER,
+  description  TEXT,
   status       TEXT NOT NULL DEFAULT 'Pending',
   position     INTEGER DEFAULT 0,
   ranking      INTEGER DEFAULT 0,
@@ -132,11 +135,12 @@ CREATE TABLE projects (
 
 CREATE VIEW IF NOT EXISTS projects_view AS
 SELECT
-  projects.id         AS id,
-  projects.name       AS name,
-  areas.name          AS area,
-  goals.name          AS goal,
-  projects.start_date AS start_date,
+  projects.id          AS id,
+  projects.name        AS name,
+  areas.name           AS area,
+  goals.name           AS goal,
+  projects.description AS description,
+  projects.start_date  AS start_date,
   projects.due_date   AS due_date,
   projects.ranking    AS ranking,
   projects.status     AS status
@@ -179,26 +183,28 @@ ORDER BY
 -- Objects:Horizon5:Purpose --
 
 CREATE TABLE purposes (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  name       TEXT NOT NULL UNIQUE,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  name        TEXT NOT NULL UNIQUE,
+  description TEXT,
+  created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE VIEW purposes_view AS
-SELECT id, name
+SELECT id, name, description
 FROM purposes
 ORDER BY name ASC;
 
 -- Objects:Horizon5:Principle --
 
 CREATE TABLE principles (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  name       TEXT NOT NULL UNIQUE,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  name        TEXT NOT NULL UNIQUE,
+  description TEXT,
+  created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE VIEW principles_view AS
-SELECT id, name
+SELECT id, name, description
 FROM principles
 ORDER BY name ASC;
 

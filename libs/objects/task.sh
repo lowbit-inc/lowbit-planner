@@ -279,7 +279,7 @@ function task_list() {
   this_status_value=""
   while [[ "$@" ]] ; do
     case "${1}" in
-      "--help"|"-h")
+      "help"|"-h"|"--help")
         help_get_message task_list
         ;;
       "--status")

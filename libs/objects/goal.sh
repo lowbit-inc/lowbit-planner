@@ -48,6 +48,15 @@ function goal_add() {
           log_print error "Missing value for --vision"
         fi
         ;;
+      "--description")
+        shift
+        if [[ "${1}" ]] ; then
+          this_goal_description="${1}"
+          log_print debug "Description: ${this_goal_description}"
+        else
+          log_print error "Missing value for --description"
+        fi
+        ;;
       "--start-date")
         shift
         if [[ "${1}" ]] ; then
@@ -103,6 +112,11 @@ function goal_add() {
   # Build fields and values for INSERT
   this_fields="name, area_id"
   this_values="'${this_goal_name}', ${this_goal_area_id}"
+
+  if [[ "${this_goal_description}" ]]; then
+    this_fields="${this_fields}, description"
+    this_values="${this_values}, '${this_goal_description}'"
+  fi
 
   if [[ "${this_goal_start_date}" ]]; then
     this_fields="${this_fields}, start_date"
@@ -218,6 +232,14 @@ function goal_edit() {
           generic_set_property goals id "${this_goal_id}" vision_id "${this_edit_vision_id}"
         else
           log_print error "Missing value for --vision"
+        fi
+        ;;
+      "--description")
+        shift
+        if [[ "${1}" ]] ; then
+          generic_set_property goals id "${this_goal_id}" description "'${1}'"
+        else
+          log_print error "Missing value for --description"
         fi
         ;;
       "--start-date")
