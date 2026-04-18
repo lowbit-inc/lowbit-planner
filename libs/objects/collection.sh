@@ -111,6 +111,50 @@ function collection_search() {
 
 }
 
+function collection_decide() {
+
+  log_print debug "Starting Collection Decide"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message collection_decide
+  fi
+
+  this_collection_name="$1" ; shift ; log_print debug "Collection name: ${this_collection_name}"
+
+  this_collection_id=$(database_run csv "SELECT id FROM collections WHERE name = '${this_collection_name}';")
+  if [[ -z "${this_collection_id}" ]]; then
+    log_print error "Collection not found: ${this_collection_name}"
+  fi
+
+  this_reset="false"
+  while [[ "$@" ]] ; do
+    this_arg="${1}"
+    case "${this_arg}" in
+      "--reset")
+        this_reset="true"
+        ;;
+      *)
+        log_print debug "Unknown arg - ignoring: ${this_arg}"
+        ;;
+    esac
+    shift
+  done
+
+  if [[ "${this_reset}" == "true" ]]; then
+    log_print user "Reset all decisions and positions for '${this_collection_name}'?"
+    decision_forget collection_items collection_item_decisions collection_id "${this_collection_id}"
+    log_print info "Decisions cleared for ${this_collection_name}."
+    return 0
+  fi
+
+  decision_generate_list collection_items collection_item_decisions collection_id "${this_collection_id}"
+  decision_make_choice   collection_items collection_item_decisions collection_id "${this_collection_id}"
+
+}
+
 function collection_main() {
 
   log_print debug "Starting Collection Main"
@@ -126,6 +170,9 @@ function collection_main() {
   case "${user_arg}" in
     "add")
       collection_add "$@"
+      ;;
+    "decide")
+      collection_decide "$@"
       ;;
     "delete")
       collection_delete "$@"
