@@ -352,7 +352,7 @@ function help_print_project_add() {
   printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} project add ${color_blue}PROJECT_NAME${color_reset} --area ${color_blue}AREA_NAME [ARGS]${color_reset}\n"
   printf "\n"
   printf "${color_bold}REQUIRED ARGUMENTS:${color_reset}\n"
-  printf "  ${color_blue}PROJECT_NAME                ${color_gray}Name of the project${color_reset}\n"
+  printf "  ${color_blue}PROJECT_NAME               ${color_gray}Name of the project${color_reset}\n"
   printf "  --area       ${color_blue}AREA_NAME     ${color_gray}Area this project belongs to${color_reset}\n"
   printf "\n"
   printf "${color_bold}OPTIONAL ARGUMENTS:${color_reset}\n"
