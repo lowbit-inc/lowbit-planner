@@ -31,7 +31,8 @@ function database_run(){
   if [[ "${this_mode}" == "box" ]]; then
     this_term_width="${COLUMNS:-0}"
     if [[ $this_term_width -eq 0 ]]; then
-      this_term_width=$(tput cols 2>/dev/null || echo 0)
+      this_term_width=$(stty size </dev/tty 2>/dev/null | cut -d' ' -f2)
+      [[ -z "${this_term_width}" ]] && this_term_width=0
     fi
     if [[ $this_term_width -gt 0 && $this_term_width -lt $config_min_terminal_width ]]; then
       sqlite3 "--line" "${database_path}" "${this_query}" | grep -v '=\s*$'
