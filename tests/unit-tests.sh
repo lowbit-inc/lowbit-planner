@@ -206,6 +206,38 @@ else
 fi
 log_print info "--------------------------------"
 
+# Decide workflow tests (on Books collection - already has item 1 "Neuromancer")
+test_command_output "Item - add Hyperion to Books"   "./plan.sh item add 'Hyperion'   --collection Books" "Item added"
+test_command_output "Item - add Snow Crash to Books" "./plan.sh item add 'Snow Crash' --collection Books" "Item added"
+
+# Generate pairs and auto-pick (noprompt picks option 1 = item_id_low for each pair)
+test_command_output "Collection decide - generates 3 pairs" \
+  "./plan.sh --noprompt collection decide Books && sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM collection_item_decisions WHERE collection_id=1'" "3"
+
+# Idempotency: re-running does not duplicate pairs
+test_command_output "Collection decide - idempotent re-run" \
+  "./plan.sh --noprompt collection decide Books && sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM collection_item_decisions WHERE collection_id=1'" "3"
+
+# Position incremented (with auto-pick=1, low ids win; items 1,4,5 in Books get positions 2,1,0 -> SUM=3)
+test_command_output "Collection decide - positions incremented" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT SUM(position) FROM collection_items WHERE collection_id=1'" "3"
+
+# --reset clears decisions and zeroes positions
+./plan.sh --noprompt collection decide Books --reset >/dev/null 2>&1
+test_command_output "Collection decide --reset - clears decisions" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM collection_item_decisions WHERE collection_id=1'" "0"
+test_command_output "Collection decide --reset - zeroes positions" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT SUM(position) FROM collection_items WHERE collection_id=1'" "0"
+
+# Done items are excluded from new pair generation
+echo "" | ./plan.sh item complete 1 >/dev/null 2>&1
+./plan.sh --noprompt collection decide Books >/dev/null 2>&1
+test_command_output "Collection decide - skips Done items (only pair 4-5)" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM collection_item_decisions WHERE collection_id=1'" "1"
+
+# Help routing
+test_command_output "Collection decide - help on missing arg" "./plan.sh collection decide" "Collection Decide"
+
 # Collection delete (needs confirmation via pipe - after items are handled)
 echo "" | ./plan.sh collection delete 2 >/dev/null 2>&1
 log_print info "--------------------------------"

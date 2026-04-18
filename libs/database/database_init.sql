@@ -5,7 +5,7 @@ CREATE TABLE meta (
   value TEXT
 );
 
-INSERT INTO meta VALUES ("db_schema", "3");
+INSERT INTO meta VALUES ("db_schema", "4");
 
 -- Workflow:Reflect:Reviews --
 
@@ -278,3 +278,21 @@ SELECT
 FROM collection_items
 LEFT JOIN collections ON collection_items.collection_id = collections.id
 ORDER BY CASE WHEN collection_items.status = 'In Progress' THEN 0 WHEN collection_items.status = 'Pending' THEN 1 ELSE 2 END, collection_items.position DESC, collection_items.name ASC;
+
+-- Workflow:Decision:Collection Item Decisions --
+
+CREATE TABLE collection_item_decisions (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  collection_id INTEGER NOT NULL,
+  item_id_low   INTEGER NOT NULL,
+  item_id_high  INTEGER NOT NULL,
+  choice_id     INTEGER,
+  created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  decided_at    TEXT,
+  FOREIGN KEY (collection_id) REFERENCES collections (id),
+  FOREIGN KEY (item_id_low)   REFERENCES collection_items (id),
+  FOREIGN KEY (item_id_high)  REFERENCES collection_items (id),
+  FOREIGN KEY (choice_id)     REFERENCES collection_items (id),
+  CHECK (item_id_low < item_id_high),
+  UNIQUE (collection_id, item_id_low, item_id_high)
+);
