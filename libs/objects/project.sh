@@ -14,6 +14,20 @@ function project_add() {
 
   log_print debug "Starting Project Add"
 
+  # Scope all working vars to this call so repeated invocations (e.g. from the
+  # clarify TUI) cannot leak optional flag values from a previous call.
+  local this_project_name=""
+  local this_project_area_name=""
+  local this_project_area_id=""
+  local this_project_goal_name=""
+  local this_project_goal_id=""
+  local this_project_description=""
+  local this_project_start_date=""
+  local this_project_due_date=""
+  local this_arg=""
+  local this_fields=""
+  local this_values=""
+
   if [[ "${1}" ]]; then
     log_print debug "User args: $@"
   else

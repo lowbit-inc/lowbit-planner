@@ -14,6 +14,13 @@ function item_add() {
 
   log_print debug "Starting Item Add"
 
+  # Scope all working vars to this call so repeated invocations (e.g. from the
+  # clarify TUI) cannot leak optional flag values from a previous call.
+  local this_item_name=""
+  local this_item_collection_name=""
+  local this_item_collection_id=""
+  local this_arg=""
+
   if [[ "${1}" ]]; then
     log_print debug "User args: $@"
   else
@@ -23,9 +30,6 @@ function item_add() {
 
   # Getting positional arg
   this_item_name="$1" ; log_print debug "Item name: ${this_item_name}" ; shift
-
-  # Getting required flag
-  this_item_collection_name=""
 
   while [[ "$@" ]] ; do
     this_arg="${1}"

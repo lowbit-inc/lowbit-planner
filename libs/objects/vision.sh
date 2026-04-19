@@ -14,6 +14,18 @@ function vision_add() {
 
   log_print debug "Starting Vision Add"
 
+  # Scope all working vars to this call so repeated invocations (e.g. from the
+  # clarify TUI) cannot leak optional flag values from a previous call.
+  local this_vision_name=""
+  local this_vision_area_name=""
+  local this_vision_area_id=""
+  local this_vision_description=""
+  local this_vision_start_date=""
+  local this_vision_due_date=""
+  local this_arg=""
+  local this_fields=""
+  local this_values=""
+
   if [[ "${1}" ]]; then
     log_print debug "User args: $@"
   else

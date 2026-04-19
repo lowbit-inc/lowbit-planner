@@ -14,6 +14,20 @@ function goal_add() {
 
   log_print debug "Starting Goal Add"
 
+  # Scope all working vars to this call so repeated invocations (e.g. from the
+  # clarify TUI) cannot leak optional flag values from a previous call.
+  local this_goal_name=""
+  local this_goal_area_name=""
+  local this_goal_area_id=""
+  local this_goal_vision_name=""
+  local this_goal_vision_id=""
+  local this_goal_description=""
+  local this_goal_start_date=""
+  local this_goal_due_date=""
+  local this_arg=""
+  local this_fields=""
+  local this_values=""
+
   if [[ "${1}" ]]; then
     log_print debug "User args: $@"
   else
