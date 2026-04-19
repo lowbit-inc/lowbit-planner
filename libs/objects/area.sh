@@ -14,6 +14,12 @@ function area_add() {
 
   log_print debug "Starting Area Add"
 
+  # Scope all working vars to this call so repeated invocations (e.g. from the
+  # clarify TUI) cannot leak optional flag values from a previous call.
+  local this_area_name=""
+  local this_area_description=""
+  local this_arg=""
+
   if [[ "${1}" ]]; then
     log_print debug "User args: $@"
   else

@@ -14,6 +14,12 @@ function recurring_add() {
 
   log_print debug "Starting Recurring Add"
 
+  # Scope all working vars to this call so repeated invocations (e.g. from the
+  # clarify TUI) cannot leak optional flag values from a previous call.
+  local this_recurring_name=""
+  local this_recurring_recurrence=""
+  local this_arg=""
+
   if [[ "${1}" ]]; then
     log_print debug "User args: $@"
   else
@@ -23,9 +29,6 @@ function recurring_add() {
 
   # Getting positional arg
   this_recurring_name="$1" ; log_print debug "Recurring name: ${this_recurring_name}" ; shift
-
-  # Getting required flag
-  this_recurring_recurrence=""
 
   while [[ "$@" ]] ; do
     this_arg="${1}"

@@ -14,6 +14,14 @@ function purpose_add() {
 
   log_print debug "Starting Purpose Add"
 
+  # Scope all working vars to this call so repeated invocations (e.g. from the
+  # clarify TUI) cannot leak optional flag values from a previous call.
+  local this_purpose_name=""
+  local this_purpose_description=""
+  local this_arg=""
+  local this_fields=""
+  local this_values=""
+
   if [[ "${1}" ]]; then
     log_print debug "User args: $@"
   else

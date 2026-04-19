@@ -614,5 +614,50 @@ else
 fi
 log_print info "--------------------------------"
 
+# Regression: optional flags must not leak across consecutive *_add calls in
+# the SAME shell process. This is the scenario the clarify TUI hits — a single
+# shell sources all libs and calls task_add, project_add, etc. repeatedly. Any
+# non-local globals holding optional-flag values would be observed by the next
+# call. The assertion runs in a single bash -c so leakage is possible.
+./plan.sh --nocolor --noprompt area add LeakArea >/dev/null 2>&1
+./plan.sh --nocolor --noprompt project add LeakProj --area LeakArea >/dev/null 2>&1
+./plan.sh --nocolor --noprompt goal add LeakGoal --area LeakArea >/dev/null 2>&1
+
+leak_source_all_libs='
+  for f in libs/utils/*.sh libs/database/*.sh libs/objects/*.sh libs/workflow/*.sh; do
+    source "$f"
+  done
+'
+
+log_print info "--------------------------------"
+log_print info "Test: task_add optional flags do not leak within one shell"
+bash -c "
+  ${leak_source_all_libs}
+  task_add 'LeakTaskWithFlags' --project LeakProj --due-date 2099-12-31 >/dev/null 2>&1
+  task_add 'LeakTaskBare' >/dev/null 2>&1
+" >/dev/null 2>&1
+leak_row=$(sqlite3 "${LBPLAN_DB_PATH}" "SELECT COALESCE(project_id,''), COALESCE(due_date,''), COALESCE(start_date,'') FROM tasks WHERE name = 'LeakTaskBare';")
+if [[ "${leak_row}" == "||" ]]; then
+  log_print info "Result: ${color_green}OK${color_reset}"
+else
+  log_print error "Result: LeakTaskBare inherited values from previous call (got: ${leak_row})"
+fi
+log_print info "--------------------------------"
+
+log_print info "--------------------------------"
+log_print info "Test: project_add optional flags do not leak within one shell"
+bash -c "
+  ${leak_source_all_libs}
+  project_add 'LeakProjWithGoal' --area LeakArea --goal LeakGoal --due-date 2099-12-31 >/dev/null 2>&1
+  project_add 'LeakProjBare' --area LeakArea >/dev/null 2>&1
+" >/dev/null 2>&1
+leak_row=$(sqlite3 "${LBPLAN_DB_PATH}" "SELECT COALESCE(goal_id,''), COALESCE(due_date,''), COALESCE(start_date,'') FROM projects WHERE name = 'LeakProjBare';")
+if [[ "${leak_row}" == "||" ]]; then
+  log_print info "Result: ${color_green}OK${color_reset}"
+else
+  log_print error "Result: LeakProjBare inherited values from previous call (got: ${leak_row})"
+fi
+log_print info "--------------------------------"
+
 # End
 log_print info "End of test scenarios - ${color_bold}${color_green}All Passed${color_reset}"

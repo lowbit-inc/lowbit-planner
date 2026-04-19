@@ -14,6 +14,12 @@ function habit_add() {
 
   log_print debug "Starting Habit Add"
 
+  # Scope all working vars to this call so repeated invocations (e.g. from the
+  # clarify TUI) cannot leak optional flag values from a previous call.
+  local this_habit_name=""
+  local this_habit_recurrence=""
+  local this_arg=""
+
   if [[ "${1}" ]]; then
     log_print debug "User args: $@"
   else
@@ -23,9 +29,6 @@ function habit_add() {
 
   # Getting positional arg
   this_habit_name="$1" ; log_print debug "Habit name: ${this_habit_name}" ; shift
-
-  # Getting required flag
-  this_habit_recurrence=""
 
   while [[ "$@" ]] ; do
     this_arg="${1}"
