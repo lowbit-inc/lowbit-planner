@@ -83,6 +83,10 @@ function reflect_screen_menu() {
 
 # Args: <key> <horizon> <label> <current_period>
 # Renders one line of the main menu with the review status badge inline.
+# Note: color_* vars hold literal "\e[..." escape sequences that printf only
+# interprets when they appear in the format string itself (not when passed as
+# %s arguments). We interpolate the badge/suffix into the format string
+# directly for that reason.
 function reflect_print_menu_item() {
   local this_key="$1"
   local this_horizon="$2"
@@ -90,22 +94,22 @@ function reflect_print_menu_item() {
   local this_current_period="$4"
 
   local this_last_reviewed=$(database_run csv "SELECT last_reviewed_at FROM reviews WHERE horizon = '${this_horizon}';" | tr -d '"')
-  local this_badge
-  local this_suffix
+  local this_badge_fmt
+  local this_suffix_fmt
 
   if [[ -z "${this_last_reviewed}" ]]; then
-    this_badge="${color_yellow}[!]${color_reset}"
-    this_suffix="${color_yellow}Never reviewed${color_reset}"
+    this_badge_fmt="${color_yellow}[!]${color_reset}"
+    this_suffix_fmt="${color_yellow}Never reviewed${color_reset}"
   elif reflect_is_current "${this_horizon}" "${this_last_reviewed}" "${this_current_period}"; then
-    this_badge="${color_green}[v]${color_reset}"
-    this_suffix="Last: ${this_last_reviewed}"
+    this_badge_fmt="${color_green}[v]${color_reset}"
+    this_suffix_fmt="Last: ${this_last_reviewed}"
   else
-    this_badge="${color_yellow}[!]${color_reset}"
-    this_suffix="${color_yellow}Due${color_reset} (last: ${this_last_reviewed})"
+    this_badge_fmt="${color_yellow}[!]${color_reset}"
+    this_suffix_fmt="${color_yellow}Due${color_reset} (last: ${this_last_reviewed})"
   fi
 
-  printf "  ${color_green}(%s)${color_reset} %s ${color_bold}%s${color_reset} — %s\n" \
-    "${this_key}" "${this_badge}" "${this_label}" "${this_suffix}"
+  printf "  ${color_green}(%s)${color_reset} ${this_badge_fmt} ${color_bold}%s${color_reset} — ${this_suffix_fmt}\n" \
+    "${this_key}" "${this_label}"
 }
 
 ############
