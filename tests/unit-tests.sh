@@ -462,18 +462,68 @@ test_command_output "Organize - invalid key ignored, then ground works" \
   "printf 'x\ng\n\nq\n' | ./plan.sh --noprompt organize" "Inbox"
 
 # Reflect workflow tests
-test_command_output "Reflect - dashboard shows horizons" "./plan.sh reflect" "Ground"
 
-# Run a reflect review and check it gets marked
-./plan.sh reflect ground >/dev/null 2>&1
+# Main menu appears and lists the horizons
+test_command_output "Reflect - TUI menu shows horizons" \
+  "printf 'q\n' | ./plan.sh --noprompt reflect" "Choose a horizon"
+
+# Inline status label for Ground is rendered in the menu
+test_command_output "Reflect - menu shows Ground label" \
+  "printf 'q\n' | ./plan.sh --noprompt reflect" "Ground (Daily)"
+
+# Pressing 'g' opens the horizon review screen for Ground
+test_command_output "Reflect - ground screen shows Reviewing header" \
+  "printf 'g\nb\nq\n' | ./plan.sh --noprompt reflect" "Reviewing: Ground"
+
+# (l) lists the items of Ground (Inbox section is part of the render)
+test_command_output "Reflect - ground list shows Inbox" \
+  "printf 'g\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Inbox"
+
+# (l) on Horizon 1 shows Active Projects
+test_command_output "Reflect - h1 list shows Projects" \
+  "printf '1\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Active Projects"
+
+# (l) on Horizon 2 shows Areas of Responsibility
+test_command_output "Reflect - h2 list shows Areas" \
+  "printf '2\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Areas of Responsibility"
+
+# (l) on Horizon 3 shows Active Goals
+test_command_output "Reflect - h3 list shows Goals" \
+  "printf '3\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Active Goals"
+
+# (l) on Horizon 4 shows Active Visions
+test_command_output "Reflect - h4 list shows Visions" \
+  "printf '4\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Active Visions"
+
+# (l) on Horizon 5 shows Purposes section
+test_command_output "Reflect - h5 list shows Purposes" \
+  "printf '5\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Purposes"
+
+# (d) Decide option is shown on Horizon 1 (supported)
+test_command_output "Reflect - h1 screen shows Decide option" \
+  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "(d) Decide"
+
+# (d) Decide option is NOT shown on Horizon 2 (unsupported)
 log_print info "--------------------------------"
-log_print info "Test: Reflect - ground review marks as complete"
-if ./plan.sh reflect 2>/dev/null | grep -q "\[v\].*Ground"; then
-  log_print info "Result: ${color_green}OK${color_reset}"
+log_print info "Test: Reflect - h2 screen hides Decide option"
+if printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect 2>/dev/null | grep -q "(d) Decide"; then
+  log_print error "Result: Decide option should not appear on h2 screen"
 else
-  log_print error "Result: ground review was not marked as complete"
+  log_print info "Result: ${color_green}OK${color_reset}"
 fi
 log_print info "--------------------------------"
+
+# (m) marks the review as complete; main menu re-renders with [v] badge
+test_command_output "Reflect - mark ground complete updates badge" \
+  "printf 'g\nm\n\nq\n' | ./plan.sh --noprompt reflect" "\[v\].*Ground"
+
+# Invalid key on the main menu is ignored (redraws); then 'g' still works
+test_command_output "Reflect - invalid key at main menu ignored" \
+  "printf 'x\ng\nb\nq\n' | ./plan.sh --noprompt reflect" "Reviewing: Ground"
+
+# Invalid key on the horizon screen is ignored (redraws); then 'b' returns
+test_command_output "Reflect - invalid key at horizon menu ignored" \
+  "printf 'g\nz\nb\nq\n' | ./plan.sh --noprompt reflect" "Reviewing: Ground"
 
 # Engage workflow tests
 # Add a task with a past due date to test overdue

@@ -1015,3 +1015,18 @@ function help_print_organize() {
   printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} organize\n"
   printf "\n"
 }
+
+function help_print_reflect() {
+  printf "${color_bold}${system_long_name} - Reflect${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}DESCRIPTION:${color_reset}\n"
+  printf "  Interactive TUI for GTD review. The main menu shows review status\n"
+  printf "  per horizon (Daily/Weekly/Monthly/Quarterly/Biannual/Yearly) — ${color_green}[v]${color_reset} current,\n"
+  printf "  ${color_yellow}[!]${color_reset} due. Pick a horizon to drill into its review screen, where you can\n"
+  printf "  list items, run ${color_green}(d)${color_reset} decide (where supported), and ${color_green}(m)${color_reset} mark the review\n"
+  printf "  as complete. Press ${color_green}(g)${color_reset} for Ground, ${color_green}(1)${color_reset}–${color_green}(5)${color_reset} for Horizons 1–5, ${color_green}(q)${color_reset} to quit.\n"
+  printf "\n"
+  printf "${color_bold}USAGE:${color_reset}\n"
+  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} reflect\n"
+  printf "\n"
+}
