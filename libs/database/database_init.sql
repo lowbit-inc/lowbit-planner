@@ -5,7 +5,7 @@ CREATE TABLE meta (
   value TEXT
 );
 
-INSERT INTO meta VALUES ("db_schema", "4");
+INSERT INTO meta VALUES ("db_schema", "5");
 
 -- Workflow:Reflect:Reviews --
 
@@ -74,11 +74,11 @@ SELECT
   visions.description AS description,
   visions.start_date  AS start_date,
   visions.due_date    AS due_date,
-  visions.ranking     AS ranking,
+  visions.position    AS position,
   visions.status      AS status
 FROM visions
 LEFT JOIN areas ON visions.area_id = areas.id
-ORDER BY CASE WHEN visions.status = 'In Progress' THEN 0 ELSE 1 END, visions.ranking DESC, visions.name ASC;
+ORDER BY CASE WHEN visions.status = 'In Progress' THEN 0 WHEN visions.status = 'Pending' THEN 1 ELSE 2 END, visions.position DESC, visions.name ASC;
 
 -- Objects:Horizon3:Goal --
 
@@ -108,12 +108,12 @@ SELECT
   goals.description AS description,
   goals.start_date  AS start_date,
   goals.due_date   AS due_date,
-  goals.ranking    AS ranking,
+  goals.position   AS position,
   goals.status     AS status
 FROM goals
 LEFT JOIN areas   ON goals.area_id   = areas.id
 LEFT JOIN visions ON goals.vision_id = visions.id
-ORDER BY CASE WHEN goals.status = 'In Progress' THEN 0 ELSE 1 END, goals.ranking DESC, goals.name ASC;
+ORDER BY CASE WHEN goals.status = 'In Progress' THEN 0 WHEN goals.status = 'Pending' THEN 1 ELSE 2 END, goals.position DESC, goals.name ASC;
 
 -- Objects:Horizon1:Project --
 
@@ -142,12 +142,12 @@ SELECT
   projects.description AS description,
   projects.start_date  AS start_date,
   projects.due_date   AS due_date,
-  projects.ranking    AS ranking,
+  projects.position   AS position,
   projects.status     AS status
 FROM projects
 LEFT JOIN areas ON projects.area_id = areas.id
 LEFT JOIN goals ON projects.goal_id = goals.id
-ORDER BY CASE WHEN projects.status = 'In Progress' THEN 0 ELSE 1 END, projects.ranking DESC, projects.name ASC;
+ORDER BY CASE WHEN projects.status = 'In Progress' THEN 0 WHEN projects.status = 'Pending' THEN 1 ELSE 2 END, projects.position DESC, projects.name ASC;
 
 -- Objects:Ground:Task --
 
@@ -295,4 +295,52 @@ CREATE TABLE collection_item_decisions (
   FOREIGN KEY (choice_id)     REFERENCES collection_items (id),
   CHECK (item_id_low < item_id_high),
   UNIQUE (collection_id, item_id_low, item_id_high)
+);
+
+-- Workflow:Decision:Vision Decisions --
+
+CREATE TABLE vision_decisions (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  item_id_low  INTEGER NOT NULL,
+  item_id_high INTEGER NOT NULL,
+  choice_id    INTEGER,
+  created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  decided_at   TEXT,
+  FOREIGN KEY (item_id_low)  REFERENCES visions (id),
+  FOREIGN KEY (item_id_high) REFERENCES visions (id),
+  FOREIGN KEY (choice_id)    REFERENCES visions (id),
+  CHECK (item_id_low < item_id_high),
+  UNIQUE (item_id_low, item_id_high)
+);
+
+-- Workflow:Decision:Goal Decisions --
+
+CREATE TABLE goal_decisions (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  item_id_low  INTEGER NOT NULL,
+  item_id_high INTEGER NOT NULL,
+  choice_id    INTEGER,
+  created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  decided_at   TEXT,
+  FOREIGN KEY (item_id_low)  REFERENCES goals (id),
+  FOREIGN KEY (item_id_high) REFERENCES goals (id),
+  FOREIGN KEY (choice_id)    REFERENCES goals (id),
+  CHECK (item_id_low < item_id_high),
+  UNIQUE (item_id_low, item_id_high)
+);
+
+-- Workflow:Decision:Project Decisions --
+
+CREATE TABLE project_decisions (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  item_id_low  INTEGER NOT NULL,
+  item_id_high INTEGER NOT NULL,
+  choice_id    INTEGER,
+  created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  decided_at   TEXT,
+  FOREIGN KEY (item_id_low)  REFERENCES projects (id),
+  FOREIGN KEY (item_id_high) REFERENCES projects (id),
+  FOREIGN KEY (choice_id)    REFERENCES projects (id),
+  CHECK (item_id_low < item_id_high),
+  UNIQUE (item_id_low, item_id_high)
 );
