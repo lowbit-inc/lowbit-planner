@@ -69,6 +69,16 @@ Each object file follows the same pattern:
 - **Dates** use ISO format `YYYY-MM-DD`; timestamps use `YYYY-MM-DD HH:MM:SS`.
 - **`LBPLAN_DB_PATH`** overrides the default database location (`~/.lowbit-planner/plan.db`). The unit test suite sets this to `/tmp/lowbit-planner-unit-tests.db` and resets it on each run.
 
+### Adding a schema migration
+
+When you need to evolve the schema, three things must change together:
+
+1. Add a new file at `libs/database/migrations/NNN_<snake_case_desc>.sql` where `NNN` is the next integer (zero-padded to 3 digits), with the SQL statements for the change. No `BEGIN`/`COMMIT` — the runner wraps each migration in its own transaction.
+2. Edit `libs/database/database_init.sql` inline to reflect the new schema as the baseline for fresh installs, and bump `INSERT INTO meta VALUES ("db_schema", "NNN")` to match.
+3. Bump the default in `database_expected_schema="${LBPLAN_EXPECTED_SCHEMA:-NNN}"` in `libs/database/database.sh`.
+
+The three must agree. A unit test enforces this. Every invocation of `./plan.sh` auto-applies pending migrations before dispatching; `./plan.sh migrate status` and `./plan.sh migrate up` let you inspect or force the process manually.
+
 ### Test framework
 
 Tests live in `tests/unit-tests.sh` and use `test_command_output "<title>" "<shell command>" "<expected substring>"` from `libs/utils/test.sh`. Each test runs the command and greps stdout for the expected string.

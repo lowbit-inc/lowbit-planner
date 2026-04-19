@@ -659,5 +659,88 @@ else
 fi
 log_print info "--------------------------------"
 
+# ========================================================================
+# Database migrations
+# ========================================================================
+
+# Invariant: database_expected_schema default in database.sh must equal the
+# db_schema value seeded in database_init.sql.
+expected_in_sh=$(grep '^database_expected_schema=' libs/database/database.sh | sed 's/.*:-\([0-9]*\)}.*/\1/')
+seed_in_sql=$(grep 'INSERT INTO meta VALUES ("db_schema"' libs/database/database_init.sql | sed 's/.*"\([0-9]*\)".*/\1/')
+log_print info "--------------------------------"
+log_print info "Test: database_expected_schema matches init.sql seed"
+if [[ "${expected_in_sh}" == "${seed_in_sql}" ]]; then
+  log_print info "Result: ${color_green}OK${color_reset}"
+else
+  log_print error "Result: database.sh has v${expected_in_sh}, init.sql seeds v${seed_in_sql}"
+fi
+log_print info "--------------------------------"
+
+# Setup: isolated migrations dir so we don't pollute libs/database/migrations
+test_migrations_dir="/tmp/lbplan-test-migrations"
+rm -rf "${test_migrations_dir}" && mkdir -p "${test_migrations_dir}"
+
+# Test: fresh DB (current test DB is at v5) reports up-to-date
+test_command_output "Migrate status - fresh DB is up to date" \
+  "./plan.sh --nocolor --noprompt migrate status" "Up to date"
+
+# Test: downgrade (DB newer than CLI) aborts with clear error
+sqlite3 "${LBPLAN_DB_PATH}" "UPDATE meta SET value='99' WHERE name='db_schema';"
+test_command_output "Migrate - aborts when DB ahead of CLI" \
+  "./plan.sh --nocolor --noprompt migrate status 2>&1" "is newer than this CLI supports"
+# Reset for subsequent tests
+sqlite3 "${LBPLAN_DB_PATH}" "UPDATE meta SET value='5' WHERE name='db_schema';"
+
+# Test: runner applies a pending migration (auto-migrate during startup)
+cat > "${test_migrations_dir}/006_test_add_column.sql" <<'EOF'
+ALTER TABLE areas ADD COLUMN migration_test_flag TEXT DEFAULT 'ok';
+EOF
+sqlite3 "${LBPLAN_DB_PATH}" "UPDATE meta SET value='5' WHERE name='db_schema';"
+test_command_output "Migrate up - applies pending migration" \
+  "LBPLAN_MIGRATIONS_DIR=${test_migrations_dir} LBPLAN_EXPECTED_SCHEMA=6 ./plan.sh --nocolor --noprompt migrate up 2>&1" \
+  "Applied migration 6"
+
+# Verify meta was bumped
+result=$(sqlite3 "${LBPLAN_DB_PATH}" "SELECT value FROM meta WHERE name='db_schema';")
+log_print info "Test: meta.db_schema bumped after migration"
+if [[ "${result}" == "6" ]]; then
+  log_print info "Result: ${color_green}OK${color_reset}"
+else
+  log_print error "Result: meta.db_schema should be 6, got ${result}"
+fi
+log_print info "--------------------------------"
+
+# Verify the ALTER actually ran
+col=$(sqlite3 "${LBPLAN_DB_PATH}" "SELECT migration_test_flag FROM areas LIMIT 1;")
+log_print info "Test: migration SQL actually ran"
+if [[ "${col}" == "ok" ]]; then
+  log_print info "Result: ${color_green}OK${color_reset}"
+else
+  log_print error "Result: migration column not found or wrong value: '${col}'"
+fi
+log_print info "--------------------------------"
+
+# Test: failed migration rolls back (bad SQL leaves schema unchanged).
+# 006 was applied in the prior test, so after a failed 007 the version must
+# remain at 6 (not 7), proving the transaction rolled back cleanly.
+cat > "${test_migrations_dir}/007_bad.sql" <<'EOF'
+ALTER TABLE nonexistent_table ADD COLUMN x TEXT;
+EOF
+LBPLAN_MIGRATIONS_DIR=${test_migrations_dir} LBPLAN_EXPECTED_SCHEMA=7 \
+  ./plan.sh --nocolor --noprompt migrate up >/dev/null 2>&1
+result=$(sqlite3 "${LBPLAN_DB_PATH}" "SELECT value FROM meta WHERE name='db_schema';")
+log_print info "Test: failed migration does not bump version"
+if [[ "${result}" == "6" ]]; then
+  log_print info "Result: ${color_green}OK${color_reset}"
+else
+  log_print error "Result: version should be 6 after failed 007, got ${result}"
+fi
+log_print info "--------------------------------"
+
+# Cleanup: remove test migrations dir and reset schema so the suite's final
+# state is consistent (no stray test migration column / no mismatched version).
+rm -rf "${test_migrations_dir}"
+sqlite3 "${LBPLAN_DB_PATH}" "UPDATE meta SET value='5' WHERE name='db_schema';"
+
 # End
 log_print info "End of test scenarios - ${color_bold}${color_green}All Passed${color_reset}"
