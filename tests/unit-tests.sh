@@ -365,9 +365,11 @@ log_print info "--------------------------------"
 test_command_output "Clarify - add inbox item 1" "./plan.sh inbox add 'Ideia para clarificar como purpose'" "Item added to inbox"
 test_command_output "Clarify - add inbox item 2" "./plan.sh inbox add 'Ideia para deletar'" "Item added to inbox"
 
-# Clarify: convert first to purpose (u + enter for name), delete second (d), then done
-# Input: u (type=purpose), empty (accept default name), d (delete second item)
-printf "u\n\nd\n" | ./plan.sh --noprompt clarify >/dev/null 2>&1
+# Clarify: convert first to purpose (u, then c to Create with pre-filled Name),
+# delete second (d).
+# Input sequence: u (type=purpose), c (Create - name is pre-filled from inbox),
+#                 d (delete second inbox item from type-select)
+printf "u\nc\nd\n" | ./plan.sh --noprompt clarify >/dev/null 2>&1
 log_print info "--------------------------------"
 log_print info "Test: Clarify - converts inbox to purpose"
 if ./plan.sh purpose list 2>/dev/null | grep -q "Ideia para clarificar como purpose"; then
@@ -386,6 +388,53 @@ else
   log_print info "Result: ${color_green}OK${color_reset}"
 fi
 log_print info "--------------------------------"
+
+# Invalid input at the type-select menu must NOT advance to the next item.
+# 'x' is invalid and should be ignored (screen redraws). Then 'u' + 'c' creates.
+./plan.sh inbox add 'Clarify invalid key' >/dev/null 2>&1
+printf "x\nu\nc\n" | ./plan.sh --noprompt clarify >/dev/null 2>&1
+test_command_output "Clarify - invalid key is ignored, item still processed" \
+  "./plan.sh purpose list" "Clarify invalid key"
+
+# Required-field validation on (c) Create: pressing 'c' on a Project form with no
+# Area must emit an inline error and stay on the screen. 's' then skips the item.
+./plan.sh inbox add 'Proj sem area' >/dev/null 2>&1
+log_print info "--------------------------------"
+log_print info "Test: Clarify - Create blocks when required Area is missing"
+if printf "p\nc\ns\n" | ./plan.sh --noprompt clarify 2>&1 | grep -q "Area is required"; then
+  log_print info "Result: ${color_green}OK${color_reset}"
+else
+  log_print error "Result: Area-required error not shown"
+fi
+log_print info "--------------------------------"
+# The skipped item must remain in the inbox
+log_print info "--------------------------------"
+log_print info "Test: Clarify - skipped item remains in inbox"
+if ./plan.sh inbox list 2>/dev/null | grep -q "Proj sem area"; then
+  log_print info "Result: ${color_green}OK${color_reset}"
+else
+  log_print error "Result: skipped item was removed from inbox"
+fi
+log_print info "--------------------------------"
+# Clean the inbox so the next clarify test starts with only its own item
+sqlite3 "$LBPLAN_DB_PATH" "DELETE FROM inbox;" >/dev/null 2>&1
+
+# FK picker with (n) New: inline-create an Area from inside a Project form, then
+# complete the Project using the fresh Area as its FK.
+# Input sequence:
+#   p           -> choose Project type
+#   2           -> open Area field (FK picker)
+#   n           -> New area (nested form)
+#   1           -> Name field in the nested area form
+#   Casa Nova   -> Name value
+#   c           -> Create area (nested form exits, picker resolves to "Casa Nova")
+#   c           -> Create project (back in outer form, Area is now "Casa Nova")
+./plan.sh inbox add 'Novo projeto com area nova' >/dev/null 2>&1
+printf "p\n2\nn\n1\nCasa Nova\nc\nc\n" | ./plan.sh --noprompt clarify >/dev/null 2>&1
+test_command_output "Clarify - FK picker creates new area inline" \
+  "./plan.sh area list" "Casa Nova"
+test_command_output "Clarify - project created with inline-new area" \
+  "./plan.sh project list" "Novo projeto com area nova"
 
 # Organize workflow tests
 test_command_output "Organize - help" "./plan.sh organize" "LEVELS"
