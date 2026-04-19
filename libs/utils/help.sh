@@ -84,6 +84,7 @@ function help_print_main() {
   printf "${color_bold}SYSTEM COMMANDS:${color_reset}\n"
   printf "  help             ${color_gray}This help message${color_reset}\n"
   printf "  install          ${color_gray}Installs this CLI to /usr/local/bin/plan${color_reset}\n"
+  printf "  migrate          ${color_gray}Apply pending database schema migrations${color_reset}\n"
   printf "  search ${color_blue}PATTERN${color_reset}   ${color_gray}Search across all entities${color_reset}\n"
   printf "  version          ${color_gray}Get CLI version${color_reset}\n"
   printf "\n"
@@ -1045,5 +1046,22 @@ function help_print_engage() {
   printf "\n"
   printf "${color_bold}USAGE:${color_reset}\n"
   printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} engage\n"
+  printf "\n"
+}
+
+function help_print_migrate() {
+  printf "${color_bold}${system_long_name} - Migrate${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}DESCRIPTION:${color_reset}\n"
+  printf "  Manage database schema migrations. The CLI automatically applies\n"
+  printf "  pending migrations on every invocation; these subcommands let you\n"
+  printf "  inspect or force the process manually.\n"
+  printf "\n"
+  printf "${color_bold}USAGE:${color_reset}\n"
+  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} migrate ${color_green}[SUBCOMMAND]${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}SUBCOMMANDS:${color_reset}\n"
+  printf "  status     ${color_gray}Show current vs expected schema and list pending migrations (default)${color_reset}\n"
+  printf "  up         ${color_gray}Apply all pending migrations${color_reset}\n"
   printf "\n"
 }

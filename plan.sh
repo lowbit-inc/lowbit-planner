@@ -96,6 +96,9 @@ case "${user_arg}" in
   "install")
     system_install
     ;;
+  "migrate")
+    database_migrate_main "$@"
+    ;;
   "search")
     system_search "$@"
     ;;
