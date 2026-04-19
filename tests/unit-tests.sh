@@ -526,9 +526,93 @@ test_command_output "Reflect - invalid key at horizon menu ignored" \
   "printf 'g\nz\nb\nq\n' | ./plan.sh --noprompt reflect" "Reviewing: Ground"
 
 # Engage workflow tests
-# Add a task with a past due date to test overdue
-./plan.sh task add "Tarefa atrasada" --due-date "2026-01-01" >/dev/null 2>&1
-test_command_output "Engage - shows overdue tasks" "./plan.sh engage" "Overdue"
+#
+# Setup fixture so all dashboard sections render:
+#   - one overdue task (past due_date)
+#   - one pending recurring
+#   - one pending habit
+#   (Next Available task + pending collection items already exist from earlier tests.)
+#
+# With these, the deterministic 1-based item ordering is:
+#   1 = overdue task     ("Tarefa atrasada")
+#   2 = next-available   ("Comprar peças")
+#   3 = recurring        ("Trocar filtro")
+#   4 = habit            ("Alongar")
+#   5 = collection item  ("Hyperion" or "Snow Crash" — randomized from Books)
+./plan.sh task add 'Tarefa atrasada' --due-date '2026-01-01' >/dev/null 2>&1
+./plan.sh recurring add 'Trocar filtro' --recurrence monthly >/dev/null 2>&1
+./plan.sh habit add 'Alongar' --recurrence daily >/dev/null 2>&1
+
+# Dashboard header
+test_command_output "Engage - TUI dashboard header" \
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "Lowbit Planner - Engage"
+
+# Overdue section is shown when applicable
+test_command_output "Engage - shows Overdue section" \
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Overdue ──"
+
+# Next Available fallback section is shown when no tasks due in 3 days
+test_command_output "Engage - shows Next Available fallback" \
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Next Available ──"
+
+# Recurring section is shown
+test_command_output "Engage - shows Recurring section" \
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Recurring ──"
+
+# Habit section is shown
+test_command_output "Engage - shows Habit section" \
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Habit ──"
+
+# Collection Item section is shown
+test_command_output "Engage - shows Collection Item section" \
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Collection Item ──"
+
+# Dashboard action prompt footer
+test_command_output "Engage - shows action prompt" \
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "Enter item"
+
+# Items are numbered (1. appears on the overdue task)
+test_command_output "Engage - numbers items" \
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" " 1\."
+
+# Selecting item 1 (a task) opens submenu that supports Start
+test_command_output "Engage - task submenu shows Start" \
+  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt engage" "(s) Start"
+
+# Task submenu shows Complete
+test_command_output "Engage - task submenu shows Complete" \
+  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt engage" "(c) Complete"
+
+# Task submenu shows Delete
+test_command_output "Engage - task submenu shows Delete" \
+  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt engage" "(d) Delete"
+
+# Task submenu header identifies the item by type and name
+test_command_output "Engage - submenu header names the item" \
+  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt engage" "task: Tarefa atrasada"
+
+# Invalid key at the dashboard redraws (prompt still appears)
+test_command_output "Engage - invalid key at dashboard ignored" \
+  "printf 'zzz\nq\n' | ./plan.sh --nocolor --noprompt engage" "Enter item"
+
+# Invalid key inside the submenu redraws (Back option still shown)
+test_command_output "Engage - invalid key in submenu ignored" \
+  "printf '1\nzzz\nb\nq\n' | ./plan.sh --nocolor --noprompt engage" "Back to dashboard"
+
+# Refresh stays on the dashboard
+test_command_output "Engage - refresh stays on dashboard" \
+  "printf 'r\nq\n' | ./plan.sh --nocolor --noprompt engage" "Enter item"
+
+# Negative: recurring submenu does NOT show Start/Stop.
+# Index 3 is the recurring in this fixture (see setup comment above).
+log_print info "--------------------------------"
+log_print info "Test: Engage - recurring submenu hides Start"
+if printf '3\nb\nq\n' | ./plan.sh --nocolor --noprompt engage 2>/dev/null | grep -q "(s) Start"; then
+  log_print error "Result: Start option should not appear on recurring submenu"
+else
+  log_print info "Result: ${color_green}OK${color_reset}"
+fi
+log_print info "--------------------------------"
 
 # End
 log_print info "End of test scenarios - ${color_bold}${color_green}All Passed${color_reset}"

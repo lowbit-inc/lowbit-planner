@@ -1030,3 +1030,20 @@ function help_print_reflect() {
   printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} reflect\n"
   printf "\n"
 }
+
+function help_print_engage() {
+  printf "${color_bold}${system_long_name} - Engage${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}DESCRIPTION:${color_reset}\n"
+  printf "  Interactive TUI dashboard to act on what's due now. Shows overdue,\n"
+  printf "  due-today, and due-in-3-days tasks (up to 5 per section), plus one\n"
+  printf "  pending recurring, habit, and collection item. If there are no tasks\n"
+  printf "  due in the next 3 days, a single \"Next Available\" task is shown\n"
+  printf "  instead. Type an item ${color_green}number${color_reset} to open its action submenu\n"
+  printf "  (start/stop/complete/delete, depending on the item type). Press ${color_green}(r)${color_reset}\n"
+  printf "  to refresh, ${color_green}(q)${color_reset} to quit.\n"
+  printf "\n"
+  printf "${color_bold}USAGE:${color_reset}\n"
+  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} engage\n"
+  printf "\n"
+}
