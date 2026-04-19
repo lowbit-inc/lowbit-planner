@@ -341,6 +341,36 @@ function goal_search() {
 
 }
 
+function goal_decide() {
+
+  log_print debug "Starting Goal Decide"
+
+  this_reset="false"
+  while [[ "$@" ]] ; do
+    this_arg="${1}"
+    case "${this_arg}" in
+      "--reset")
+        this_reset="true"
+        ;;
+      *)
+        log_print debug "Unknown arg - ignoring: ${this_arg}"
+        ;;
+    esac
+    shift
+  done
+
+  if [[ "${this_reset}" == "true" ]]; then
+    log_print user "Reset all goal decisions and positions?"
+    decision_forget goals goal_decisions
+    log_print info "Goal decisions cleared."
+    return 0
+  fi
+
+  decision_generate_list goals goal_decisions
+  decision_make_choice   goals goal_decisions
+
+}
+
 function goal_main() {
 
   log_print debug "Starting Goal Main"
@@ -359,6 +389,9 @@ function goal_main() {
       ;;
     "complete")
       goal_complete "$@"
+      ;;
+    "decide")
+      goal_decide "$@"
       ;;
     "delete")
       goal_delete "$@"

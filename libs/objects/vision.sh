@@ -308,6 +308,36 @@ function vision_search() {
 
 }
 
+function vision_decide() {
+
+  log_print debug "Starting Vision Decide"
+
+  this_reset="false"
+  while [[ "$@" ]] ; do
+    this_arg="${1}"
+    case "${this_arg}" in
+      "--reset")
+        this_reset="true"
+        ;;
+      *)
+        log_print debug "Unknown arg - ignoring: ${this_arg}"
+        ;;
+    esac
+    shift
+  done
+
+  if [[ "${this_reset}" == "true" ]]; then
+    log_print user "Reset all vision decisions and positions?"
+    decision_forget visions vision_decisions
+    log_print info "Vision decisions cleared."
+    return 0
+  fi
+
+  decision_generate_list visions vision_decisions
+  decision_make_choice   visions vision_decisions
+
+}
+
 function vision_main() {
 
   log_print debug "Starting Vision Main"
@@ -326,6 +356,9 @@ function vision_main() {
       ;;
     "complete")
       vision_complete "$@"
+      ;;
+    "decide")
+      vision_decide "$@"
       ;;
     "delete")
       vision_delete "$@"

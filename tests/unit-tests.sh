@@ -238,6 +238,59 @@ test_command_output "Collection decide - skips Done items (only pair 4-5)" \
 # Help routing
 test_command_output "Collection decide - help on missing arg" "./plan.sh collection decide" "Collection Decide"
 
+# Vision decide workflow tests (global scope)
+# At this point there is 1 vision ("Ser fluente em japonês"). Add 2 more to get 3 visions -> C(3,2) = 3 pairs.
+test_command_output "Vision - add Dominar Mandarim" "./plan.sh vision add 'Dominar Mandarim' --area Casa" "Item added to visions"
+test_command_output "Vision - add Ler Dostoievski" "./plan.sh vision add 'Ler Dostoievski' --area Casa" "Item added to visions"
+
+test_command_output "Vision decide - generates 3 pairs" \
+  "./plan.sh --noprompt vision decide && sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM vision_decisions'" "3"
+test_command_output "Vision decide - idempotent re-run" \
+  "./plan.sh --noprompt vision decide && sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM vision_decisions'" "3"
+test_command_output "Vision decide - positions incremented" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT SUM(position) FROM visions'" "3"
+
+./plan.sh --noprompt vision decide --reset >/dev/null 2>&1
+test_command_output "Vision decide --reset - clears decisions" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM vision_decisions'" "0"
+test_command_output "Vision decide --reset - zeroes positions" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT SUM(position) FROM visions'" "0"
+
+# Goal decide workflow tests (global scope)
+# At this point there are 2 goals. Add 1 more to get 3 goals -> C(3,2) = 3 pairs.
+test_command_output "Goal - add 3rd goal" "./plan.sh goal add 'Escrever um livro' --area Casa" "Item added to goals"
+
+test_command_output "Goal decide - generates 3 pairs" \
+  "./plan.sh --noprompt goal decide && sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM goal_decisions'" "3"
+test_command_output "Goal decide - idempotent re-run" \
+  "./plan.sh --noprompt goal decide && sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM goal_decisions'" "3"
+test_command_output "Goal decide - positions incremented" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT SUM(position) FROM goals'" "3"
+
+./plan.sh --noprompt goal decide --reset >/dev/null 2>&1
+test_command_output "Goal decide --reset - clears decisions" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM goal_decisions'" "0"
+test_command_output "Goal decide --reset - zeroes positions" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT SUM(position) FROM goals'" "0"
+
+# Project decide workflow tests (global scope)
+# At this point there is 1 project. Add 2 more to get 3 projects -> C(3,2) = 3 pairs.
+test_command_output "Project - add 2nd project" "./plan.sh project add 'Organizar armario' --area Casa" "Item added to projects"
+test_command_output "Project - add 3rd project" "./plan.sh project add 'Plantar arvore' --area Casa" "Item added to projects"
+
+test_command_output "Project decide - generates 3 pairs" \
+  "./plan.sh --noprompt project decide && sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM project_decisions'" "3"
+test_command_output "Project decide - idempotent re-run" \
+  "./plan.sh --noprompt project decide && sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM project_decisions'" "3"
+test_command_output "Project decide - positions incremented" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT SUM(position) FROM projects'" "3"
+
+./plan.sh --noprompt project decide --reset >/dev/null 2>&1
+test_command_output "Project decide --reset - clears decisions" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM project_decisions'" "0"
+test_command_output "Project decide --reset - zeroes positions" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT SUM(position) FROM projects'" "0"
+
 # Collection delete (needs confirmation via pipe - after items are handled)
 echo "" | ./plan.sh collection delete 2 >/dev/null 2>&1
 log_print info "--------------------------------"

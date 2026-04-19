@@ -342,6 +342,36 @@ function project_search() {
 
 }
 
+function project_decide() {
+
+  log_print debug "Starting Project Decide"
+
+  this_reset="false"
+  while [[ "$@" ]] ; do
+    this_arg="${1}"
+    case "${this_arg}" in
+      "--reset")
+        this_reset="true"
+        ;;
+      *)
+        log_print debug "Unknown arg - ignoring: ${this_arg}"
+        ;;
+    esac
+    shift
+  done
+
+  if [[ "${this_reset}" == "true" ]]; then
+    log_print user "Reset all project decisions and positions?"
+    decision_forget projects project_decisions
+    log_print info "Project decisions cleared."
+    return 0
+  fi
+
+  decision_generate_list projects project_decisions
+  decision_make_choice   projects project_decisions
+
+}
+
 function project_main() {
 
   log_print debug "Starting Project Main"
@@ -360,6 +390,9 @@ function project_main() {
       ;;
     "complete")
       project_complete "$@"
+      ;;
+    "decide")
+      project_decide "$@"
       ;;
     "delete")
       project_delete "$@"
