@@ -100,8 +100,8 @@ else
 fi
 log_print info "--------------------------------"
 
-# Task 11.5: Organize routing test
-test_command_output "Organize routes correctly" "./plan.sh organize" "Lowbit Planner"
+# Task 11.5: Organize routing test (now a TUI — pipe 'q' to close the menu)
+test_command_output "Organize routes correctly" "printf 'q\n' | ./plan.sh --noprompt organize" "Lowbit Planner"
 
 # Task 6.1: Goal example tests (depends on Area "Casa" from 11.1)
 test_command_output "Goal - help" "./plan.sh goal" "Lowbit Planner - Goal"
@@ -436,15 +436,30 @@ test_command_output "Clarify - FK picker creates new area inline" \
 test_command_output "Clarify - project created with inline-new area" \
   "./plan.sh project list" "Novo projeto com area nova"
 
-# Organize workflow tests
-test_command_output "Organize - help" "./plan.sh organize" "LEVELS"
-test_command_output "Organize - ground shows Inbox" "./plan.sh organize ground" "Inbox"
-test_command_output "Organize - h1 shows Projects" "./plan.sh organize h1" "Projects"
-test_command_output "Organize - h2 shows Areas" "./plan.sh organize h2" "Areas"
-test_command_output "Organize - h3 shows Goals" "./plan.sh organize h3" "Goals"
-test_command_output "Organize - h4 shows Visions" "./plan.sh organize h4" "Visions"
-test_command_output "Organize - h5 shows Purpose" "./plan.sh organize h5" "Purpose"
-test_command_output "Organize - all shows everything" "./plan.sh organize all" "Ground Level"
+# Organize workflow tests (TUI — drive via piped keystrokes)
+#   <level-key>\n       -> pick a horizon from the menu
+#   \n                  -> press ENTER at the "Press ENTER to return" prompt
+#   q\n                 -> quit the TUI from the menu
+test_command_output "Organize - TUI menu shows horizons" \
+  "printf 'q\n' | ./plan.sh --noprompt organize" "Choose a horizon"
+test_command_output "Organize - ground shows Inbox" \
+  "printf 'g\n\nq\n' | ./plan.sh --noprompt organize" "Inbox"
+test_command_output "Organize - h1 shows Projects" \
+  "printf '1\n\nq\n' | ./plan.sh --noprompt organize" "Projects"
+test_command_output "Organize - h2 shows Areas" \
+  "printf '2\n\nq\n' | ./plan.sh --noprompt organize" "Areas"
+test_command_output "Organize - h3 shows Goals" \
+  "printf '3\n\nq\n' | ./plan.sh --noprompt organize" "Goals"
+test_command_output "Organize - h4 shows Visions" \
+  "printf '4\n\nq\n' | ./plan.sh --noprompt organize" "Visions"
+test_command_output "Organize - h5 shows Purpose" \
+  "printf '5\n\nq\n' | ./plan.sh --noprompt organize" "Purpose"
+test_command_output "Organize - all shows everything" \
+  "printf 'a\n\nq\n' | ./plan.sh --noprompt organize" "Ground Level"
+
+# Invalid key on the menu is ignored (screen redraws); then 'g' still works
+test_command_output "Organize - invalid key ignored, then ground works" \
+  "printf 'x\ng\n\nq\n' | ./plan.sh --noprompt organize" "Inbox"
 
 # Reflect workflow tests
 test_command_output "Reflect - dashboard shows horizons" "./plan.sh reflect" "Ground"
