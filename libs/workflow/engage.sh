@@ -67,7 +67,7 @@ function engage_screen_dashboard() {
 
     engage_print_section_one "Recurring"       "${color_magenta}"     "recurrings"       "ORDER BY id"
     engage_print_section_one "Habit"           "${color_blue}"        "habits"           "ORDER BY id"
-    engage_print_section_one "Collection Item" "${color_bright_cyan}" "collection_items" "ORDER BY RANDOM()"
+    engage_print_section_one "Collection Item" "${color_bright_cyan}" "collection_items" "ORDER BY ci.position DESC, ci.name ASC"
 
     if [[ ${engage_item_count} -eq 0 ]]; then
       printf "  ${color_gray}Nothing actionable right now. Enjoy your free time!${color_reset}\n\n"
