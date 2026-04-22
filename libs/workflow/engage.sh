@@ -25,6 +25,8 @@ function engage_main() {
   while true; do
     this_engage_choice=""
     engage_screen_dashboard
+    # Mode switch requested from the dashboard
+    [[ -n "${this_workflow_switch}" ]] && return 0
     case "${this_engage_choice}" in
       quit|"")  return 0 ;;
       refresh)  continue ;;
@@ -62,7 +64,7 @@ function engage_screen_dashboard() {
   while true; do
     engage_load_items
     clear
-    printf "${color_bold}${system_long_name} - Engage${color_reset}\n\n"
+    workflow_print_header "engage"
 
     engage_print_section_tasks "Overdue"   "${color_red}"    "due_date < '${this_today}' AND due_date != ''"
     engage_print_section_tasks "Due Today" "${color_yellow}" "due_date = '${this_today}'"
@@ -87,6 +89,10 @@ function engage_screen_dashboard() {
 
     if ! read this_choice; then
       this_engage_choice="quit"
+      return 0
+    fi
+
+    if workflow_try_switch "${this_choice}" "engage"; then
       return 0
     fi
 

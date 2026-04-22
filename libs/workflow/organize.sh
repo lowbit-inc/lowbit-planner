@@ -18,6 +18,7 @@ function organize_main() {
   while true; do
     this_organize_choice=""
     organize_screen_menu
+    [[ -n "${this_workflow_switch}" ]] && return 0
     case "${this_organize_choice}" in
       quit|"")   return 0 ;;
       ground)    organize_show_level organize_ground    "Ground"    ;;
@@ -44,7 +45,7 @@ function organize_screen_menu() {
   local this_choice
   while true; do
     clear
-    printf "${color_bold}${system_long_name} - Organize${color_reset}\n\n"
+    workflow_print_header "organize"
     printf "  Choose a horizon:\n\n"
     printf "  ${color_green}(g)${color_reset} Ground     ${color_gray}Inbox, Tasks, Recurring, Habits, Collections, Items${color_reset}\n"
     printf "  ${color_green}(1)${color_reset} Horizon 1  ${color_gray}Projects${color_reset}\n"
@@ -59,6 +60,10 @@ function organize_screen_menu() {
 
     if ! read this_choice; then
       this_organize_choice="quit"
+      return 0
+    fi
+
+    if workflow_try_switch "${this_choice}" "organize"; then
       return 0
     fi
 

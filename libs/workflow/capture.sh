@@ -26,7 +26,7 @@ function capture_tui() {
 
   while true; do
     clear
-    printf "${color_bold}${system_long_name} - Capture${color_reset}\n\n"
+    workflow_print_header "capture"
     printf "  Type an idea and press ${color_green}ENTER${color_reset} to add it to the inbox.\n"
     printf "  Press ${color_yellow}q${color_reset} + ENTER or ${color_yellow}Ctrl-D${color_reset} to quit.\n\n"
 
@@ -38,6 +38,10 @@ function capture_tui() {
     printf "> "
     if ! read this_idea; then
       printf "\n"
+      return 0
+    fi
+
+    if workflow_try_switch "${this_idea}" "capture"; then
       return 0
     fi
 

@@ -536,6 +536,7 @@ function clarify_screen_type_select() {
   local this_choice
   while true; do
     clear
+    workflow_print_header "clarify"
     printf "${color_bold}[%d/%d]${color_reset} ${color_green}%s${color_reset}\n\n" "${this_idx}" "${this_total}" "${this_inbox_name}"
     printf "  What type of object?\n"
     printf "  ${color_green}(t)${color_reset} Task       ${color_green}(r)${color_reset} Recurring   ${color_green}(h)${color_reset} Habit\n"
@@ -547,6 +548,11 @@ function clarify_screen_type_select() {
     printf "\n"
     printf "> "
     if ! read this_choice; then
+      this_form_result="quit"
+      return 0
+    fi
+
+    if workflow_try_switch "${this_choice}" "clarify"; then
       this_form_result="quit"
       return 0
     fi

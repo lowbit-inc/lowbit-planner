@@ -26,6 +26,7 @@ function reflect_main() {
   while true; do
     this_reflect_choice=""
     reflect_screen_menu
+    [[ -n "${this_workflow_switch}" ]] && return 0
     case "${this_reflect_choice}" in
       quit|"")  return 0 ;;
       ground)    reflect_screen_horizon "ground"   "Ground"                           ;;
@@ -51,7 +52,7 @@ function reflect_screen_menu() {
   local this_choice
   while true; do
     clear
-    printf "${color_bold}${system_long_name} - Reflect${color_reset}\n\n"
+    workflow_print_header "reflect"
     printf "  Choose a horizon to review:\n\n"
     reflect_print_menu_item "g" "ground"   "Ground (Daily)"        "$(datetime_get_current_day)"
     reflect_print_menu_item "1" "horizon1" "Horizon 1 (Weekly)"    "$(datetime_get_current_week)"
@@ -65,6 +66,10 @@ function reflect_screen_menu() {
 
     if ! read this_choice; then
       this_reflect_choice="quit"
+      return 0
+    fi
+
+    if workflow_try_switch "${this_choice}" "reflect"; then
       return 0
     fi
 

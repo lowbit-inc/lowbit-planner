@@ -545,7 +545,7 @@ test_command_output "Reflect - invalid key at horizon menu ignored" \
 
 # Dashboard header
 test_command_output "Engage - TUI dashboard header" \
-  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "Lowbit Planner - Engage"
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "\[E\] engage"
 
 # Overdue section is shown when applicable
 test_command_output "Engage - shows Overdue section" \
