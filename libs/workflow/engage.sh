@@ -47,12 +47,20 @@ function engage_main() {
 
 function engage_screen_dashboard() {
   local this_choice
-  engage_load_items
 
   local this_today=$(datetime_get_current_day)
   local this_3days=$(date -j -v+3d '+%Y-%m-%d')
 
+  # Random selections are picked once per dashboard invocation so that Enter
+  # just redraws the same screen. The outer engage_main loop re-enters this
+  # function on 'refresh', which re-runs these queries and picks new items.
+  # Recurring intentionally stays deterministic (oldest pending) to force the
+  # user to tackle it before moving on.
+  local engage_habit_id=$(database_run csv "SELECT id FROM habits WHERE status = 'Pending' ORDER BY RANDOM() LIMIT 1;")
+  local engage_item_id=$(database_run csv "SELECT ci.id FROM collection_items ci WHERE ci.status = 'Pending' AND ci.collection_id = (SELECT collection_id FROM collection_items WHERE status = 'Pending' GROUP BY collection_id ORDER BY RANDOM() LIMIT 1) ORDER BY ci.position DESC, ci.name ASC LIMIT 1;")
+
   while true; do
+    engage_load_items
     clear
     printf "${color_bold}${system_long_name} - Engage${color_reset}\n\n"
 
@@ -65,9 +73,9 @@ function engage_screen_dashboard() {
       engage_print_section_next_available "${color_green}" "${this_today}"
     fi
 
-    engage_print_section_one "Recurring"       "${color_magenta}"     "recurrings"       "ORDER BY id"
-    engage_print_section_one "Habit"           "${color_blue}"        "habits"           "ORDER BY id"
-    engage_print_section_one "Collection Item" "${color_bright_cyan}" "collection_items" "ORDER BY ci.position DESC, ci.name ASC"
+    engage_print_section_one "Recurring"       "${color_magenta}"     "recurrings"       ""
+    [[ -n "${engage_habit_id}" ]] && engage_print_section_one "Habit"           "${color_blue}"        "habits"           "${engage_habit_id}"
+    [[ -n "${engage_item_id}" ]]  && engage_print_section_one "Collection Item" "${color_bright_cyan}" "collection_items" "${engage_item_id}"
 
     if [[ ${engage_item_count} -eq 0 ]]; then
       printf "  ${color_gray}Nothing actionable right now. Enjoy your free time!${color_reset}\n\n"
@@ -283,26 +291,28 @@ function engage_print_section_next_available() {
 
 # Print one pending item from a single-object table (recurrings/habits/collection_items).
 # Hides the section if no pending row exists.
-# Args: <label> <color> <table> <order_by>
+# For recurrings, picks the oldest pending (deterministic, forces follow-through).
+# For habits/collection_items, the caller passes a pre-selected id.
+# Args: <label> <color> <table> <id_or_empty>
 function engage_print_section_one() {
   local this_label="$1"
   local this_color="$2"
   local this_table="$3"
-  local this_order="$4"
+  local this_fixed_id="$4"
 
   local this_row
   local this_type
   case "${this_table}" in
     recurrings)
-      this_row=$(database_run csv "SELECT id, name, recurrence FROM recurrings WHERE status = 'Pending' ${this_order} LIMIT 1;")
+      this_row=$(database_run csv "SELECT id, name, recurrence FROM recurrings WHERE status = 'Pending' ORDER BY id LIMIT 1;")
       this_type="recurring"
       ;;
     habits)
-      this_row=$(database_run csv "SELECT id, name, recurrence FROM habits WHERE status = 'Pending' ${this_order} LIMIT 1;")
+      this_row=$(database_run csv "SELECT id, name, recurrence FROM habits WHERE status = 'Pending' AND id = ${this_fixed_id} LIMIT 1;")
       this_type="habit"
       ;;
     collection_items)
-      this_row=$(database_run csv "SELECT ci.id, ci.name, c.name FROM collection_items ci LEFT JOIN collections c ON ci.collection_id = c.id WHERE ci.status = 'Pending' ${this_order} LIMIT 1;")
+      this_row=$(database_run csv "SELECT ci.id, ci.name, c.name FROM collection_items ci LEFT JOIN collections c ON ci.collection_id = c.id WHERE ci.status = 'Pending' AND ci.id = ${this_fixed_id} LIMIT 1;")
       this_type="item"
       ;;
   esac
