@@ -190,26 +190,449 @@ function reflect_horizon_has_decide() {
   esac
 }
 
-# Clear, render the horizon list via the existing render function, wait for ENTER.
+# Dispatch the (l) action to the horizon-specific list/picker screen.
 # Args: <horizon>
 function reflect_show_list() {
   local this_horizon="$1"
-  local _
-
-  clear
   case "${this_horizon}" in
-    ground)   reflect_review_ground   ;;
-    horizon1) reflect_review_horizon1 ;;
-    horizon2) reflect_review_horizon2 ;;
-    horizon3) reflect_review_horizon3 ;;
-    horizon4) reflect_review_horizon4 ;;
-    horizon5) reflect_review_horizon5 ;;
+    ground)   reflect_screen_list_ground   ;;
+    horizon1) reflect_screen_list_horizon1 ;;
+    horizon2) reflect_screen_list_horizon2 ;;
+    horizon3) reflect_screen_list_horizon3 ;;
+    horizon4) reflect_screen_list_horizon4 ;;
+    horizon5) reflect_screen_list_horizon5 ;;
   esac
+}
+
+############
+# Layer 2c #
+# Generic numbered picker used by horizon list screens
+############
+
+# Renders a numbered list from a 2-column SQL query (id, label). Sets
+# this_reflect_picker_id / this_reflect_picker_name on selection, or leaves them
+# empty when the user presses (b)ack. EOF / (q)uit propagates via
+# this_reflect_choice="quit".
+# Args: <title> <query>
+function reflect_screen_picker() {
+  local this_title="$1"
+  local this_query="$2"
+  this_reflect_picker_id=""
+  this_reflect_picker_name=""
+
+  local this_choice
+  local i
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ ${this_title} ═══${color_reset}\n\n"
+
+    local this_raw
+    this_raw=$(sqlite3 -separator $'\t' "${database_path}" "${this_query}")
+
+    local -a this_ids=()
+    local -a this_names=()
+    if [[ -n "${this_raw}" ]]; then
+      local id label
+      while IFS=$'\t' read -r id label; do
+        this_ids+=("${id}")
+        this_names+=("${label}")
+      done <<< "${this_raw}"
+    fi
+
+    if [[ ${#this_ids[@]} -eq 0 ]]; then
+      printf "  ${color_gray}(none)${color_reset}\n\n"
+    else
+      for i in "${!this_ids[@]}"; do
+        printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_names[$i]}"
+      done
+      printf "\n"
+    fi
+
+    printf "  ---\n"
+    printf "  Enter a ${color_green}number${color_reset} to open, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *[!0-9]*|"") ;; # invalid - redraw
+      *)
+        if (( this_choice >= 1 && this_choice <= ${#this_ids[@]} )); then
+          this_reflect_picker_id="${this_ids[$((this_choice-1))]}"
+          this_reflect_picker_name="${this_names[$((this_choice-1))]}"
+          return 0
+        fi
+        ;;
+    esac
+  done
+}
+
+############
+# Layer 2d #
+# Horizon list screens (picker → detail loop)
+############
+
+function reflect_screen_list_horizon1() {
+  while true; do
+    reflect_screen_picker "Projects" \
+      "SELECT id, name FROM projects_view WHERE status != 'Done';"
+    [[ "${this_reflect_choice}" == "quit" ]] && return 0
+    [[ -z "${this_reflect_picker_id}" ]] && return 0
+    reflect_screen_detail_horizon1 "${this_reflect_picker_id}" "${this_reflect_picker_name}"
+    [[ "${this_reflect_choice}" == "quit" ]] && return 0
+  done
+}
+
+function reflect_screen_list_horizon2() {
+  while true; do
+    reflect_screen_picker "Areas" \
+      "SELECT a.id, a.name || ' (' ||
+         (SELECT COUNT(*) FROM projects WHERE area_id = a.id AND status != 'Done') || 'p, ' ||
+         (SELECT COUNT(*) FROM goals    WHERE area_id = a.id AND status != 'Done') || 'g, ' ||
+         (SELECT COUNT(*) FROM visions  WHERE area_id = a.id AND status != 'Done') || 'v)'
+       FROM areas a ORDER BY a.name;"
+    [[ "${this_reflect_choice}" == "quit" ]] && return 0
+    [[ -z "${this_reflect_picker_id}" ]] && return 0
+    # Picker label carries "(Np, Ng, Nv)" suffix; fetch the raw area name for filtering.
+    local this_area_name
+    this_area_name=$(database_run csv "SELECT name FROM areas WHERE id = ${this_reflect_picker_id};")
+    reflect_screen_detail_horizon2 "${this_reflect_picker_id}" "${this_area_name}"
+    [[ "${this_reflect_choice}" == "quit" ]] && return 0
+  done
+}
+
+function reflect_screen_list_horizon3() {
+  while true; do
+    reflect_screen_picker "Goals" \
+      "SELECT id, name FROM goals_view WHERE status != 'Done';"
+    [[ "${this_reflect_choice}" == "quit" ]] && return 0
+    [[ -z "${this_reflect_picker_id}" ]] && return 0
+    reflect_screen_detail_horizon3 "${this_reflect_picker_id}" "${this_reflect_picker_name}"
+    [[ "${this_reflect_choice}" == "quit" ]] && return 0
+  done
+}
+
+function reflect_screen_list_horizon4() {
+  while true; do
+    reflect_screen_picker "Visions" \
+      "SELECT id, name FROM visions_view WHERE status != 'Done';"
+    [[ "${this_reflect_choice}" == "quit" ]] && return 0
+    [[ -z "${this_reflect_picker_id}" ]] && return 0
+    reflect_screen_detail_horizon4 "${this_reflect_picker_id}" "${this_reflect_picker_name}"
+    [[ "${this_reflect_choice}" == "quit" ]] && return 0
+  done
+}
+
+# Horizon 5 keeps the plain show-and-return flow — no drill-down.
+function reflect_screen_list_horizon5() {
+  local _
+  clear
+  workflow_print_header "reflect"
+  reflect_review_horizon5
   printf "\n${color_gray}Press ENTER to return (or Ctrl+D to quit)...${color_reset}\n"
   if ! read _; then
     this_reflect_choice="quit"
     return 0
   fi
+}
+
+# Ground keeps the multi-section overview (inbox/tasks/recurring/habits) and
+# appends a numbered Collections picker. Digit drills into a collection detail
+# screen; (b) returns to the horizon menu; (q) quits.
+function reflect_screen_list_ground() {
+  local this_choice
+  local i
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Ground ═══${color_reset}\n\n"
+
+    printf "${color_bold}${color_cyan}── Inbox ──${color_reset}\n"
+    local this_inbox=$(database_run box "SELECT * FROM inbox_view")
+    if [[ -n "${this_inbox}" ]]; then
+      echo "${this_inbox}"
+      printf "\n  ${color_yellow}Tip: Run '${system_basename} clarify' to process inbox items.${color_reset}\n"
+    else
+      printf "  ${color_gray}(empty)${color_reset}\n"
+    fi
+    printf "\n"
+
+    printf "${color_bold}${color_cyan}── Active Tasks ──${color_reset}\n"
+    local this_tasks=$(database_run box "SELECT * FROM tasks_view WHERE status != 'Done'")
+    if [[ -n "${this_tasks}" ]]; then
+      echo "${this_tasks}"
+    else
+      printf "  ${color_gray}(none)${color_reset}\n"
+    fi
+    printf "\n"
+
+    printf "${color_bold}${color_cyan}── Recurring (Pending) ──${color_reset}\n"
+    local this_recurrings=$(database_run box "SELECT * FROM recurrings_view WHERE status = 'Pending'")
+    if [[ -n "${this_recurrings}" ]]; then
+      echo "${this_recurrings}"
+    else
+      printf "  ${color_gray}(none)${color_reset}\n"
+    fi
+    printf "\n"
+
+    printf "${color_bold}${color_cyan}── Habits (Pending) ──${color_reset}\n"
+    local this_habits=$(database_run box "SELECT * FROM habits_view WHERE status = 'Pending'")
+    if [[ -n "${this_habits}" ]]; then
+      echo "${this_habits}"
+    else
+      printf "  ${color_gray}(none)${color_reset}\n"
+    fi
+    printf "\n"
+
+    printf "${color_bold}${color_cyan}── Collections ──${color_reset}\n"
+    local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "SELECT id, name FROM collections_view;")
+    local -a this_col_ids=()
+    local -a this_col_names=()
+    if [[ -n "${this_raw}" ]]; then
+      local id name
+      while IFS=$'\t' read -r id name; do
+        this_col_ids+=("${id}")
+        this_col_names+=("${name}")
+      done <<< "${this_raw}"
+    fi
+    if [[ ${#this_col_ids[@]} -eq 0 ]]; then
+      printf "  ${color_gray}(none)${color_reset}\n"
+    else
+      for i in "${!this_col_ids[@]}"; do
+        printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_col_names[$i]}"
+      done
+    fi
+    printf "\n"
+
+    printf "  ---\n"
+    printf "  Enter a ${color_green}collection number${color_reset} to open, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *[!0-9]*|"") ;; # invalid - redraw
+      *)
+        if (( this_choice >= 1 && this_choice <= ${#this_col_ids[@]} )); then
+          reflect_screen_detail_collection "${this_col_ids[$((this_choice-1))]}" "${this_col_names[$((this_choice-1))]}"
+          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+    esac
+  done
+}
+
+############
+# Layer 2e #
+# Detail screens
+############
+
+function reflect_screen_detail_horizon1() {
+  local this_id="$1"
+  local this_name="$2"
+  local this_choice
+
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Project: ${this_name} ═══${color_reset}\n\n"
+
+    printf "${color_bold}${color_cyan}── Tasks ──${color_reset}\n"
+    local this_tasks=$(database_run box "SELECT * FROM tasks_view WHERE project = '${this_name}' AND status != 'Done'")
+    if [[ -n "${this_tasks}" ]]; then
+      echo "${this_tasks}"
+    else
+      printf "  ${color_gray}(none)${color_reset}\n"
+    fi
+    printf "\n"
+
+    printf "  ---\n"
+    printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+    case "${this_choice}" in
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *) ;; # invalid - redraw
+    esac
+  done
+}
+
+function reflect_screen_detail_horizon2() {
+  local this_id="$1"
+  local this_name="$2"
+  local this_choice
+
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Area: ${this_name} ═══${color_reset}\n\n"
+
+    printf "${color_bold}${color_cyan}── Projects ──${color_reset}\n"
+    local this_projects=$(database_run box "SELECT * FROM projects_view WHERE area = '${this_name}' AND status != 'Done'")
+    if [[ -n "${this_projects}" ]]; then
+      echo "${this_projects}"
+    else
+      printf "  ${color_gray}(none)${color_reset}\n"
+    fi
+    printf "\n"
+
+    printf "${color_bold}${color_cyan}── Goals ──${color_reset}\n"
+    local this_goals=$(database_run box "SELECT * FROM goals_view WHERE area = '${this_name}' AND status != 'Done'")
+    if [[ -n "${this_goals}" ]]; then
+      echo "${this_goals}"
+    else
+      printf "  ${color_gray}(none)${color_reset}\n"
+    fi
+    printf "\n"
+
+    printf "${color_bold}${color_cyan}── Visions ──${color_reset}\n"
+    local this_visions=$(database_run box "SELECT * FROM visions_view WHERE area = '${this_name}' AND status != 'Done'")
+    if [[ -n "${this_visions}" ]]; then
+      echo "${this_visions}"
+    else
+      printf "  ${color_gray}(none)${color_reset}\n"
+    fi
+    printf "\n"
+
+    printf "  ---\n"
+    printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+    case "${this_choice}" in
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *) ;; # invalid - redraw
+    esac
+  done
+}
+
+function reflect_screen_detail_horizon3() {
+  local this_id="$1"
+  local this_name="$2"
+  local this_choice
+
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Goal: ${this_name} ═══${color_reset}\n\n"
+
+    printf "${color_bold}${color_cyan}── Projects ──${color_reset}\n"
+    local this_projects=$(database_run box "SELECT * FROM projects_view WHERE goal = '${this_name}' AND status != 'Done'")
+    if [[ -n "${this_projects}" ]]; then
+      echo "${this_projects}"
+    else
+      printf "  ${color_gray}(none)${color_reset}\n"
+    fi
+    printf "\n"
+
+    printf "  ---\n"
+    printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+    case "${this_choice}" in
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *) ;; # invalid - redraw
+    esac
+  done
+}
+
+function reflect_screen_detail_horizon4() {
+  local this_id="$1"
+  local this_name="$2"
+  local this_choice
+
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Vision: ${this_name} ═══${color_reset}\n\n"
+
+    printf "${color_bold}${color_cyan}── Goals ──${color_reset}\n"
+    local this_goals=$(database_run box "SELECT * FROM goals_view WHERE vision = '${this_name}' AND status != 'Done'")
+    if [[ -n "${this_goals}" ]]; then
+      echo "${this_goals}"
+    else
+      printf "  ${color_gray}(none)${color_reset}\n"
+    fi
+    printf "\n"
+
+    printf "  ---\n"
+    printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+    case "${this_choice}" in
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *) ;; # invalid - redraw
+    esac
+  done
+}
+
+function reflect_screen_detail_collection() {
+  local this_id="$1"
+  local this_name="$2"
+  local this_choice
+
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Collection: ${this_name} ═══${color_reset}\n\n"
+
+    printf "${color_bold}${color_cyan}── Items ──${color_reset}\n"
+    local this_items=$(database_run box "SELECT * FROM collection_items_view WHERE collection = '${this_name}' AND status != 'Done'")
+    if [[ -n "${this_items}" ]]; then
+      echo "${this_items}"
+    else
+      printf "  ${color_gray}(none)${color_reset}\n"
+    fi
+    printf "\n"
+
+    printf "  ---\n"
+    printf "  ${color_green}(d)${color_reset} Decide (rank items)\n"
+    printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+    case "${this_choice}" in
+      d|D)
+        collection_decide "${this_name}"
+        local _
+        printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+        if ! read _; then
+          this_reflect_choice="quit"
+          return 0
+        fi
+        ;;
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *) ;; # invalid - redraw
+    esac
+  done
 }
 
 # Dispatch to the object-level decide function. Only called for horizons where
@@ -304,102 +727,6 @@ function reflect_is_current() {
   esac
 
   [[ "${this_review_period}" == "${this_current_period}" ]]
-}
-
-function reflect_review_ground() {
-  # Show inbox
-  printf "${color_bold}${color_cyan}── Inbox ──${color_reset}\n"
-  local this_inbox=$(database_run box "SELECT * FROM inbox_view")
-  if [[ -n "${this_inbox}" ]]; then
-    echo "${this_inbox}"
-    printf "\n"
-    printf "  ${color_yellow}Tip: Run '${system_basename} clarify' to process inbox items.${color_reset}\n"
-  else
-    printf "  ${color_gray}(empty)${color_reset}\n"
-  fi
-  printf "\n"
-
-  # Show active tasks
-  printf "${color_bold}${color_cyan}── Active Tasks ──${color_reset}\n"
-  local this_tasks=$(database_run box "SELECT * FROM tasks_view WHERE status != 'Done'")
-  if [[ -n "${this_tasks}" ]]; then
-    echo "${this_tasks}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
-
-  # Show pending recurring
-  printf "${color_bold}${color_cyan}── Recurring (Pending) ──${color_reset}\n"
-  local this_recurrings=$(database_run box "SELECT * FROM recurrings_view WHERE status = 'Pending'")
-  if [[ -n "${this_recurrings}" ]]; then
-    echo "${this_recurrings}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
-
-  # Show pending habits
-  printf "${color_bold}${color_cyan}── Habits (Pending) ──${color_reset}\n"
-  local this_habits=$(database_run box "SELECT * FROM habits_view WHERE status = 'Pending'")
-  if [[ -n "${this_habits}" ]]; then
-    echo "${this_habits}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
-}
-
-function reflect_review_horizon1() {
-  printf "${color_bold}${color_cyan}── Active Projects ──${color_reset}\n"
-  local this_projects=$(database_run box "SELECT * FROM projects_view WHERE status != 'Done'")
-  if [[ -n "${this_projects}" ]]; then
-    echo "${this_projects}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
-  printf "  ${color_yellow}Tip: Do all projects have a next action? Any stalled?${color_reset}\n"
-  printf "\n"
-}
-
-function reflect_review_horizon2() {
-  printf "${color_bold}${color_cyan}── Areas of Responsibility ──${color_reset}\n"
-  local this_areas=$(database_run box "SELECT * FROM areas_view")
-  if [[ -n "${this_areas}" ]]; then
-    echo "${this_areas}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
-  printf "  ${color_yellow}Tip: Is each area being maintained? Any missing projects?${color_reset}\n"
-  printf "\n"
-}
-
-function reflect_review_horizon3() {
-  printf "${color_bold}${color_cyan}── Active Goals ──${color_reset}\n"
-  local this_goals=$(database_run box "SELECT * FROM goals_view WHERE status != 'Done'")
-  if [[ -n "${this_goals}" ]]; then
-    echo "${this_goals}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
-  printf "  ${color_yellow}Tip: Are goals on track? Any projects missing to achieve them?${color_reset}\n"
-  printf "\n"
-}
-
-function reflect_review_horizon4() {
-  printf "${color_bold}${color_cyan}── Active Visions ──${color_reset}\n"
-  local this_visions=$(database_run box "SELECT * FROM visions_view WHERE status != 'Done'")
-  if [[ -n "${this_visions}" ]]; then
-    echo "${this_visions}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
-  printf "  ${color_yellow}Tip: Do your visions still align with your purpose?${color_reset}\n"
-  printf "\n"
 }
 
 function reflect_review_horizon5() {

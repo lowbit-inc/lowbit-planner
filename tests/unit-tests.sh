@@ -479,21 +479,21 @@ test_command_output "Reflect - ground screen shows Reviewing header" \
 test_command_output "Reflect - ground list shows Inbox" \
   "printf 'g\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Inbox"
 
-# (l) on Horizon 1 shows Active Projects
+# (l) on Horizon 1 shows Projects picker
 test_command_output "Reflect - h1 list shows Projects" \
-  "printf '1\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Active Projects"
+  "printf '1\nl\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Projects"
 
-# (l) on Horizon 2 shows Areas of Responsibility
+# (l) on Horizon 2 shows Areas picker
 test_command_output "Reflect - h2 list shows Areas" \
-  "printf '2\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Areas of Responsibility"
+  "printf '2\nl\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Areas"
 
-# (l) on Horizon 3 shows Active Goals
+# (l) on Horizon 3 shows Goals picker
 test_command_output "Reflect - h3 list shows Goals" \
-  "printf '3\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Active Goals"
+  "printf '3\nl\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Goals"
 
-# (l) on Horizon 4 shows Active Visions
+# (l) on Horizon 4 shows Visions picker
 test_command_output "Reflect - h4 list shows Visions" \
-  "printf '4\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Active Visions"
+  "printf '4\nl\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Visions"
 
 # (l) on Horizon 5 shows Purposes section
 test_command_output "Reflect - h5 list shows Purposes" \
@@ -524,6 +524,26 @@ test_command_output "Reflect - invalid key at main menu ignored" \
 # Invalid key on the horizon screen is ignored (redraws); then 'b' returns
 test_command_output "Reflect - invalid key at horizon menu ignored" \
   "printf 'g\nz\nb\nq\n' | ./plan.sh --noprompt reflect" "Reviewing: Ground"
+
+# Horizon 1 drill-down: pick project #1 → detail screen renders Project header
+test_command_output "Reflect - h1 drill-down shows Project header" \
+  "printf '1\nl\n1\nb\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Project:"
+
+# Horizon 2 picker label carries (Np, Ng, Nv) counts suffix
+test_command_output "Reflect - h2 list label shows counts pattern" \
+  "printf '2\nl\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Casa (.*p, .*g, .*v)"
+
+# Horizon 2 drill-down shows Projects/Goals/Visions sections for the area
+test_command_output "Reflect - h2 drill-down shows Projects section" \
+  "printf '2\nl\n1\nb\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "── Projects ──"
+test_command_output "Reflect - h2 drill-down shows Goals section" \
+  "printf '2\nl\n1\nb\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "── Goals ──"
+test_command_output "Reflect - h2 drill-down shows Visions section" \
+  "printf '2\nl\n1\nb\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "── Visions ──"
+
+# Ground drill-down: pick first collection → detail shows (d) Decide option
+test_command_output "Reflect - ground collection detail shows Decide option" \
+  "printf 'g\nl\n1\nb\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "(d) Decide"
 
 # Engage workflow tests
 #
