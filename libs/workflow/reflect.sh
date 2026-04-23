@@ -342,55 +342,58 @@ function reflect_screen_list_horizon5() {
   fi
 }
 
-# Ground keeps the multi-section overview (inbox/tasks/recurring/habits) and
-# appends a numbered Collections picker. Digit drills into a collection detail
-# screen; (b) returns to the horizon menu; (q) quits.
+# Ground has six object types — dumping them all at once floods the screen.
+# The (l) action opens this type submenu instead: each key lists one category,
+# while (c) enters the existing Collections picker with drill-down.
 function reflect_screen_list_ground() {
+  local this_choice
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Ground ═══${color_reset}\n\n"
+    printf "  Choose what to list:\n\n"
+    printf "  ${color_green}(i)${color_reset} Inbox\n"
+    printf "  ${color_green}(t)${color_reset} Tasks\n"
+    printf "  ${color_green}(r)${color_reset} Recurring\n"
+    printf "  ${color_green}(h)${color_reset} Habits\n"
+    printf "  ${color_green}(c)${color_reset} Collections\n"
+    printf "  ${color_green}(x)${color_reset} Collection Items\n"
+    printf "  ---\n"
+    printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      i|I) reflect_show_and_wait reflect_ground_section_inbox       ;;
+      t|T) reflect_show_and_wait reflect_ground_section_tasks       ;;
+      r|R) reflect_show_and_wait reflect_ground_section_recurring   ;;
+      h|H) reflect_show_and_wait reflect_ground_section_habits      ;;
+      c|C) reflect_screen_list_ground_collections                   ;;
+      x|X) reflect_show_and_wait reflect_ground_section_items       ;;
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *)   ;; # invalid - redraw
+    esac
+
+    if [[ "${this_reflect_choice}" == "quit" ]]; then
+      return 0
+    fi
+  done
+}
+
+# Numbered Collections picker — digit drills into the collection detail screen
+# (which includes the (d) Decide option). (b) returns to the ground submenu.
+function reflect_screen_list_ground_collections() {
   local this_choice
   local i
   while true; do
     clear
     workflow_print_header "reflect"
-    printf "${color_bold}${color_bright_blue}═══ Ground ═══${color_reset}\n\n"
+    printf "${color_bold}${color_bright_blue}═══ Collections ═══${color_reset}\n\n"
 
-    printf "${color_bold}${color_cyan}── Inbox ──${color_reset}\n"
-    local this_inbox=$(database_run box "SELECT * FROM inbox_view")
-    if [[ -n "${this_inbox}" ]]; then
-      echo "${this_inbox}"
-      printf "\n  ${color_yellow}Tip: Run '${system_basename} clarify' to process inbox items.${color_reset}\n"
-    else
-      printf "  ${color_gray}(empty)${color_reset}\n"
-    fi
-    printf "\n"
-
-    printf "${color_bold}${color_cyan}── Active Tasks ──${color_reset}\n"
-    local this_tasks=$(database_run box "SELECT * FROM tasks_view WHERE status != 'Done'")
-    if [[ -n "${this_tasks}" ]]; then
-      echo "${this_tasks}"
-    else
-      printf "  ${color_gray}(none)${color_reset}\n"
-    fi
-    printf "\n"
-
-    printf "${color_bold}${color_cyan}── Recurring (Pending) ──${color_reset}\n"
-    local this_recurrings=$(database_run box "SELECT * FROM recurrings_view WHERE status = 'Pending'")
-    if [[ -n "${this_recurrings}" ]]; then
-      echo "${this_recurrings}"
-    else
-      printf "  ${color_gray}(none)${color_reset}\n"
-    fi
-    printf "\n"
-
-    printf "${color_bold}${color_cyan}── Habits (Pending) ──${color_reset}\n"
-    local this_habits=$(database_run box "SELECT * FROM habits_view WHERE status = 'Pending'")
-    if [[ -n "${this_habits}" ]]; then
-      echo "${this_habits}"
-    else
-      printf "  ${color_gray}(none)${color_reset}\n"
-    fi
-    printf "\n"
-
-    printf "${color_bold}${color_cyan}── Collections ──${color_reset}\n"
     local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "SELECT id, name FROM collections_view;")
     local -a this_col_ids=()
     local -a this_col_names=()
@@ -402,16 +405,16 @@ function reflect_screen_list_ground() {
       done <<< "${this_raw}"
     fi
     if [[ ${#this_col_ids[@]} -eq 0 ]]; then
-      printf "  ${color_gray}(none)${color_reset}\n"
+      printf "  ${color_gray}(none)${color_reset}\n\n"
     else
       for i in "${!this_col_ids[@]}"; do
         printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_col_names[$i]}"
       done
+      printf "\n"
     fi
-    printf "\n"
 
     printf "  ---\n"
-    printf "  Enter a ${color_green}collection number${color_reset} to open, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "  Enter a ${color_green}number${color_reset} to open, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
     printf "> "
     if ! read this_choice; then
       this_reflect_choice="quit"
@@ -430,6 +433,72 @@ function reflect_screen_list_ground() {
         ;;
     esac
   done
+}
+
+# Clear, run a section renderer, wait for ENTER (or propagate quit on EOF).
+# Args: <render_fn>
+function reflect_show_and_wait() {
+  local this_fn="$1"
+  local _
+  clear
+  workflow_print_header "reflect"
+  "${this_fn}"
+  printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+  if ! read _; then
+    this_reflect_choice="quit"
+    return 0
+  fi
+}
+
+function reflect_ground_section_inbox() {
+  printf "${color_bold}${color_cyan}── Inbox ──${color_reset}\n"
+  local this_inbox=$(database_run box "SELECT * FROM inbox_view")
+  if [[ -n "${this_inbox}" ]]; then
+    echo "${this_inbox}"
+    printf "\n  ${color_yellow}Tip: Run '${system_basename} clarify' to process inbox items.${color_reset}\n"
+  else
+    printf "  ${color_gray}(empty)${color_reset}\n"
+  fi
+}
+
+function reflect_ground_section_tasks() {
+  printf "${color_bold}${color_cyan}── Active Tasks ──${color_reset}\n"
+  local this_tasks=$(database_run box "SELECT * FROM tasks_view WHERE status != 'Done'")
+  if [[ -n "${this_tasks}" ]]; then
+    echo "${this_tasks}"
+  else
+    printf "  ${color_gray}(none)${color_reset}\n"
+  fi
+}
+
+function reflect_ground_section_recurring() {
+  printf "${color_bold}${color_cyan}── Recurring (Pending) ──${color_reset}\n"
+  local this_recurrings=$(database_run box "SELECT * FROM recurrings_view WHERE status = 'Pending'")
+  if [[ -n "${this_recurrings}" ]]; then
+    echo "${this_recurrings}"
+  else
+    printf "  ${color_gray}(none)${color_reset}\n"
+  fi
+}
+
+function reflect_ground_section_habits() {
+  printf "${color_bold}${color_cyan}── Habits (Pending) ──${color_reset}\n"
+  local this_habits=$(database_run box "SELECT * FROM habits_view WHERE status = 'Pending'")
+  if [[ -n "${this_habits}" ]]; then
+    echo "${this_habits}"
+  else
+    printf "  ${color_gray}(none)${color_reset}\n"
+  fi
+}
+
+function reflect_ground_section_items() {
+  printf "${color_bold}${color_cyan}── Collection Items ──${color_reset}\n"
+  local this_items=$(database_run box "SELECT * FROM collection_items_view WHERE status != 'Done'")
+  if [[ -n "${this_items}" ]]; then
+    echo "${this_items}"
+  else
+    printf "  ${color_gray}(none)${color_reset}\n"
+  fi
 }
 
 ############

@@ -5,7 +5,7 @@ CREATE TABLE meta (
   value TEXT
 );
 
-INSERT INTO meta VALUES ("db_schema", "5");
+INSERT INTO meta VALUES ("db_schema", "6");
 
 -- Workflow:Reflect:Reviews --
 
@@ -45,9 +45,14 @@ CREATE TABLE areas (
 );
 
 CREATE VIEW areas_view AS
-SELECT name, description
-FROM areas
-ORDER BY name ASC;
+SELECT
+  a.name,
+  a.description,
+  (SELECT COUNT(*) FROM projects WHERE area_id = a.id AND status != 'Done') AS projects,
+  (SELECT COUNT(*) FROM goals    WHERE area_id = a.id AND status != 'Done') AS goals,
+  (SELECT COUNT(*) FROM visions  WHERE area_id = a.id AND status != 'Done') AS visions
+FROM areas a
+ORDER BY a.name ASC;
 
 -- Objects:Horizon4:Vision --
 

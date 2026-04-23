@@ -479,9 +479,12 @@ test_command_output "Reflect - menu shows Ground label" \
 test_command_output "Reflect - ground screen shows Reviewing header" \
   "printf 'g\nb\nq\n' | ./plan.sh --noprompt reflect" "Reviewing: Ground"
 
-# (l) lists the items of Ground (Inbox section is part of the render)
-test_command_output "Reflect - ground list shows Inbox" \
-  "printf 'g\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Inbox"
+# (l) opens the Ground type submenu (lists all object categories as options)
+test_command_output "Reflect - ground submenu offers Inbox" \
+  "printf 'g\nl\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Inbox"
+# Picking (i) from the ground submenu drills into the Inbox section
+test_command_output "Reflect - ground → inbox shows Inbox section" \
+  "printf 'g\nl\ni\n\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "── Inbox ──"
 
 # (l) on Horizon 1 shows Projects picker
 test_command_output "Reflect - h1 list shows Projects" \
@@ -545,9 +548,9 @@ test_command_output "Reflect - h2 drill-down shows Goals section" \
 test_command_output "Reflect - h2 drill-down shows Visions section" \
   "printf '2\nl\n1\nb\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "── Visions ──"
 
-# Ground drill-down: pick first collection → detail shows (d) Decide option
+# Ground drill-down: (l) → (c) collections picker → pick #1 → detail shows (d) Decide
 test_command_output "Reflect - ground collection detail shows Decide option" \
-  "printf 'g\nl\n1\nb\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "(d) Decide"
+  "printf 'g\nl\nc\n1\nb\nb\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "(d) Decide"
 
 # Engage workflow tests
 #
