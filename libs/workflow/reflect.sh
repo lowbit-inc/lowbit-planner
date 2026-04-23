@@ -130,6 +130,7 @@ function reflect_screen_horizon() {
 
   while true; do
     clear
+    workflow_print_header "reflect"
     printf "${color_bold}${color_bright_blue}═══ Reviewing: ${this_label} ═══${color_reset}\n\n"
     printf "  ${color_green}(l)${color_reset} List items\n"
     if reflect_horizon_has_decide "${this_horizon}"; then
@@ -733,6 +734,7 @@ function reflect_mark_complete() {
 
   database_run box "UPDATE reviews SET last_reviewed_at = datetime('now', 'localtime') WHERE horizon = '${this_horizon}';" >/dev/null
   clear
+  workflow_print_header "reflect"
   printf "${color_green}Review of ${this_label} marked as complete.${color_reset}\n"
   printf "\n${color_gray}Press ENTER to return to main menu...${color_reset}\n"
   if ! read _; then

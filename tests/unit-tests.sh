@@ -436,6 +436,15 @@ test_command_output "Clarify - FK picker creates new area inline" \
 test_command_output "Clarify - project created with inline-new area" \
   "./plan.sh project list" "Novo projeto com area nova"
 
+# (b) Back from the object form returns to type-select for the same inbox item.
+# Input: 't' (Task form) -> 'b' (back) -> 'u' (Purpose form) -> 'c' (Create).
+# After this the item must end up as a purpose, proving the back step brought
+# us back to the type-select screen instead of advancing/skipping.
+./plan.sh inbox add 'Item para voltar' >/dev/null 2>&1
+printf "t\nb\nu\nc\n" | ./plan.sh --noprompt clarify >/dev/null 2>&1
+test_command_output "Clarify - (b) Back returns to type select" \
+  "./plan.sh purpose list" "Item para voltar"
+
 # Organize workflow tests (TUI — drive via piped keystrokes)
 #   <level-key>\n       -> pick a horizon from the menu
 #   \n                  -> press ENTER at the "Press ENTER to return" prompt

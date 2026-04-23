@@ -94,6 +94,7 @@ function organize_show_level() {
   local _
 
   clear
+  workflow_print_header "organize"
   "${this_fn}"
   printf "\n${color_gray}Press ENTER to return to menu (or Ctrl+D to quit)...${color_reset}\n"
   if ! read _; then
@@ -106,6 +107,7 @@ function organize_show_all() {
   local _
 
   clear
+  workflow_print_header "organize"
   organize_ground
   organize_horizon1
   organize_horizon2

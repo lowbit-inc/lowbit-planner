@@ -127,6 +127,7 @@ function engage_screen_item() {
 
   while true; do
     clear
+    workflow_print_header "engage"
     printf "${color_bold}${color_bright_blue}═══ ${this_type}: ${this_name} ═══${color_reset}\n\n"
     if engage_type_supports_start "${this_type}"; then
       printf "  ${color_green}(s)${color_reset} Start\n"
