@@ -4,44 +4,34 @@
 # Properties #
 ##############
 
-# Communication between TUI layers (set by callees, read by callers):
-#   this_organize_choice - "ground" | "horizon1"..."horizon5" | "all" | "quit" | ""
+# 3-level explorer:
+#   L1 horizon menu  -> L2 object menu (ground, horizon5) OR direct to L3 (h1-h4)
+#   L2 object menu   -> L3 operations menu for the selected type
+#   L3 operations    -> invoke <type>_<verb> from libs/objects/*.sh
+#
+# Inter-layer comms:
+#   this_organize_choice        - "quit" | "" (propagates EOF out to outer loops)
+#   this_organize_picker_id     - numeric id chosen in organize_screen_id_picker
+#   this_organize_picker_name   - label of the same row
+#   this_form_result            - set by clarify_screen_object_form (reused as-is)
 
-###########
-# Layer 1 #
+##########
+# Layer 1
 # Main loop
-###########
+##########
 
 function organize_main() {
   log_print debug "Starting Organize workflow"
-
-  while true; do
-    this_organize_choice=""
-    organize_screen_menu
-    [[ -n "${this_workflow_switch}" ]] && return 0
-    case "${this_organize_choice}" in
-      quit|"")   return 0 ;;
-      ground)    organize_ground_menu ;;
-      horizon1)  organize_show_level organize_horizon1  "Horizon 1" ;;
-      horizon2)  organize_show_level organize_horizon2  "Horizon 2" ;;
-      horizon3)  organize_show_level organize_horizon3  "Horizon 3" ;;
-      horizon4)  organize_show_level organize_horizon4  "Horizon 4" ;;
-      horizon5)  organize_show_level organize_horizon5  "Horizon 5" ;;
-      all)       organize_show_all ;;
-    esac
-    # If the level viewer got EOF, propagate quit out of the outer loop
-    if [[ "${this_organize_choice}" == "quit" ]]; then
-      return 0
-    fi
-  done
+  this_organize_choice=""
+  organize_screen_horizon_menu
 }
 
-###########
-# Layer 2 #
-# Menu TUI
-###########
+##########
+# Layer 2a
+# Horizon menu (root)
+##########
 
-function organize_screen_menu() {
+function organize_screen_horizon_menu() {
   local this_choice
   while true; do
     clear
@@ -52,14 +42,12 @@ function organize_screen_menu() {
     printf "  ${color_green}(2)${color_reset} Horizon 2  ${color_gray}Areas${color_reset}\n"
     printf "  ${color_green}(3)${color_reset} Horizon 3  ${color_gray}Goals${color_reset}\n"
     printf "  ${color_green}(4)${color_reset} Horizon 4  ${color_gray}Visions${color_reset}\n"
-    printf "  ${color_green}(5)${color_reset} Horizon 5  ${color_gray}Purpose & Principles${color_reset}\n"
-    printf "  ${color_green}(a)${color_reset} All        ${color_gray}Everything${color_reset}\n"
+    printf "  ${color_green}(5)${color_reset} Horizon 5  ${color_gray}Purposes & Principles${color_reset}\n"
     printf "  ---\n"
     printf "  ${color_yellow}(q)${color_reset} Quit\n\n"
     printf "> "
 
     if ! read this_choice; then
-      this_organize_choice="quit"
       return 0
     fi
 
@@ -68,93 +56,144 @@ function organize_screen_menu() {
     fi
 
     case "${this_choice}" in
-      g|G) this_organize_choice="ground"   ; return 0 ;;
-      1)   this_organize_choice="horizon1" ; return 0 ;;
-      2)   this_organize_choice="horizon2" ; return 0 ;;
-      3)   this_organize_choice="horizon3" ; return 0 ;;
-      4)   this_organize_choice="horizon4" ; return 0 ;;
-      5)   this_organize_choice="horizon5" ; return 0 ;;
-      a|A) this_organize_choice="all"      ; return 0 ;;
-      q|Q) this_organize_choice="quit"     ; return 0 ;;
+      g|G) organize_screen_object_menu "ground"   ;;
+      1)   organize_screen_object_ops  "project"  ;;
+      2)   organize_screen_object_ops  "area"     ;;
+      3)   organize_screen_object_ops  "goal"     ;;
+      4)   organize_screen_object_ops  "vision"   ;;
+      5)   organize_screen_object_menu "horizon5" ;;
+      q|Q) return 0 ;;
       *)   ;; # invalid - redraw
     esac
+
+    [[ "${this_organize_choice}" == "quit" ]] && return 0
   done
 }
 
-###########
-# Helpers #
-###########
+##########
+# Layer 2b
+# Object menu (ground / horizon5 only)
+##########
 
-# Args: <render_fn> <label>
-# Clears the screen, runs the render function that already exists, then waits
-# for ENTER to return to the menu. EOF propagates "quit" to the outer loop.
-function organize_show_level() {
-  local this_fn="$1"
-  local this_label="$2"
-  local _
-
-  clear
-  workflow_print_header "organize"
-  "${this_fn}"
-  printf "\n${color_gray}Press ENTER to return to menu (or Ctrl+D to quit)...${color_reset}\n"
-  if ! read _; then
-    this_organize_choice="quit"
-    return 0
-  fi
-}
-
-function organize_show_all() {
-  local _
-
-  clear
-  workflow_print_header "organize"
-  organize_ground
-  organize_horizon1
-  organize_horizon2
-  organize_horizon3
-  organize_horizon4
-  organize_horizon5
-  printf "\n${color_gray}Press ENTER to return to menu (or Ctrl+D to quit)...${color_reset}\n"
-  if ! read _; then
-    this_organize_choice="quit"
-    return 0
-  fi
-}
-
-function organize_print_header() {
-  local this_title="${1}"
-  printf "${color_bold}${color_cyan}── ${this_title} ──${color_reset}\n"
-  printf "\n"
-}
-
-function organize_ground() {
-
-  printf "${color_bold}${color_bright_blue}═══ Ground Level ═══${color_reset}\n"
-  printf "\n"
-
-  organize_ground_section_inbox
-  organize_ground_section_tasks
-  organize_ground_section_recurring
-  organize_ground_section_habits
-  organize_ground_section_collections
-  organize_ground_section_items
-}
-
-# Submenu to pick which ground category to list. The ground level has six object
-# types, so dumping them all at once (as horizons 1-5 do) floods the screen.
-function organize_ground_menu() {
+# Args: <horizon>   horizon in {ground, horizon5}
+function organize_screen_object_menu() {
+  local this_horizon="$1"
   local this_choice
   while true; do
     clear
     workflow_print_header "organize"
-    printf "${color_bold}${color_bright_blue}═══ Ground ═══${color_reset}\n\n"
-    printf "  Choose what to list:\n\n"
-    printf "  ${color_green}(i)${color_reset} Inbox\n"
-    printf "  ${color_green}(t)${color_reset} Tasks\n"
-    printf "  ${color_green}(r)${color_reset} Recurring\n"
-    printf "  ${color_green}(h)${color_reset} Habits\n"
-    printf "  ${color_green}(c)${color_reset} Collections\n"
-    printf "  ${color_green}(a)${color_reset} All\n"
+
+    case "${this_horizon}" in
+      ground)
+        printf "${color_bold}${color_bright_blue}═══ Ground ═══${color_reset}\n\n"
+        printf "  Choose an object type:\n\n"
+        printf "  ${color_green}(i)${color_reset} Inbox\n"
+        printf "  ${color_green}(t)${color_reset} Task\n"
+        printf "  ${color_green}(r)${color_reset} Recurring\n"
+        printf "  ${color_green}(h)${color_reset} Habit\n"
+        printf "  ${color_green}(c)${color_reset} Collection\n"
+        printf "  ${color_green}(x)${color_reset} Item\n"
+        ;;
+      horizon5)
+        printf "${color_bold}${color_bright_blue}═══ Horizon 5 ═══${color_reset}\n\n"
+        printf "  Choose an object type:\n\n"
+        printf "  ${color_green}(u)${color_reset} Purpose\n"
+        printf "  ${color_green}(n)${color_reset} Principle\n"
+        ;;
+    esac
+
+    printf "  ---\n"
+    printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+
+    if ! read this_choice; then
+      this_organize_choice="quit"
+      return 0
+    fi
+
+    case "${this_horizon}" in
+      ground)
+        case "${this_choice}" in
+          i|I) organize_screen_object_ops "inbox"      ;;
+          t|T) organize_screen_object_ops "task"       ;;
+          r|R) organize_screen_object_ops "recurring"  ;;
+          h|H) organize_screen_object_ops "habit"      ;;
+          c|C) organize_screen_object_ops "collection" ;;
+          x|X) organize_screen_object_ops "item"       ;;
+          b|B) return 0 ;;
+          q|Q) this_organize_choice="quit" ; return 0 ;;
+          *)   ;;
+        esac
+        ;;
+      horizon5)
+        case "${this_choice}" in
+          u|U) organize_screen_object_ops "purpose"   ;;
+          n|N) organize_screen_object_ops "principle" ;;
+          b|B) return 0 ;;
+          q|Q) this_organize_choice="quit" ; return 0 ;;
+          *)   ;;
+        esac
+        ;;
+    esac
+
+    [[ "${this_organize_choice}" == "quit" ]] && return 0
+  done
+}
+
+##########
+# Layer 2c
+# Capability table: which verbs each type supports.
+##########
+
+# Echoes a space-separated list of verbs supported by <type>.
+# Verbs: list add complete start stop decide remove
+function organize_type_caps() {
+  case "$1" in
+    inbox)      echo "list add remove" ;;
+    task)       echo "list add complete start stop remove" ;;
+    recurring)  echo "list add complete remove" ;;
+    habit)      echo "list add complete remove" ;;
+    collection) echo "list add decide remove" ;;
+    item)       echo "list add complete start stop remove" ;;
+    project)    echo "list add complete start stop decide remove" ;;
+    area)       echo "list add remove" ;;
+    goal)       echo "list add complete start stop decide remove" ;;
+    vision)     echo "list add complete start stop decide remove" ;;
+    purpose)    echo "list add remove" ;;
+    principle)  echo "list add remove" ;;
+  esac
+}
+
+function organize_caps_has() {
+  local this_caps="$1"
+  local this_verb="$2"
+  [[ " ${this_caps} " == *" ${this_verb} "* ]]
+}
+
+##########
+# Layer 3
+# Operations menu for a given type
+##########
+
+# Args: <type>
+function organize_screen_object_ops() {
+  local this_type="$1"
+  local this_caps=$(organize_type_caps "${this_type}")
+  local this_title_type=$(organize_type_title "${this_type}")
+  local this_choice
+
+  while true; do
+    clear
+    workflow_print_header "organize"
+    printf "${color_bold}${color_bright_blue}═══ ${this_title_type} ═══${color_reset}\n\n"
+
+    organize_caps_has "${this_caps}" "list"     && printf "  ${color_green}(l)${color_reset} List\n"
+    organize_caps_has "${this_caps}" "add"      && printf "  ${color_green}(a)${color_reset} Add\n"
+    organize_caps_has "${this_caps}" "complete" && printf "  ${color_green}(c)${color_reset} Complete\n"
+    organize_caps_has "${this_caps}" "start"    && printf "  ${color_green}(s)${color_reset} Start\n"
+    organize_caps_has "${this_caps}" "stop"     && printf "  ${color_green}(x)${color_reset} Stop\n"
+    organize_caps_has "${this_caps}" "decide"   && printf "  ${color_green}(d)${color_reset} Decide\n"
+    organize_caps_has "${this_caps}" "remove"   && printf "  ${color_green}(r)${color_reset} Remove\n"
     printf "  ---\n"
     printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
     printf "> "
@@ -165,111 +204,86 @@ function organize_ground_menu() {
     fi
 
     case "${this_choice}" in
-      i|I) organize_show_level organize_ground_section_inbox       "Inbox"            ;;
-      t|T) organize_show_level organize_ground_section_tasks       "Tasks"            ;;
-      r|R) organize_show_level organize_ground_section_recurring   "Recurring"        ;;
-      h|H) organize_show_level organize_ground_section_habits      "Habits"           ;;
-      c|C) organize_ground_screen_collections ;;
-      a|A) organize_show_level organize_ground                     "Ground"           ;;
+      l|L) organize_caps_has "${this_caps}" "list"     && organize_action_list     "${this_type}" ;;
+      a|A) organize_caps_has "${this_caps}" "add"      && organize_action_add      "${this_type}" ;;
+      c|C) organize_caps_has "${this_caps}" "complete" && organize_action_complete "${this_type}" ;;
+      s|S) organize_caps_has "${this_caps}" "start"    && organize_action_start    "${this_type}" ;;
+      x|X) organize_caps_has "${this_caps}" "stop"     && organize_action_stop     "${this_type}" ;;
+      d|D) organize_caps_has "${this_caps}" "decide"   && organize_action_decide   "${this_type}" ;;
+      r|R) organize_caps_has "${this_caps}" "remove"   && organize_action_remove   "${this_type}" ;;
       b|B) return 0 ;;
       q|Q) this_organize_choice="quit" ; return 0 ;;
-      *)   ;; # invalid - redraw
+      *)   ;;
     esac
 
-    # Propagate quit out if a sub-screen got EOF.
-    if [[ "${this_organize_choice}" == "quit" ]]; then
-      return 0
-    fi
+    [[ "${this_organize_choice}" == "quit" ]] && return 0
   done
 }
 
-function organize_ground_section_inbox() {
-  organize_print_header "Inbox"
-  local this_inbox=$(database_run box "SELECT * FROM inbox_view")
-  if [[ -n "${this_inbox}" ]]; then
-    echo "${this_inbox}"
-  else
-    printf "  ${color_gray}(empty)${color_reset}\n"
-  fi
-  printf "\n"
+# Args: <type>
+function organize_type_title() {
+  case "$1" in
+    inbox)      echo "Inbox" ;;
+    task)       echo "Task" ;;
+    recurring)  echo "Recurring" ;;
+    habit)      echo "Habit" ;;
+    collection) echo "Collection" ;;
+    item)       echo "Item" ;;
+    project)    echo "Project" ;;
+    area)       echo "Area" ;;
+    goal)       echo "Goal" ;;
+    vision)     echo "Vision" ;;
+    purpose)    echo "Purpose" ;;
+    principle)  echo "Principle" ;;
+  esac
 }
 
-function organize_ground_section_tasks() {
-  organize_print_header "Tasks"
-  local this_tasks=$(database_run box "SELECT * FROM tasks_view WHERE status != 'Done'")
-  if [[ -n "${this_tasks}" ]]; then
-    echo "${this_tasks}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
-}
+##########
+# Helpers
+##########
 
-function organize_ground_section_recurring() {
-  organize_print_header "Recurring"
-  local this_recurrings=$(database_run box "SELECT * FROM recurrings_view WHERE status != 'Done'")
-  if [[ -n "${this_recurrings}" ]]; then
-    echo "${this_recurrings}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
-}
+# Args: <title> <query>   query must SELECT id, label FROM ...
+# Sets this_organize_picker_id / this_organize_picker_name on selection, leaves
+# them empty on back. EOF / (q)uit propagates via this_organize_choice="quit".
+function organize_screen_id_picker() {
+  local this_title="$1"
+  local this_query="$2"
+  this_organize_picker_id=""
+  this_organize_picker_name=""
 
-function organize_ground_section_habits() {
-  organize_print_header "Habits"
-  local this_habits=$(database_run box "SELECT * FROM habits_view WHERE status != 'Done'")
-  if [[ -n "${this_habits}" ]]; then
-    echo "${this_habits}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
-}
-
-function organize_ground_section_collections() {
-  organize_print_header "Collections"
-  local this_collections=$(database_run box "SELECT * FROM collections_view")
-  if [[ -n "${this_collections}" ]]; then
-    echo "${this_collections}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
-}
-
-# Numbered Collections picker — digit drills into a screen listing that
-# collection's items. (b) returns to the ground submenu; (q)/EOF quits.
-function organize_ground_screen_collections() {
   local this_choice
   local i
   while true; do
     clear
     workflow_print_header "organize"
-    printf "${color_bold}${color_bright_blue}═══ Collections ═══${color_reset}\n\n"
+    printf "${color_bold}${color_bright_blue}═══ ${this_title} ═══${color_reset}\n\n"
 
-    local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "SELECT id, name FROM collections_view;")
-    local -a this_col_ids=()
-    local -a this_col_names=()
+    local this_raw
+    this_raw=$(sqlite3 -separator $'\t' "${database_path}" "${this_query}")
+
+    local -a this_ids=()
+    local -a this_names=()
     if [[ -n "${this_raw}" ]]; then
-      local id name
-      while IFS=$'\t' read -r id name; do
-        this_col_ids+=("${id}")
-        this_col_names+=("${name}")
+      local id label
+      while IFS=$'\t' read -r id label; do
+        this_ids+=("${id}")
+        this_names+=("${label}")
       done <<< "${this_raw}"
     fi
-    if [[ ${#this_col_ids[@]} -eq 0 ]]; then
+
+    if [[ ${#this_ids[@]} -eq 0 ]]; then
       printf "  ${color_gray}(none)${color_reset}\n\n"
     else
-      for i in "${!this_col_ids[@]}"; do
-        printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_col_names[$i]}"
+      for i in "${!this_ids[@]}"; do
+        printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_names[$i]}"
       done
       printf "\n"
     fi
 
     printf "  ---\n"
-    printf "  Enter a ${color_green}number${color_reset} to open, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "  Enter a ${color_green}number${color_reset}, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
     printf "> "
+
     if ! read this_choice; then
       this_organize_choice="quit"
       return 0
@@ -278,31 +292,78 @@ function organize_ground_screen_collections() {
     case "${this_choice}" in
       b|B) return 0 ;;
       q|Q) this_organize_choice="quit" ; return 0 ;;
-      *[!0-9]*|"") ;; # invalid - redraw
+      *[!0-9]*|"") ;;
       *)
-        if (( this_choice >= 1 && this_choice <= ${#this_col_ids[@]} )); then
-          organize_ground_screen_collection_detail "${this_col_names[$((this_choice-1))]}"
-          [[ "${this_organize_choice}" == "quit" ]] && return 0
+        if (( this_choice >= 1 && this_choice <= ${#this_ids[@]} )); then
+          this_organize_picker_id="${this_ids[$((this_choice-1))]}"
+          this_organize_picker_name="${this_names[$((this_choice-1))]}"
+          return 0
         fi
         ;;
     esac
   done
 }
 
-# Show items belonging to a single collection, then wait for ENTER.
-# Args: <collection_name>
-function organize_ground_screen_collection_detail() {
-  local this_name="$1"
+# Args: <type>  -> the view name and (optional) WHERE filter.
+function organize_list_query() {
+  case "$1" in
+    inbox)      echo "SELECT id, name FROM inbox_view" ;;
+    task)       echo "SELECT id, name FROM tasks_view WHERE status != 'Done'" ;;
+    recurring)  echo "SELECT id, name FROM recurrings_view WHERE status != 'Done'" ;;
+    habit)      echo "SELECT id, name FROM habits_view WHERE status != 'Done'" ;;
+    collection) echo "SELECT id, name FROM collections_view" ;;
+    item)       echo "SELECT id, name FROM collection_items_view WHERE status != 'Done'" ;;
+    project)    echo "SELECT id, name FROM projects_view WHERE status != 'Done'" ;;
+    area)       echo "SELECT id, name FROM areas_view" ;;
+    goal)       echo "SELECT id, name FROM goals_view WHERE status != 'Done'" ;;
+    vision)     echo "SELECT id, name FROM visions_view WHERE status != 'Done'" ;;
+    purpose)    echo "SELECT id, name FROM purposes_view" ;;
+    principle)  echo "SELECT id, name FROM principles_view" ;;
+  esac
+}
+
+function organize_view_name() {
+  case "$1" in
+    inbox)      echo "inbox_view" ;;
+    task)       echo "tasks_view" ;;
+    recurring)  echo "recurrings_view" ;;
+    habit)      echo "habits_view" ;;
+    collection) echo "collections_view" ;;
+    item)       echo "collection_items_view" ;;
+    project)    echo "projects_view" ;;
+    area)       echo "areas_view" ;;
+    goal)       echo "goals_view" ;;
+    vision)     echo "visions_view" ;;
+    purpose)    echo "purposes_view" ;;
+    principle)  echo "principles_view" ;;
+  esac
+}
+
+##########
+# Actions
+##########
+
+function organize_action_list() {
+  local this_type="$1"
+  local this_title=$(organize_type_title "${this_type}")
+  local this_view=$(organize_view_name "${this_type}")
   local _
+
   clear
   workflow_print_header "organize"
-  printf "${color_bold}${color_bright_blue}═══ Collection: ${this_name} ═══${color_reset}\n\n"
-  local this_items=$(database_run box "SELECT * FROM collection_items_view WHERE collection = '${this_name}' AND status != 'Done'")
-  if [[ -n "${this_items}" ]]; then
-    echo "${this_items}"
+  printf "${color_bold}${color_bright_blue}═══ ${this_title} ═══${color_reset}\n\n"
+
+  local this_where=""
+  case "${this_type}" in
+    task|recurring|habit|item|project|goal|vision) this_where=" WHERE status != 'Done'" ;;
+  esac
+  local this_rows=$(database_run box "SELECT * FROM ${this_view}${this_where}")
+  if [[ -n "${this_rows}" ]]; then
+    echo "${this_rows}"
   else
     printf "  ${color_gray}(none)${color_reset}\n"
   fi
+
   printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
   if ! read _; then
     this_organize_choice="quit"
@@ -310,93 +371,135 @@ function organize_ground_screen_collection_detail() {
   fi
 }
 
-function organize_ground_section_items() {
-  organize_print_header "Collection Items"
-  local this_items=$(database_run box "SELECT * FROM collection_items_view WHERE status != 'Done'")
-  if [[ -n "${this_items}" ]]; then
-    echo "${this_items}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
+function organize_action_add() {
+  local this_type="$1"
+  local _
+
+  if [[ "${this_type}" == "inbox" ]]; then
+    clear
+    workflow_print_header "organize"
+    printf "${color_bold}${color_bright_blue}═══ Add to Inbox ═══${color_reset}\n\n"
+    printf "  Name (empty to cancel): "
+    local this_name
+    if ! read this_name; then
+      this_organize_choice="quit"
+      return 0
+    fi
+    if [[ -n "${this_name}" ]]; then
+      inbox_add "${this_name}"
+      printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+      if ! read _; then
+        this_organize_choice="quit"
+        return 0
+      fi
+    fi
+    return 0
   fi
-  printf "\n"
+
+  clarify_screen_object_form "${this_type}" "" ""
+  [[ "${this_form_result}" == "quit" ]] && this_organize_choice="quit"
+  return 0
 }
 
-function organize_horizon1() {
+# Shared: picker then dispatch <type>_<verb> <id>
+# Args: <type> <verb> <picker_title>
+function organize_action_pick_and_run() {
+  local this_type="$1"
+  local this_verb="$2"
+  local this_title="$3"
+  local this_query=$(organize_list_query "${this_type}")
+  local _
 
-  printf "${color_bold}${color_bright_blue}═══ Horizon 1 - Projects ═══${color_reset}\n"
-  printf "\n"
+  # Narrow for state-specific verbs
+  case "${this_verb}" in
+    complete)
+      this_query=$(echo "${this_query}" | sed "s/WHERE status != 'Done'/WHERE status != 'Done'/")
+      ;;
+    start)
+      # only Pending
+      case "${this_type}" in
+        task|item|project|goal|vision)
+          this_query="SELECT id, name FROM $(organize_view_name "${this_type}") WHERE status = 'Pending'"
+          ;;
+      esac
+      ;;
+    stop)
+      case "${this_type}" in
+        task|item|project|goal|vision)
+          this_query="SELECT id, name FROM $(organize_view_name "${this_type}") WHERE status = 'In Progress'"
+          ;;
+      esac
+      ;;
+    remove)
+      this_query="SELECT id, name FROM $(organize_view_name "${this_type}")"
+      ;;
+  esac
 
-  local this_projects=$(database_run box "SELECT * FROM projects_view WHERE status != 'Done'")
-  if [[ -n "${this_projects}" ]]; then
-    echo "${this_projects}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
+  organize_screen_id_picker "${this_title}" "${this_query}"
+  [[ "${this_organize_choice}" == "quit" ]] && return 0
+  [[ -z "${this_organize_picker_id}" ]] && return 0
+
+  clear
+  workflow_print_header "organize"
+  local this_fn_verb="${this_verb}"
+  [[ "${this_verb}" == "remove" ]] && this_fn_verb="delete"
+  "${this_type}_${this_fn_verb}" "${this_organize_picker_id}"
+
+  printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+  if ! read _; then
+    this_organize_choice="quit"
+    return 0
   fi
-  printf "\n"
 }
 
-function organize_horizon2() {
-
-  printf "${color_bold}${color_bright_blue}═══ Horizon 2 - Areas of Responsibility ═══${color_reset}\n"
-  printf "\n"
-
-  local this_areas=$(database_run box "SELECT * FROM areas_view")
-  if [[ -n "${this_areas}" ]]; then
-    echo "${this_areas}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
+function organize_action_complete() {
+  local this_title="Complete $(organize_type_title "$1")"
+  organize_action_pick_and_run "$1" "complete" "${this_title}"
 }
 
-function organize_horizon3() {
-
-  printf "${color_bold}${color_bright_blue}═══ Horizon 3 - Goals ═══${color_reset}\n"
-  printf "\n"
-
-  local this_goals=$(database_run box "SELECT * FROM goals_view WHERE status != 'Done'")
-  if [[ -n "${this_goals}" ]]; then
-    echo "${this_goals}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
+function organize_action_start() {
+  local this_title="Start $(organize_type_title "$1")"
+  organize_action_pick_and_run "$1" "start" "${this_title}"
 }
 
-function organize_horizon4() {
-
-  printf "${color_bold}${color_bright_blue}═══ Horizon 4 - Visions ═══${color_reset}\n"
-  printf "\n"
-
-  local this_visions=$(database_run box "SELECT * FROM visions_view WHERE status != 'Done'")
-  if [[ -n "${this_visions}" ]]; then
-    echo "${this_visions}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
+function organize_action_stop() {
+  local this_title="Stop $(organize_type_title "$1")"
+  organize_action_pick_and_run "$1" "stop" "${this_title}"
 }
 
-function organize_horizon5() {
+function organize_action_remove() {
+  local this_title="Remove $(organize_type_title "$1")"
+  organize_action_pick_and_run "$1" "remove" "${this_title}"
+}
 
-  printf "${color_bold}${color_bright_blue}═══ Horizon 5 - Purpose & Principles ═══${color_reset}\n"
-  printf "\n"
+function organize_action_decide() {
+  local this_type="$1"
+  local _
 
-  organize_print_header "Purposes"
-  local this_purposes=$(database_run box "SELECT * FROM purposes_view")
-  if [[ -n "${this_purposes}" ]]; then
-    echo "${this_purposes}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
-
-  organize_print_header "Principles"
-  local this_principles=$(database_run box "SELECT * FROM principles_view")
-  if [[ -n "${this_principles}" ]]; then
-    echo "${this_principles}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
+  case "${this_type}" in
+    project|goal|vision)
+      clear
+      workflow_print_header "organize"
+      "${this_type}_decide"
+      printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+      if ! read _; then
+        this_organize_choice="quit"
+        return 0
+      fi
+      ;;
+    collection)
+      local this_query="SELECT id, name FROM collections_view"
+      organize_screen_id_picker "Decide Collection" "${this_query}"
+      [[ "${this_organize_choice}" == "quit" ]] && return 0
+      [[ -z "${this_organize_picker_id}" ]] && return 0
+      clear
+      workflow_print_header "organize"
+      collection_decide "${this_organize_picker_name}"
+      printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+      if ! read _; then
+        this_organize_choice="quit"
+        return 0
+      fi
+      ;;
+  esac
 }

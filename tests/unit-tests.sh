@@ -445,34 +445,43 @@ printf "t\nb\nu\nc\n" | ./plan.sh --noprompt clarify >/dev/null 2>&1
 test_command_output "Clarify - (b) Back returns to type select" \
   "./plan.sh purpose list" "Item para voltar"
 
-# Organize workflow tests (TUI — drive via piped keystrokes)
-#   <level-key>\n       -> pick a horizon from the menu
-#   \n                  -> press ENTER at the "Press ENTER to return" prompt
-#   q\n                 -> quit the TUI from the menu
-test_command_output "Organize - TUI menu shows horizons" \
+# Organize workflow tests (TUI — 3-level CRUD explorer: horizon → object → op)
+#   L1 keys: g/1/2/3/4/5/q   L2 keys: (varies per horizon) b/q
+#   L3 keys: l/a/c/s/x/d/r/b/q    ENTER to dismiss result screens
+test_command_output "Organize - L1 menu shows horizons" \
   "printf 'q\n' | ./plan.sh --noprompt organize" "Choose a horizon"
-test_command_output "Organize - ground submenu offers Inbox" \
+test_command_output "Organize - L2 ground menu offers Inbox option" \
   "printf 'g\nb\nq\n' | ./plan.sh --noprompt organize" "Inbox"
-test_command_output "Organize - ground → inbox shows Inbox section" \
-  "printf 'g\ni\n\nb\nq\n' | ./plan.sh --noprompt organize" "── Inbox ──"
-test_command_output "Organize - ground → all shows full dump" \
-  "printf 'g\na\n\nb\nq\n' | ./plan.sh --noprompt organize" "Ground Level"
-test_command_output "Organize - h1 shows Projects" \
-  "printf '1\n\nq\n' | ./plan.sh --noprompt organize" "Projects"
-test_command_output "Organize - h2 shows Areas" \
-  "printf '2\n\nq\n' | ./plan.sh --noprompt organize" "Areas"
-test_command_output "Organize - h3 shows Goals" \
-  "printf '3\n\nq\n' | ./plan.sh --noprompt organize" "Goals"
-test_command_output "Organize - h4 shows Visions" \
-  "printf '4\n\nq\n' | ./plan.sh --noprompt organize" "Visions"
-test_command_output "Organize - h5 shows Purpose" \
-  "printf '5\n\nq\n' | ./plan.sh --noprompt organize" "Purpose"
-test_command_output "Organize - all shows everything" \
-  "printf 'a\n\nq\n' | ./plan.sh --noprompt organize" "Ground Level"
+test_command_output "Organize - L2 horizon5 menu offers Purpose option" \
+  "printf '5\nb\nq\n' | ./plan.sh --noprompt organize" "Purpose"
+test_command_output "Organize - L3 ground → inbox → list shows Inbox header" \
+  "printf 'g\ni\nl\n\nb\nb\nq\n' | ./plan.sh --noprompt organize" "═══ Inbox ═══"
+test_command_output "Organize - H1 skips L2 and goes direct to Project ops" \
+  "printf '1\nl\n\nb\nq\n' | ./plan.sh --noprompt organize" "═══ Project ═══"
+test_command_output "Organize - H2 skips L2 and goes direct to Area ops" \
+  "printf '2\nb\nq\n' | ./plan.sh --noprompt organize" "═══ Area ═══"
+test_command_output "Organize - H3 skips L2 and goes direct to Goal ops" \
+  "printf '3\nb\nq\n' | ./plan.sh --noprompt organize" "═══ Goal ═══"
+test_command_output "Organize - H4 skips L2 and goes direct to Vision ops" \
+  "printf '4\nb\nq\n' | ./plan.sh --noprompt organize" "═══ Vision ═══"
+test_command_output "Organize - H5 → purpose → list shows Purpose header" \
+  "printf '5\nu\nl\n\nb\nb\nq\n' | ./plan.sh --noprompt organize" "═══ Purpose ═══"
+test_command_output "Organize - task ops menu offers Complete" \
+  "printf 'g\nt\nb\nb\nq\n' | ./plan.sh --noprompt organize" "Complete"
+test_command_output "Organize - collection ops menu offers Decide" \
+  "printf 'g\nc\nb\nb\nq\n' | ./plan.sh --noprompt organize" "Decide"
+test_command_output "Organize - inbox ops menu offers Remove" \
+  "printf 'g\ni\nb\nb\nq\n' | ./plan.sh --noprompt organize" "Remove"
 
 # Invalid key on the menu is ignored (screen redraws); then 'g' still works
-test_command_output "Organize - invalid key ignored, then ground works" \
-  "printf 'x\ng\nb\nq\n' | ./plan.sh --noprompt organize" "Inbox"
+test_command_output "Organize - invalid L1 key ignored, then ground works" \
+  "printf 'z\ng\nb\nq\n' | ./plan.sh --noprompt organize" "Inbox"
+
+# Inbox add via inline prompt (only type without clarify form support)
+./plan.sh --noprompt inbox delete "Novo via organize" >/dev/null 2>&1
+printf "g\ni\na\nNovo via organize\n\nb\nb\nq\n" | ./plan.sh --noprompt organize >/dev/null 2>&1
+test_command_output "Organize - inbox add creates item via inline prompt" \
+  "./plan.sh inbox list" "Novo via organize"
 
 # Reflect workflow tests
 
