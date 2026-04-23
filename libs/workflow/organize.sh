@@ -21,7 +21,7 @@ function organize_main() {
     [[ -n "${this_workflow_switch}" ]] && return 0
     case "${this_organize_choice}" in
       quit|"")   return 0 ;;
-      ground)    organize_show_level organize_ground    "Ground"    ;;
+      ground)    organize_ground_menu ;;
       horizon1)  organize_show_level organize_horizon1  "Horizon 1" ;;
       horizon2)  organize_show_level organize_horizon2  "Horizon 2" ;;
       horizon3)  organize_show_level organize_horizon3  "Horizon 3" ;;
@@ -130,6 +130,60 @@ function organize_ground() {
   printf "${color_bold}${color_bright_blue}═══ Ground Level ═══${color_reset}\n"
   printf "\n"
 
+  organize_ground_section_inbox
+  organize_ground_section_tasks
+  organize_ground_section_recurring
+  organize_ground_section_habits
+  organize_ground_section_collections
+  organize_ground_section_items
+}
+
+# Submenu to pick which ground category to list. The ground level has six object
+# types, so dumping them all at once (as horizons 1-5 do) floods the screen.
+function organize_ground_menu() {
+  local this_choice
+  while true; do
+    clear
+    workflow_print_header "organize"
+    printf "${color_bold}${color_bright_blue}═══ Ground ═══${color_reset}\n\n"
+    printf "  Choose what to list:\n\n"
+    printf "  ${color_green}(i)${color_reset} Inbox\n"
+    printf "  ${color_green}(t)${color_reset} Tasks\n"
+    printf "  ${color_green}(r)${color_reset} Recurring\n"
+    printf "  ${color_green}(h)${color_reset} Habits\n"
+    printf "  ${color_green}(c)${color_reset} Collections\n"
+    printf "  ${color_green}(x)${color_reset} Collection Items\n"
+    printf "  ${color_green}(a)${color_reset} All\n"
+    printf "  ---\n"
+    printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+
+    if ! read this_choice; then
+      this_organize_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      i|I) organize_show_level organize_ground_section_inbox       "Inbox"            ;;
+      t|T) organize_show_level organize_ground_section_tasks       "Tasks"            ;;
+      r|R) organize_show_level organize_ground_section_recurring   "Recurring"        ;;
+      h|H) organize_show_level organize_ground_section_habits      "Habits"           ;;
+      c|C) organize_show_level organize_ground_section_collections "Collections"      ;;
+      x|X) organize_show_level organize_ground_section_items       "Collection Items" ;;
+      a|A) organize_show_level organize_ground                     "Ground"           ;;
+      b|B) return 0 ;;
+      q|Q) this_organize_choice="quit" ; return 0 ;;
+      *)   ;; # invalid - redraw
+    esac
+
+    # Propagate quit out if a sub-screen got EOF.
+    if [[ "${this_organize_choice}" == "quit" ]]; then
+      return 0
+    fi
+  done
+}
+
+function organize_ground_section_inbox() {
   organize_print_header "Inbox"
   local this_inbox=$(database_run box "SELECT * FROM inbox_view")
   if [[ -n "${this_inbox}" ]]; then
@@ -138,7 +192,9 @@ function organize_ground() {
     printf "  ${color_gray}(empty)${color_reset}\n"
   fi
   printf "\n"
+}
 
+function organize_ground_section_tasks() {
   organize_print_header "Tasks"
   local this_tasks=$(database_run box "SELECT * FROM tasks_view WHERE status != 'Done'")
   if [[ -n "${this_tasks}" ]]; then
@@ -147,7 +203,9 @@ function organize_ground() {
     printf "  ${color_gray}(none)${color_reset}\n"
   fi
   printf "\n"
+}
 
+function organize_ground_section_recurring() {
   organize_print_header "Recurring"
   local this_recurrings=$(database_run box "SELECT * FROM recurrings_view WHERE status != 'Done'")
   if [[ -n "${this_recurrings}" ]]; then
@@ -156,7 +214,9 @@ function organize_ground() {
     printf "  ${color_gray}(none)${color_reset}\n"
   fi
   printf "\n"
+}
 
+function organize_ground_section_habits() {
   organize_print_header "Habits"
   local this_habits=$(database_run box "SELECT * FROM habits_view WHERE status != 'Done'")
   if [[ -n "${this_habits}" ]]; then
@@ -165,7 +225,9 @@ function organize_ground() {
     printf "  ${color_gray}(none)${color_reset}\n"
   fi
   printf "\n"
+}
 
+function organize_ground_section_collections() {
   organize_print_header "Collections"
   local this_collections=$(database_run box "SELECT * FROM collections_view")
   if [[ -n "${this_collections}" ]]; then
@@ -174,7 +236,9 @@ function organize_ground() {
     printf "  ${color_gray}(none)${color_reset}\n"
   fi
   printf "\n"
+}
 
+function organize_ground_section_items() {
   organize_print_header "Collection Items"
   local this_items=$(database_run box "SELECT * FROM collection_items_view WHERE status != 'Done'")
   if [[ -n "${this_items}" ]]; then

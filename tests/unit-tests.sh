@@ -442,8 +442,12 @@ test_command_output "Clarify - project created with inline-new area" \
 #   q\n                 -> quit the TUI from the menu
 test_command_output "Organize - TUI menu shows horizons" \
   "printf 'q\n' | ./plan.sh --noprompt organize" "Choose a horizon"
-test_command_output "Organize - ground shows Inbox" \
-  "printf 'g\n\nq\n' | ./plan.sh --noprompt organize" "Inbox"
+test_command_output "Organize - ground submenu offers Inbox" \
+  "printf 'g\nb\nq\n' | ./plan.sh --noprompt organize" "Inbox"
+test_command_output "Organize - ground → inbox shows Inbox section" \
+  "printf 'g\ni\n\nb\nq\n' | ./plan.sh --noprompt organize" "── Inbox ──"
+test_command_output "Organize - ground → all shows full dump" \
+  "printf 'g\na\n\nb\nq\n' | ./plan.sh --noprompt organize" "Ground Level"
 test_command_output "Organize - h1 shows Projects" \
   "printf '1\n\nq\n' | ./plan.sh --noprompt organize" "Projects"
 test_command_output "Organize - h2 shows Areas" \
@@ -459,7 +463,7 @@ test_command_output "Organize - all shows everything" \
 
 # Invalid key on the menu is ignored (screen redraws); then 'g' still works
 test_command_output "Organize - invalid key ignored, then ground works" \
-  "printf 'x\ng\n\nq\n' | ./plan.sh --noprompt organize" "Inbox"
+  "printf 'x\ng\nb\nq\n' | ./plan.sh --noprompt organize" "Inbox"
 
 # Reflect workflow tests
 
