@@ -152,7 +152,6 @@ function organize_ground_menu() {
     printf "  ${color_green}(r)${color_reset} Recurring\n"
     printf "  ${color_green}(h)${color_reset} Habits\n"
     printf "  ${color_green}(c)${color_reset} Collections\n"
-    printf "  ${color_green}(x)${color_reset} Collection Items\n"
     printf "  ${color_green}(a)${color_reset} All\n"
     printf "  ---\n"
     printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
@@ -168,8 +167,7 @@ function organize_ground_menu() {
       t|T) organize_show_level organize_ground_section_tasks       "Tasks"            ;;
       r|R) organize_show_level organize_ground_section_recurring   "Recurring"        ;;
       h|H) organize_show_level organize_ground_section_habits      "Habits"           ;;
-      c|C) organize_show_level organize_ground_section_collections "Collections"      ;;
-      x|X) organize_show_level organize_ground_section_items       "Collection Items" ;;
+      c|C) organize_ground_screen_collections ;;
       a|A) organize_show_level organize_ground                     "Ground"           ;;
       b|B) return 0 ;;
       q|Q) this_organize_choice="quit" ; return 0 ;;
@@ -236,6 +234,78 @@ function organize_ground_section_collections() {
     printf "  ${color_gray}(none)${color_reset}\n"
   fi
   printf "\n"
+}
+
+# Numbered Collections picker — digit drills into a screen listing that
+# collection's items. (b) returns to the ground submenu; (q)/EOF quits.
+function organize_ground_screen_collections() {
+  local this_choice
+  local i
+  while true; do
+    clear
+    workflow_print_header "organize"
+    printf "${color_bold}${color_bright_blue}═══ Collections ═══${color_reset}\n\n"
+
+    local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "SELECT id, name FROM collections_view;")
+    local -a this_col_ids=()
+    local -a this_col_names=()
+    if [[ -n "${this_raw}" ]]; then
+      local id name
+      while IFS=$'\t' read -r id name; do
+        this_col_ids+=("${id}")
+        this_col_names+=("${name}")
+      done <<< "${this_raw}"
+    fi
+    if [[ ${#this_col_ids[@]} -eq 0 ]]; then
+      printf "  ${color_gray}(none)${color_reset}\n\n"
+    else
+      for i in "${!this_col_ids[@]}"; do
+        printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_col_names[$i]}"
+      done
+      printf "\n"
+    fi
+
+    printf "  ---\n"
+    printf "  Enter a ${color_green}number${color_reset} to open, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_organize_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      b|B) return 0 ;;
+      q|Q) this_organize_choice="quit" ; return 0 ;;
+      *[!0-9]*|"") ;; # invalid - redraw
+      *)
+        if (( this_choice >= 1 && this_choice <= ${#this_col_ids[@]} )); then
+          organize_ground_screen_collection_detail "${this_col_names[$((this_choice-1))]}"
+          [[ "${this_organize_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+    esac
+  done
+}
+
+# Show items belonging to a single collection, then wait for ENTER.
+# Args: <collection_name>
+function organize_ground_screen_collection_detail() {
+  local this_name="$1"
+  local _
+  clear
+  workflow_print_header "organize"
+  printf "${color_bold}${color_bright_blue}═══ Collection: ${this_name} ═══${color_reset}\n\n"
+  local this_items=$(database_run box "SELECT * FROM collection_items_view WHERE collection = '${this_name}' AND status != 'Done'")
+  if [[ -n "${this_items}" ]]; then
+    echo "${this_items}"
+  else
+    printf "  ${color_gray}(none)${color_reset}\n"
+  fi
+  printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+  if ! read _; then
+    this_organize_choice="quit"
+    return 0
+  fi
 }
 
 function organize_ground_section_items() {
