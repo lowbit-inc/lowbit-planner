@@ -235,6 +235,17 @@ echo "" | ./plan.sh item complete 1 >/dev/null 2>&1
 test_command_output "Collection decide - skips Done items (only pair 4-5)" \
   "sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM collection_item_decisions WHERE collection_id=1'" "1"
 
+# Regression: stale pending pairs pointing at deleted items are scrubbed on
+# the next decide run so no "ghost" comparisons remain.
+./plan.sh --noprompt collection decide Books --reset >/dev/null 2>&1
+./plan.sh item add 'Ghost Book' --collection Books >/dev/null 2>&1
+ghost_id=$(sqlite3 $LBPLAN_DB_PATH "SELECT id FROM collection_items WHERE name='Ghost Book';")
+./plan.sh --noprompt collection decide Books >/dev/null 2>&1
+./plan.sh --noprompt item delete "${ghost_id}" >/dev/null 2>&1
+./plan.sh --noprompt collection decide Books >/dev/null 2>&1
+test_command_output "Collection decide - scrubs pending pairs for deleted items" \
+  "sqlite3 \$LBPLAN_DB_PATH \"SELECT COUNT(*) FROM collection_item_decisions WHERE collection_id=1 AND choice_id IS NULL AND (item_id_low=${ghost_id} OR item_id_high=${ghost_id})\"" "0"
+
 # Help routing
 test_command_output "Collection decide - help on missing arg" "./plan.sh collection decide" "Collection Decide"
 
