@@ -29,7 +29,7 @@ function reflect_main() {
     [[ -n "${this_workflow_switch}" ]] && return 0
     case "${this_reflect_choice}" in
       quit|"")  return 0 ;;
-      ground)    reflect_screen_horizon "ground"   "Ground"                           ;;
+      ground)    reflect_screen_ground_actions                                        ;;
       horizon1)  reflect_screen_horizon "horizon1" "Horizon 1 - Projects"             ;;
       horizon2)  reflect_screen_horizon "horizon2" "Horizon 2 - Areas"                ;;
       horizon3)  reflect_screen_horizon "horizon3" "Horizon 3 - Goals"                ;;
@@ -192,11 +192,12 @@ function reflect_horizon_has_decide() {
 }
 
 # Dispatch the (l) action to the horizon-specific list/picker screen.
+# Ground uses its own action menu (reflect_screen_ground_actions) and does not
+# go through reflect_screen_horizon, so it is not dispatched here.
 # Args: <horizon>
 function reflect_show_list() {
   local this_horizon="$1"
   case "${this_horizon}" in
-    ground)   reflect_screen_list_ground   ;;
     horizon1) reflect_screen_list_horizon1 ;;
     horizon2) reflect_screen_list_horizon2 ;;
     horizon3) reflect_screen_list_horizon3 ;;
@@ -343,22 +344,44 @@ function reflect_screen_list_horizon5() {
   fi
 }
 
-# Ground has six object types — dumping them all at once floods the screen.
-# The (l) action opens this type submenu instead: each key lists one category,
-# while (c) enters the existing Collections picker with drill-down.
-function reflect_screen_list_ground() {
+# Ground is reviewed daily. Instead of listing object categories, this screen
+# surfaces the two actions that resolve Ground-level state (clarify the inbox,
+# decide pending collections) and only unlocks "Mark review as complete" once
+# both are resolved.
+function reflect_screen_ground_actions() {
   local this_choice
   while true; do
     clear
     workflow_print_header "reflect"
     printf "${color_bold}${color_bright_blue}═══ Ground ═══${color_reset}\n\n"
-    printf "  Choose what to list:\n\n"
-    printf "  ${color_green}(i)${color_reset} Inbox\n"
-    printf "  ${color_green}(t)${color_reset} Tasks\n"
-    printf "  ${color_green}(r)${color_reset} Recurring\n"
-    printf "  ${color_green}(h)${color_reset} Habits\n"
-    printf "  ${color_green}(c)${color_reset} Collections\n"
-    printf "  ${color_green}(x)${color_reset} Collection Items\n"
+
+    local this_inbox_count=$(database_run csv "SELECT count(*) FROM inbox;" | tr -d '"')
+    local this_pending_collections=$(database_run csv \
+      "SELECT count(*) FROM (SELECT collection_id FROM collection_items WHERE status != 'Done' GROUP BY collection_id HAVING count(*) >= 2);" \
+      | tr -d '"')
+    [[ -z "${this_inbox_count}"          ]] && this_inbox_count=0
+    [[ -z "${this_pending_collections}"  ]] && this_pending_collections=0
+
+    if (( this_inbox_count > 0 )); then
+      printf "  ${color_green}(i)${color_reset} Clarify Inbox          — ${this_inbox_count} item(s) to clarify\n"
+    else
+      printf "  ${color_gray}(i) Clarify Inbox          — (empty)${color_reset}\n"
+    fi
+
+    if (( this_pending_collections > 0 )); then
+      printf "  ${color_green}(d)${color_reset} Decide Collections     — ${this_pending_collections} collection(s) with pending decisions\n"
+    else
+      printf "  ${color_gray}(d) Decide Collections     — (nothing to decide)${color_reset}\n"
+    fi
+
+    local this_mark_enabled="false"
+    if (( this_inbox_count == 0 && this_pending_collections == 0 )); then
+      this_mark_enabled="true"
+      printf "  ${color_green}(m)${color_reset} Mark review as complete\n"
+    else
+      printf "  ${color_gray}(m) Mark review as complete   [blocked: clarify inbox and decide collections first]${color_reset}\n"
+    fi
+
     printf "  ---\n"
     printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
     printf "> "
@@ -368,34 +391,49 @@ function reflect_screen_list_ground() {
     fi
 
     case "${this_choice}" in
-      i|I) reflect_show_and_wait reflect_ground_section_inbox       ;;
-      t|T) reflect_show_and_wait reflect_ground_section_tasks       ;;
-      r|R) reflect_show_and_wait reflect_ground_section_recurring   ;;
-      h|H) reflect_show_and_wait reflect_ground_section_habits      ;;
-      c|C) reflect_screen_list_ground_collections                   ;;
-      x|X) reflect_show_and_wait reflect_ground_section_items       ;;
+      i|I)
+        if (( this_inbox_count > 0 )); then
+          clarify_main
+        fi
+        ;;
+      d|D)
+        if (( this_pending_collections > 0 )); then
+          reflect_screen_ground_decide_picker
+          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+      m|M)
+        if [[ "${this_mark_enabled}" == "true" ]]; then
+          reflect_mark_complete "ground" "Ground"
+          return 0
+        fi
+        ;;
       b|B) return 0 ;;
       q|Q) this_reflect_choice="quit" ; return 0 ;;
       *)   ;; # invalid - redraw
     esac
-
-    if [[ "${this_reflect_choice}" == "quit" ]]; then
-      return 0
-    fi
   done
 }
 
-# Numbered Collections picker — digit drills into the collection detail screen
-# (which includes the (d) Decide option). (b) returns to the ground submenu.
-function reflect_screen_list_ground_collections() {
+# Numbered picker that lists collections with pending decisions and dispatches
+# the chosen one straight to collection_decide — skipping the old detail screen
+# to keep the daily ritual one keystroke away from action.
+function reflect_screen_ground_decide_picker() {
   local this_choice
   local i
   while true; do
     clear
     workflow_print_header "reflect"
-    printf "${color_bold}${color_bright_blue}═══ Collections ═══${color_reset}\n\n"
+    printf "${color_bold}${color_bright_blue}═══ Decide Collections ═══${color_reset}\n\n"
 
-    local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "SELECT id, name FROM collections_view;")
+    local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "
+      SELECT c.id, c.name
+      FROM collections c
+      JOIN collection_items ci ON ci.collection_id = c.id
+      WHERE ci.status != 'Done'
+      GROUP BY c.id, c.name
+      HAVING count(ci.id) >= 2
+      ORDER BY c.name;")
     local -a this_col_ids=()
     local -a this_col_names=()
     if [[ -n "${this_raw}" ]]; then
@@ -415,7 +453,7 @@ function reflect_screen_list_ground_collections() {
     fi
 
     printf "  ---\n"
-    printf "  Enter a ${color_green}number${color_reset} to open, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "  Enter a ${color_green}number${color_reset} to decide, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
     printf "> "
     if ! read this_choice; then
       this_reflect_choice="quit"
@@ -428,78 +466,17 @@ function reflect_screen_list_ground_collections() {
       *[!0-9]*|"") ;; # invalid - redraw
       *)
         if (( this_choice >= 1 && this_choice <= ${#this_col_ids[@]} )); then
-          reflect_screen_detail_collection "${this_col_ids[$((this_choice-1))]}" "${this_col_names[$((this_choice-1))]}"
-          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+          local _
+          collection_decide "${this_col_names[$((this_choice-1))]}"
+          printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+          if ! read _; then
+            this_reflect_choice="quit"
+            return 0
+          fi
         fi
         ;;
     esac
   done
-}
-
-# Clear, run a section renderer, wait for ENTER (or propagate quit on EOF).
-# Args: <render_fn>
-function reflect_show_and_wait() {
-  local this_fn="$1"
-  local _
-  clear
-  workflow_print_header "reflect"
-  "${this_fn}"
-  printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
-  if ! read _; then
-    this_reflect_choice="quit"
-    return 0
-  fi
-}
-
-function reflect_ground_section_inbox() {
-  printf "${color_bold}${color_cyan}── Inbox ──${color_reset}\n"
-  local this_inbox=$(database_run box "SELECT * FROM inbox_view")
-  if [[ -n "${this_inbox}" ]]; then
-    echo "${this_inbox}"
-    printf "\n  ${color_yellow}Tip: Run '${system_basename} clarify' to process inbox items.${color_reset}\n"
-  else
-    printf "  ${color_gray}(empty)${color_reset}\n"
-  fi
-}
-
-function reflect_ground_section_tasks() {
-  printf "${color_bold}${color_cyan}── Active Tasks ──${color_reset}\n"
-  local this_tasks=$(database_run box "SELECT * FROM tasks_view WHERE status != 'Done'")
-  if [[ -n "${this_tasks}" ]]; then
-    echo "${this_tasks}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-}
-
-function reflect_ground_section_recurring() {
-  printf "${color_bold}${color_cyan}── Recurring (Pending) ──${color_reset}\n"
-  local this_recurrings=$(database_run box "SELECT * FROM recurrings_view WHERE status = 'Pending'")
-  if [[ -n "${this_recurrings}" ]]; then
-    echo "${this_recurrings}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-}
-
-function reflect_ground_section_habits() {
-  printf "${color_bold}${color_cyan}── Habits (Pending) ──${color_reset}\n"
-  local this_habits=$(database_run box "SELECT * FROM habits_view WHERE status = 'Pending'")
-  if [[ -n "${this_habits}" ]]; then
-    echo "${this_habits}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-}
-
-function reflect_ground_section_items() {
-  printf "${color_bold}${color_cyan}── Collection Items ──${color_reset}\n"
-  local this_items=$(database_run box "SELECT * FROM collection_items_view WHERE status != 'Done'")
-  if [[ -n "${this_items}" ]]; then
-    echo "${this_items}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
 }
 
 ############
@@ -654,50 +631,6 @@ function reflect_screen_detail_horizon4() {
       return 0
     fi
     case "${this_choice}" in
-      b|B) return 0 ;;
-      q|Q) this_reflect_choice="quit" ; return 0 ;;
-      *) ;; # invalid - redraw
-    esac
-  done
-}
-
-function reflect_screen_detail_collection() {
-  local this_id="$1"
-  local this_name="$2"
-  local this_choice
-
-  while true; do
-    clear
-    workflow_print_header "reflect"
-    printf "${color_bold}${color_bright_blue}═══ Collection: ${this_name} ═══${color_reset}\n\n"
-
-    printf "${color_bold}${color_cyan}── Items ──${color_reset}\n"
-    local this_items=$(database_run box "SELECT * FROM collection_items_view WHERE collection = '${this_name}' AND status != 'Done'")
-    if [[ -n "${this_items}" ]]; then
-      echo "${this_items}"
-    else
-      printf "  ${color_gray}(none)${color_reset}\n"
-    fi
-    printf "\n"
-
-    printf "  ---\n"
-    printf "  ${color_green}(d)${color_reset} Decide (rank items)\n"
-    printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
-    printf "> "
-    if ! read this_choice; then
-      this_reflect_choice="quit"
-      return 0
-    fi
-    case "${this_choice}" in
-      d|D)
-        collection_decide "${this_name}"
-        local _
-        printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
-        if ! read _; then
-          this_reflect_choice="quit"
-          return 0
-        fi
-        ;;
       b|B) return 0 ;;
       q|Q) this_reflect_choice="quit" ; return 0 ;;
       *) ;; # invalid - redraw

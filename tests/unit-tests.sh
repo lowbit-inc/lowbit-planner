@@ -493,16 +493,15 @@ test_command_output "Reflect - TUI menu shows horizons" \
 test_command_output "Reflect - menu shows Ground label" \
   "printf 'q\n' | ./plan.sh --noprompt reflect" "Ground (Daily)"
 
-# Pressing 'g' opens the horizon review screen for Ground
-test_command_output "Reflect - ground screen shows Reviewing header" \
-  "printf 'g\nb\nq\n' | ./plan.sh --noprompt reflect" "Reviewing: Ground"
+# Pressing 'g' opens the Ground actions screen (Clarify / Decide / Mark)
+test_command_output "Reflect - ground screen shows Ground header" \
+  "printf 'g\nb\nq\n' | ./plan.sh --noprompt reflect" "═══ Ground ═══"
 
-# (l) opens the Ground type submenu (lists all object categories as options)
-test_command_output "Reflect - ground submenu offers Inbox" \
-  "printf 'g\nl\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Inbox"
-# Picking (i) from the ground submenu drills into the Inbox section
-test_command_output "Reflect - ground → inbox shows Inbox section" \
-  "printf 'g\nl\ni\n\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "── Inbox ──"
+# Ground actions screen lists the three action items
+test_command_output "Reflect - ground screen offers Clarify Inbox" \
+  "printf 'g\nb\nq\n' | ./plan.sh --noprompt reflect" "Clarify Inbox"
+test_command_output "Reflect - ground screen offers Decide Collections" \
+  "printf 'g\nb\nq\n' | ./plan.sh --noprompt reflect" "Decide Collections"
 
 # (l) on Horizon 1 shows Projects picker
 test_command_output "Reflect - h1 list shows Projects" \
@@ -538,17 +537,23 @@ else
 fi
 log_print info "--------------------------------"
 
-# (m) marks the review as complete; main menu re-renders with [v] badge
+# (m) is blocked while inbox has items or collections have pending decisions.
+test_command_output "Reflect - ground mark complete is blocked when state pending" \
+  "printf 'g\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "blocked"
+
+# (m) marks the review as complete once state is empty; main menu shows [v].
+# Saves and restores inbox + collection_items state so subsequent tests are unaffected.
 test_command_output "Reflect - mark ground complete updates badge" \
-  "printf 'g\nm\n\nq\n' | ./plan.sh --noprompt reflect" "\[v\].*Ground"
+  "sqlite3 \$LBPLAN_DB_PATH 'CREATE TABLE _bk_inbox AS SELECT * FROM inbox; CREATE TABLE _bk_pending AS SELECT id FROM collection_items WHERE status != \"Done\"; DELETE FROM inbox; UPDATE collection_items SET status = \"Done\" WHERE id IN (SELECT id FROM _bk_pending);' && printf 'g\nm\n\nq\n' | ./plan.sh --noprompt reflect; sqlite3 \$LBPLAN_DB_PATH 'INSERT INTO inbox SELECT * FROM _bk_inbox; UPDATE collection_items SET status = \"Pending\" WHERE id IN (SELECT id FROM _bk_pending); DROP TABLE _bk_inbox; DROP TABLE _bk_pending;'" \
+  "\[v\].*Ground"
 
 # Invalid key on the main menu is ignored (redraws); then 'g' still works
 test_command_output "Reflect - invalid key at main menu ignored" \
-  "printf 'x\ng\nb\nq\n' | ./plan.sh --noprompt reflect" "Reviewing: Ground"
+  "printf 'x\ng\nb\nq\n' | ./plan.sh --noprompt reflect" "═══ Ground ═══"
 
-# Invalid key on the horizon screen is ignored (redraws); then 'b' returns
-test_command_output "Reflect - invalid key at horizon menu ignored" \
-  "printf 'g\nz\nb\nq\n' | ./plan.sh --noprompt reflect" "Reviewing: Ground"
+# Invalid key on the ground actions screen is ignored (redraws); then 'b' returns
+test_command_output "Reflect - invalid key at ground menu ignored" \
+  "printf 'g\nz\nb\nq\n' | ./plan.sh --noprompt reflect" "═══ Ground ═══"
 
 # Horizon 1 drill-down: pick project #1 → detail screen renders Project header
 test_command_output "Reflect - h1 drill-down shows Project header" \
@@ -566,9 +571,9 @@ test_command_output "Reflect - h2 drill-down shows Goals section" \
 test_command_output "Reflect - h2 drill-down shows Visions section" \
   "printf '2\nl\n1\nb\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "── Visions ──"
 
-# Ground drill-down: (l) → (c) collections picker → pick #1 → detail shows (d) Decide
-test_command_output "Reflect - ground collection detail shows Decide option" \
-  "printf 'g\nl\nc\n1\nb\nb\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "(d) Decide"
+# Ground (d) opens a picker that lists collections with pending decisions
+test_command_output "Reflect - ground decide picker shows header" \
+  "printf 'g\nd\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Decide Collections ═══"
 
 # Engage workflow tests
 #
