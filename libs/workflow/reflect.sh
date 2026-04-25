@@ -357,7 +357,21 @@ function reflect_screen_ground_actions() {
 
     local this_inbox_count=$(database_run csv "SELECT count(*) FROM inbox;" | tr -d '"')
     local this_pending_collections=$(database_run csv \
-      "SELECT count(*) FROM (SELECT collection_id FROM collection_items WHERE status != 'Done' GROUP BY collection_id HAVING count(*) >= 2);" \
+      "SELECT count(*) FROM (
+         SELECT a.collection_id
+         FROM collection_items a
+         JOIN collection_items b
+           ON a.collection_id = b.collection_id AND a.id < b.id
+         LEFT JOIN collection_item_decisions d
+           ON d.collection_id = a.collection_id
+          AND d.item_id_low  = a.id
+          AND d.item_id_high = b.id
+          AND d.choice_id IS NOT NULL
+         WHERE a.status != 'Done'
+           AND b.status != 'Done'
+           AND d.choice_id IS NULL
+         GROUP BY a.collection_id
+       );" \
       | tr -d '"')
     [[ -z "${this_inbox_count}"          ]] && this_inbox_count=0
     [[ -z "${this_pending_collections}"  ]] && this_pending_collections=0
@@ -429,10 +443,15 @@ function reflect_screen_ground_decide_picker() {
     local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "
       SELECT c.id, c.name
       FROM collections c
-      JOIN collection_items ci ON ci.collection_id = c.id
-      WHERE ci.status != 'Done'
+      JOIN collection_items a ON a.collection_id = c.id AND a.status != 'Done'
+      JOIN collection_items b ON b.collection_id = c.id AND b.status != 'Done' AND a.id < b.id
+      LEFT JOIN collection_item_decisions d
+        ON d.collection_id = c.id
+       AND d.item_id_low   = a.id
+       AND d.item_id_high  = b.id
+       AND d.choice_id IS NOT NULL
+      WHERE d.choice_id IS NULL
       GROUP BY c.id, c.name
-      HAVING count(ci.id) >= 2
       ORDER BY c.name;")
     local -a this_col_ids=()
     local -a this_col_names=()

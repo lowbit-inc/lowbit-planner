@@ -583,6 +583,10 @@ test_command_output "Reflect - h2 drill-down shows Visions section" \
   "printf '2\nl\n1\nb\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "── Visions ──"
 
 # Ground (d) opens a picker that lists collections with pending decisions
+# (Setup: a fresh collection with two undecided items so an undecided pair exists)
+./plan.sh collection add 'Boardgames'           >/dev/null 2>&1
+./plan.sh item add 'Gloomhaven' --collection Boardgames >/dev/null 2>&1
+./plan.sh item add 'Wingspan'   --collection Boardgames >/dev/null 2>&1
 test_command_output "Reflect - ground decide picker shows header" \
   "printf 'g\nd\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Decide Collections ═══"
 
