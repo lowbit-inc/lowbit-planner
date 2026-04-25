@@ -220,11 +220,12 @@ function clarify_screen_object_form() {
   local this_prefilled_name="$3"
   local this_prefilled_project="$4"
   local this_prefilled_area="$5"
+  local this_prefilled_goal="$6"
 
   local this_name="${this_prefilled_name}"
   local this_project="${this_prefilled_project}"
   local this_area="${this_prefilled_area}"
-  local this_goal=""
+  local this_goal="${this_prefilled_goal}"
   local this_vision=""
   local this_collection=""
   local this_description=""

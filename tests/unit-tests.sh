@@ -542,10 +542,6 @@ test_command_output "Reflect - ground screen offers Decide Collections" \
 test_command_output "Reflect - h1 list shows Projects" \
   "printf '1\nl\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Projects"
 
-# (l) on Horizon 3 shows Goals picker
-test_command_output "Reflect - h3 list shows Goals" \
-  "printf '3\nl\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Goals"
-
 # (l) on Horizon 4 shows Visions picker
 test_command_output "Reflect - h4 list shows Visions" \
   "printf '4\nl\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Visions"
@@ -614,6 +610,20 @@ test_command_output "Reflect - h2 validate picker shows header" \
 # Add Visions picker reachable from H2
 test_command_output "Reflect - h2 add vision picker shows header" \
   "printf '2\nv\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Add Visions ═══"
+
+# Horizon 3 actions screen surfaces the two review actions
+test_command_output "Reflect - h3 actions screen offers Decide Goals" \
+  "printf '3\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Decide Goals"
+test_command_output "Reflect - h3 actions screen offers Add Projects" \
+  "printf '3\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Projects"
+
+# Mark complete on H3 is blocked while any of the two counters > 0
+test_command_output "Reflect - h3 mark complete is blocked when state pending" \
+  "printf '3\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "blocked"
+
+# Add Projects picker reachable from H3 (lists goals without project)
+test_command_output "Reflect - h3 add project picker shows header" \
+  "printf '3\np\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Add Projects ═══"
 
 # Ground (d) opens a picker that lists collections with pending decisions
 # (Setup: a fresh collection with two undecided items so an undecided pair exists)

@@ -32,7 +32,7 @@ function reflect_main() {
       ground)    reflect_screen_ground_actions                                        ;;
       horizon1)  reflect_screen_horizon1_actions                                      ;;
       horizon2)  reflect_screen_horizon2_actions                                      ;;
-      horizon3)  reflect_screen_horizon "horizon3" "Horizon 3 - Goals"                ;;
+      horizon3)  reflect_screen_horizon3_actions                                      ;;
       horizon4)  reflect_screen_horizon "horizon4" "Horizon 4 - Visions"              ;;
       horizon5)  reflect_screen_horizon "horizon5" "Horizon 5 - Purpose & Principles" ;;
     esac
@@ -186,8 +186,8 @@ function reflect_screen_horizon() {
 # Args: <horizon>
 function reflect_horizon_has_decide() {
   case "$1" in
-    horizon3|horizon4) return 0 ;;
-    *)                 return 1 ;;
+    horizon4) return 0 ;;
+    *)        return 1 ;;
   esac
 }
 
@@ -198,7 +198,6 @@ function reflect_horizon_has_decide() {
 function reflect_show_list() {
   local this_horizon="$1"
   case "${this_horizon}" in
-    horizon3) reflect_screen_list_horizon3 ;;
     horizon4) reflect_screen_list_horizon4 ;;
     horizon5) reflect_screen_list_horizon5 ;;
   esac
@@ -277,17 +276,6 @@ function reflect_screen_picker() {
 # Layer 2d #
 # Horizon list screens (picker → detail loop)
 ############
-
-function reflect_screen_list_horizon3() {
-  while true; do
-    reflect_screen_picker "Goals" \
-      "SELECT id, name FROM goals_view WHERE status != 'Done';"
-    [[ "${this_reflect_choice}" == "quit" ]] && return 0
-    [[ -z "${this_reflect_picker_id}" ]] && return 0
-    reflect_screen_detail_horizon3 "${this_reflect_picker_id}" "${this_reflect_picker_name}"
-    [[ "${this_reflect_choice}" == "quit" ]] && return 0
-  done
-}
 
 function reflect_screen_list_horizon4() {
   while true; do
@@ -1027,28 +1015,62 @@ function reflect_screen_horizon2_add_plan_picker() {
 }
 
 ############
-# Layer 2e #
-# Detail screens
+# Layer 2e3 #
+# Horizon 3 (Goals) action-focused TUI — mirrors Ground/Horizon1/Horizon2.
 ############
 
-function reflect_screen_detail_horizon3() {
-  local this_id="$1"
-  local this_name="$2"
+# Two things must be resolved during a quarterly Goals review:
+#   (d) rank goals against each other (global)
+#   (p) ensure every goal has at least one Project planned
+# (m) only unlocks when both counters hit zero.
+function reflect_screen_horizon3_actions() {
   local this_choice
-
   while true; do
     clear
     workflow_print_header "reflect"
-    printf "${color_bold}${color_bright_blue}═══ Goal: ${this_name} ═══${color_reset}\n\n"
+    printf "${color_bold}${color_bright_blue}═══ Horizon 3 - Goals ═══${color_reset}\n\n"
 
-    printf "${color_bold}${color_cyan}── Projects ──${color_reset}\n"
-    local this_projects=$(database_run box "SELECT * FROM projects_view WHERE goal = '${this_name}' AND status != 'Done'")
-    if [[ -n "${this_projects}" ]]; then
-      echo "${this_projects}"
+    local this_pending_goals=$(database_run csv \
+      "SELECT count(*) FROM goals a
+         JOIN goals b ON a.id < b.id
+         LEFT JOIN goal_decisions d
+           ON d.item_id_low  = a.id
+          AND d.item_id_high = b.id
+          AND d.choice_id IS NOT NULL
+        WHERE a.status != 'Done'
+          AND b.status != 'Done'
+          AND d.choice_id IS NULL;" \
+      | tr -d '"')
+    local this_goals_without_project=$(database_run csv \
+      "SELECT count(*) FROM goals g
+        WHERE g.status != 'Done'
+          AND NOT EXISTS (
+            SELECT 1 FROM projects p
+             WHERE p.goal_id = g.id AND p.status != 'Done'
+          );" \
+      | tr -d '"')
+    [[ -z "${this_pending_goals}"          ]] && this_pending_goals=0
+    [[ -z "${this_goals_without_project}"  ]] && this_goals_without_project=0
+
+    if (( this_pending_goals > 0 )); then
+      printf "  ${color_green}(d)${color_reset} Decide Goals                — ${this_pending_goals} pending goal decision(s)\n"
     else
-      printf "  ${color_gray}(none)${color_reset}\n"
+      printf "  ${color_gray}(d) Decide Goals                — (nothing to decide)${color_reset}\n"
     fi
-    printf "\n"
+
+    if (( this_goals_without_project > 0 )); then
+      printf "  ${color_green}(p)${color_reset} Add Projects                — ${this_goals_without_project} goal(s) without project\n"
+    else
+      printf "  ${color_gray}(p) Add Projects                — (every goal has a project)${color_reset}\n"
+    fi
+
+    local this_mark_enabled="false"
+    if (( this_pending_goals == 0 && this_goals_without_project == 0 )); then
+      this_mark_enabled="true"
+      printf "  ${color_green}(m)${color_reset} Mark review as complete\n"
+    else
+      printf "  ${color_gray}(m) Mark review as complete   [blocked: resolve goal decisions and ensure each goal has a project]${color_reset}\n"
+    fi
 
     printf "  ---\n"
     printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
@@ -1057,13 +1079,108 @@ function reflect_screen_detail_horizon3() {
       this_reflect_choice="quit"
       return 0
     fi
+
     case "${this_choice}" in
+      d|D)
+        if (( this_pending_goals > 0 )); then
+          local _
+          clear
+          workflow_print_header "reflect"
+          goal_decide
+          printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+          if ! read _; then
+            this_reflect_choice="quit"
+            return 0
+          fi
+        fi
+        ;;
+      p|P)
+        if (( this_goals_without_project > 0 )); then
+          reflect_screen_horizon3_add_project_picker
+          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+      m|M)
+        if [[ "${this_mark_enabled}" == "true" ]]; then
+          reflect_mark_complete "horizon3" "Horizon 3"
+          return 0
+        fi
+        ;;
       b|B) return 0 ;;
       q|Q) this_reflect_choice="quit" ; return 0 ;;
-      *) ;; # invalid - redraw
+      *)   ;; # invalid - redraw
     esac
   done
 }
+
+# Picker of goals without a pending project; on selection opens the project
+# clarify form pre-filled with the goal's name and area (derived from goal.area_id).
+function reflect_screen_horizon3_add_project_picker() {
+  local this_choice
+  local i
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Add Projects ═══${color_reset}\n\n"
+
+    local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "
+      SELECT g.id, g.name, COALESCE(a.name, '')
+        FROM goals g
+        LEFT JOIN areas a ON a.id = g.area_id
+       WHERE g.status != 'Done'
+         AND NOT EXISTS (
+           SELECT 1 FROM projects p
+            WHERE p.goal_id = g.id AND p.status != 'Done'
+         )
+       ORDER BY g.name;")
+    local -a this_goal_ids=()
+    local -a this_goal_names=()
+    local -a this_area_names=()
+    if [[ -n "${this_raw}" ]]; then
+      local id name area
+      while IFS=$'\t' read -r id name area; do
+        this_goal_ids+=("${id}")
+        this_goal_names+=("${name}")
+        this_area_names+=("${area}")
+      done <<< "${this_raw}"
+    fi
+    if [[ ${#this_goal_ids[@]} -eq 0 ]]; then
+      printf "  ${color_gray}(none)${color_reset}\n\n"
+    else
+      for i in "${!this_goal_ids[@]}"; do
+        printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_goal_names[$i]}"
+      done
+      printf "\n"
+    fi
+
+    printf "  ---\n"
+    printf "  Enter a ${color_green}number${color_reset} to add a project, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *[!0-9]*|"") ;; # invalid - redraw
+      *)
+        if (( this_choice >= 1 && this_choice <= ${#this_goal_ids[@]} )); then
+          clarify_screen_object_form "project" "" "" "" \
+            "${this_area_names[$((this_choice-1))]}" \
+            "${this_goal_names[$((this_choice-1))]}"
+          [[ "${this_form_result}" == "quit" ]] && this_reflect_choice="quit" && return 0
+        fi
+        ;;
+    esac
+  done
+}
+
+############
+# Layer 2e #
+# Detail screens
+############
 
 function reflect_screen_detail_horizon4() {
   local this_id="$1"
@@ -1106,7 +1223,6 @@ function reflect_run_decide() {
   local _
 
   case "$1" in
-    horizon3) goal_decide    ;;
     horizon4) vision_decide  ;;
   esac
   printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
