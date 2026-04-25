@@ -218,9 +218,10 @@ function clarify_screen_object_form() {
   local this_type="$1"
   local this_inbox_id="$2"
   local this_prefilled_name="$3"
+  local this_prefilled_project="$4"
 
   local this_name="${this_prefilled_name}"
-  local this_project=""
+  local this_project="${this_prefilled_project}"
   local this_area=""
   local this_goal=""
   local this_vision=""

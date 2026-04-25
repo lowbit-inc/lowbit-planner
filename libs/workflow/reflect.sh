@@ -30,7 +30,7 @@ function reflect_main() {
     case "${this_reflect_choice}" in
       quit|"")  return 0 ;;
       ground)    reflect_screen_ground_actions                                        ;;
-      horizon1)  reflect_screen_horizon "horizon1" "Horizon 1 - Projects"             ;;
+      horizon1)  reflect_screen_horizon1_actions                                      ;;
       horizon2)  reflect_screen_horizon "horizon2" "Horizon 2 - Areas"                ;;
       horizon3)  reflect_screen_horizon "horizon3" "Horizon 3 - Goals"                ;;
       horizon4)  reflect_screen_horizon "horizon4" "Horizon 4 - Visions"              ;;
@@ -186,8 +186,8 @@ function reflect_screen_horizon() {
 # Args: <horizon>
 function reflect_horizon_has_decide() {
   case "$1" in
-    horizon1|horizon3|horizon4) return 0 ;;
-    *)                          return 1 ;;
+    horizon3|horizon4) return 0 ;;
+    *)                 return 1 ;;
   esac
 }
 
@@ -198,7 +198,6 @@ function reflect_horizon_has_decide() {
 function reflect_show_list() {
   local this_horizon="$1"
   case "${this_horizon}" in
-    horizon1) reflect_screen_list_horizon1 ;;
     horizon2) reflect_screen_list_horizon2 ;;
     horizon3) reflect_screen_list_horizon3 ;;
     horizon4) reflect_screen_list_horizon4 ;;
@@ -279,17 +278,6 @@ function reflect_screen_picker() {
 # Layer 2d #
 # Horizon list screens (picker → detail loop)
 ############
-
-function reflect_screen_list_horizon1() {
-  while true; do
-    reflect_screen_picker "Projects" \
-      "SELECT id, name FROM projects_view WHERE status != 'Done';"
-    [[ "${this_reflect_choice}" == "quit" ]] && return 0
-    [[ -z "${this_reflect_picker_id}" ]] && return 0
-    reflect_screen_detail_horizon1 "${this_reflect_picker_id}" "${this_reflect_picker_name}"
-    [[ "${this_reflect_choice}" == "quit" ]] && return 0
-  done
-}
 
 function reflect_screen_list_horizon2() {
   while true; do
@@ -499,28 +487,88 @@ function reflect_screen_ground_decide_picker() {
 }
 
 ############
-# Layer 2e #
-# Detail screens
+# Layer 2e1 #
+# Horizon 1 (Projects) action-focused TUI — mirrors Ground.
 ############
 
-function reflect_screen_detail_horizon1() {
-  local this_id="$1"
-  local this_name="$2"
+# Three things must be resolved during a weekly Projects review:
+#   (d) rank projects against each other
+#   (n) ensure every project has at least one Next Action (task)
+#   (t) rank tasks within each multi-task project
+# (m) only unlocks when all three counters hit zero.
+function reflect_screen_horizon1_actions() {
   local this_choice
-
   while true; do
     clear
     workflow_print_header "reflect"
-    printf "${color_bold}${color_bright_blue}═══ Project: ${this_name} ═══${color_reset}\n\n"
+    printf "${color_bold}${color_bright_blue}═══ Horizon 1 - Projects ═══${color_reset}\n\n"
 
-    printf "${color_bold}${color_cyan}── Tasks ──${color_reset}\n"
-    local this_tasks=$(database_run box "SELECT * FROM tasks_view WHERE project = '${this_name}' AND status != 'Done'")
-    if [[ -n "${this_tasks}" ]]; then
-      echo "${this_tasks}"
+    local this_pending_projects=$(database_run csv \
+      "SELECT count(*) FROM projects a
+         JOIN projects b ON a.id < b.id
+         LEFT JOIN project_decisions d
+           ON d.item_id_low  = a.id
+          AND d.item_id_high = b.id
+          AND d.choice_id IS NOT NULL
+        WHERE a.status != 'Done'
+          AND b.status != 'Done'
+          AND d.choice_id IS NULL;" \
+      | tr -d '"')
+    local this_projects_without_next=$(database_run csv \
+      "SELECT count(*) FROM projects p
+        WHERE p.status != 'Done'
+          AND NOT EXISTS (
+            SELECT 1 FROM tasks t
+             WHERE t.project_id = p.id AND t.status != 'Done'
+          );" \
+      | tr -d '"')
+    local this_pending_task_decides=$(database_run csv \
+      "SELECT count(*) FROM (
+         SELECT a.project_id
+           FROM tasks a
+           JOIN tasks b
+             ON a.project_id = b.project_id AND a.id < b.id
+           LEFT JOIN task_decisions d
+             ON d.project_id  = a.project_id
+            AND d.item_id_low  = a.id
+            AND d.item_id_high = b.id
+            AND d.choice_id IS NOT NULL
+          WHERE a.status != 'Done'
+            AND b.status != 'Done'
+            AND a.project_id IS NOT NULL
+            AND d.choice_id IS NULL
+          GROUP BY a.project_id
+       );" \
+      | tr -d '"')
+    [[ -z "${this_pending_projects}"      ]] && this_pending_projects=0
+    [[ -z "${this_projects_without_next}" ]] && this_projects_without_next=0
+    [[ -z "${this_pending_task_decides}"  ]] && this_pending_task_decides=0
+
+    if (( this_pending_projects > 0 )); then
+      printf "  ${color_green}(d)${color_reset} Decide Projects             — ${this_pending_projects} pending project decision(s)\n"
     else
-      printf "  ${color_gray}(none)${color_reset}\n"
+      printf "  ${color_gray}(d) Decide Projects             — (nothing to decide)${color_reset}\n"
     fi
-    printf "\n"
+
+    if (( this_projects_without_next > 0 )); then
+      printf "  ${color_green}(n)${color_reset} Add Next Actions            — ${this_projects_without_next} project(s) without next action\n"
+    else
+      printf "  ${color_gray}(n) Add Next Actions            — (every project has a next action)${color_reset}\n"
+    fi
+
+    if (( this_pending_task_decides > 0 )); then
+      printf "  ${color_green}(t)${color_reset} Decide Tasks in Project     — ${this_pending_task_decides} project(s) with pending task decisions\n"
+    else
+      printf "  ${color_gray}(t) Decide Tasks in Project     — (nothing to decide)${color_reset}\n"
+    fi
+
+    local this_mark_enabled="false"
+    if (( this_pending_projects == 0 && this_projects_without_next == 0 && this_pending_task_decides == 0 )); then
+      this_mark_enabled="true"
+      printf "  ${color_green}(m)${color_reset} Mark review as complete\n"
+    else
+      printf "  ${color_gray}(m) Mark review as complete   [blocked: resolve project decisions, next actions and task decisions first]${color_reset}\n"
+    fi
 
     printf "  ---\n"
     printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
@@ -529,13 +577,177 @@ function reflect_screen_detail_horizon1() {
       this_reflect_choice="quit"
       return 0
     fi
+
     case "${this_choice}" in
+      d|D)
+        if (( this_pending_projects > 0 )); then
+          local _
+          clear
+          workflow_print_header "reflect"
+          project_decide
+          printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+          if ! read _; then
+            this_reflect_choice="quit"
+            return 0
+          fi
+        fi
+        ;;
+      n|N)
+        if (( this_projects_without_next > 0 )); then
+          reflect_screen_horizon1_next_action_picker
+          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+      t|T)
+        if (( this_pending_task_decides > 0 )); then
+          reflect_screen_horizon1_decide_tasks_picker
+          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+      m|M)
+        if [[ "${this_mark_enabled}" == "true" ]]; then
+          reflect_mark_complete "horizon1" "Horizon 1"
+          return 0
+        fi
+        ;;
       b|B) return 0 ;;
       q|Q) this_reflect_choice="quit" ; return 0 ;;
-      *) ;; # invalid - redraw
+      *)   ;; # invalid - redraw
     esac
   done
 }
+
+# Picker of projects that have no pending task; opens the clarify task form
+# pre-filled with the chosen project so the user only types the task name.
+function reflect_screen_horizon1_next_action_picker() {
+  local this_choice
+  local i
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Add Next Actions ═══${color_reset}\n\n"
+
+    local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "
+      SELECT p.id, p.name
+        FROM projects p
+       WHERE p.status != 'Done'
+         AND NOT EXISTS (
+           SELECT 1 FROM tasks t
+            WHERE t.project_id = p.id AND t.status != 'Done'
+         )
+       ORDER BY p.name;")
+    local -a this_proj_ids=()
+    local -a this_proj_names=()
+    if [[ -n "${this_raw}" ]]; then
+      local id name
+      while IFS=$'\t' read -r id name; do
+        this_proj_ids+=("${id}")
+        this_proj_names+=("${name}")
+      done <<< "${this_raw}"
+    fi
+    if [[ ${#this_proj_ids[@]} -eq 0 ]]; then
+      printf "  ${color_gray}(none)${color_reset}\n\n"
+    else
+      for i in "${!this_proj_ids[@]}"; do
+        printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_proj_names[$i]}"
+      done
+      printf "\n"
+    fi
+
+    printf "  ---\n"
+    printf "  Enter a ${color_green}number${color_reset} to add a task, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *[!0-9]*|"") ;; # invalid - redraw
+      *)
+        if (( this_choice >= 1 && this_choice <= ${#this_proj_ids[@]} )); then
+          clarify_screen_object_form "task" "" "" "${this_proj_names[$((this_choice-1))]}"
+          [[ "${this_form_result}" == "quit" ]] && this_reflect_choice="quit" && return 0
+        fi
+        ;;
+    esac
+  done
+}
+
+# Picker of projects with pending task decisions; dispatches the chosen one to
+# task_decide.
+function reflect_screen_horizon1_decide_tasks_picker() {
+  local this_choice
+  local i
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Decide Tasks in Project ═══${color_reset}\n\n"
+
+    local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "
+      SELECT p.id, p.name
+        FROM projects p
+        JOIN tasks a ON a.project_id = p.id AND a.status != 'Done'
+        JOIN tasks b ON b.project_id = p.id AND b.status != 'Done' AND a.id < b.id
+        LEFT JOIN task_decisions d
+          ON d.project_id   = p.id
+         AND d.item_id_low  = a.id
+         AND d.item_id_high = b.id
+         AND d.choice_id IS NOT NULL
+       WHERE d.choice_id IS NULL
+       GROUP BY p.id, p.name
+       ORDER BY p.name;")
+    local -a this_proj_ids=()
+    local -a this_proj_names=()
+    if [[ -n "${this_raw}" ]]; then
+      local id name
+      while IFS=$'\t' read -r id name; do
+        this_proj_ids+=("${id}")
+        this_proj_names+=("${name}")
+      done <<< "${this_raw}"
+    fi
+    if [[ ${#this_proj_ids[@]} -eq 0 ]]; then
+      printf "  ${color_gray}(none)${color_reset}\n\n"
+    else
+      for i in "${!this_proj_ids[@]}"; do
+        printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_proj_names[$i]}"
+      done
+      printf "\n"
+    fi
+
+    printf "  ---\n"
+    printf "  Enter a ${color_green}number${color_reset} to decide, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *[!0-9]*|"") ;; # invalid - redraw
+      *)
+        if (( this_choice >= 1 && this_choice <= ${#this_proj_ids[@]} )); then
+          local _
+          task_decide "${this_proj_names[$((this_choice-1))]}"
+          printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+          if ! read _; then
+            this_reflect_choice="quit"
+            return 0
+          fi
+        fi
+        ;;
+    esac
+  done
+}
+
+############
+# Layer 2e #
+# Detail screens
+############
 
 function reflect_screen_detail_horizon2() {
   local this_id="$1"
@@ -664,7 +876,6 @@ function reflect_run_decide() {
   local _
 
   case "$1" in
-    horizon1) project_decide ;;
     horizon3) goal_decide    ;;
     horizon4) vision_decide  ;;
   esac

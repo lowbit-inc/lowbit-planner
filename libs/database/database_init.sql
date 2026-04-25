@@ -5,7 +5,7 @@ CREATE TABLE meta (
   value TEXT
 );
 
-INSERT INTO meta VALUES ("db_schema", "6");
+INSERT INTO meta VALUES ("db_schema", "7");
 
 -- Workflow:Reflect:Reviews --
 
@@ -162,6 +162,7 @@ CREATE TABLE tasks (
   due_date     TEXT,
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   name         TEXT NOT NULL,
+  position     INTEGER DEFAULT 0,
   project_id   INTEGER,
   start_date   TEXT,
   status       TEXT NOT NULL DEFAULT 'Pending',
@@ -348,4 +349,22 @@ CREATE TABLE project_decisions (
   FOREIGN KEY (choice_id)    REFERENCES projects (id),
   CHECK (item_id_low < item_id_high),
   UNIQUE (item_id_low, item_id_high)
+);
+
+-- Workflow:Decision:Task Decisions --
+
+CREATE TABLE task_decisions (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id    INTEGER NOT NULL,
+  item_id_low   INTEGER NOT NULL,
+  item_id_high  INTEGER NOT NULL,
+  choice_id     INTEGER,
+  created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  decided_at    TEXT,
+  FOREIGN KEY (project_id)   REFERENCES projects (id),
+  FOREIGN KEY (item_id_low)  REFERENCES tasks (id),
+  FOREIGN KEY (item_id_high) REFERENCES tasks (id),
+  FOREIGN KEY (choice_id)    REFERENCES tasks (id),
+  CHECK (item_id_low < item_id_high),
+  UNIQUE (project_id, item_id_low, item_id_high)
 );

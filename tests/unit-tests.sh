@@ -332,6 +332,30 @@ else
 fi
 log_print info "--------------------------------"
 
+# Task decide workflow tests (scoped to a project)
+# Project "Arrumar torneira" (id 1) has 1 pending task ("Comprar peças"). Add 2
+# more so C(3,2) = 3 pairs are generated when we run task decide on it.
+./plan.sh task add 'Trocar cano'    --project 'Arrumar torneira' >/dev/null 2>&1
+./plan.sh task add 'Comprar fita'   --project 'Arrumar torneira' >/dev/null 2>&1
+
+test_command_output "Task decide - help on missing arg" \
+  "./plan.sh task decide" "Task Decide"
+
+test_command_output "Task decide - generates 3 pairs" \
+  "./plan.sh --noprompt task decide 'Arrumar torneira' && sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM task_decisions WHERE project_id=1'" "3"
+
+test_command_output "Task decide - idempotent re-run" \
+  "./plan.sh --noprompt task decide 'Arrumar torneira' && sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM task_decisions WHERE project_id=1'" "3"
+
+test_command_output "Task decide - positions incremented" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT SUM(position) FROM tasks WHERE project_id=1'" "3"
+
+./plan.sh --noprompt task decide 'Arrumar torneira' --reset >/dev/null 2>&1
+test_command_output "Task decide --reset - clears decisions" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM task_decisions WHERE project_id=1'" "0"
+test_command_output "Task decide --reset - zeroes positions" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT SUM(position) FROM tasks WHERE project_id=1'" "0"
+
 # Purpose CRUD tests
 test_command_output "Purpose - help" "./plan.sh purpose" "Lowbit Planner - Purpose"
 test_command_output "Purpose - add" "./plan.sh purpose add 'Viver com intencionalidade'" "Item added to purposes"
@@ -566,9 +590,21 @@ test_command_output "Reflect - invalid key at main menu ignored" \
 test_command_output "Reflect - invalid key at ground menu ignored" \
   "printf 'g\nz\nb\nq\n' | ./plan.sh --noprompt reflect" "═══ Ground ═══"
 
-# Horizon 1 drill-down: pick project #1 → detail screen renders Project header
-test_command_output "Reflect - h1 drill-down shows Project header" \
-  "printf '1\nl\n1\nb\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Project:"
+# Horizon 1 actions screen surfaces the three review actions
+test_command_output "Reflect - h1 actions screen offers Decide Projects" \
+  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Decide Projects"
+test_command_output "Reflect - h1 actions screen offers Add Next Actions" \
+  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Next Actions"
+test_command_output "Reflect - h1 actions screen offers Decide Tasks in Project" \
+  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Decide Tasks in Project"
+
+# Mark complete on H1 is blocked while any of the three counters > 0
+test_command_output "Reflect - h1 mark complete is blocked when state pending" \
+  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "blocked"
+
+# Add Next Actions picker lists projects without a pending task
+test_command_output "Reflect - h1 next action picker shows project without tasks" \
+  "printf '1\nn\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Add Next Actions ═══"
 
 # Horizon 2 picker label carries (Np, Ng, Nv) counts suffix
 test_command_output "Reflect - h2 list label shows counts pattern" \
