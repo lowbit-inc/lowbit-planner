@@ -542,14 +542,6 @@ test_command_output "Reflect - ground screen offers Decide Collections" \
 test_command_output "Reflect - h1 list shows Projects" \
   "printf '1\nl\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Projects"
 
-# (l) on Horizon 5 shows Purposes section
-test_command_output "Reflect - h5 list shows Purposes" \
-  "printf '5\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Purposes"
-
-# (d) Decide option is shown on Horizon 1 (supported)
-test_command_output "Reflect - h1 screen shows Decide option" \
-  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "(d) Decide"
-
 # (m) is blocked while inbox has items or collections have pending decisions.
 test_command_output "Reflect - ground mark complete is blocked when state pending" \
   "printf 'g\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "blocked"
@@ -634,6 +626,33 @@ test_command_output "Reflect - h4 mark complete is blocked when state pending" \
 # Add Goals picker reachable from H4 (lists visions without goal)
 test_command_output "Reflect - h4 add goal picker shows header" \
   "printf '4\ng\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Add Goals ═══"
+
+# Setup: ensure there's at least one principle so the validate picker has rows.
+# (The principle CRUD test deletes its fixture; without this the (r) action is
+# gated and the picker never opens.)
+./plan.sh principle add 'Consistencia acima de intensidade' >/dev/null 2>&1
+
+# Horizon 5 actions screen surfaces all four review actions
+test_command_output "Reflect - h5 actions screen offers Validate Purposes" \
+  "printf '5\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Validate Purposes"
+test_command_output "Reflect - h5 actions screen offers Validate Principles" \
+  "printf '5\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Validate Principles"
+test_command_output "Reflect - h5 actions screen offers Add Purpose" \
+  "printf '5\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Purpose"
+test_command_output "Reflect - h5 actions screen offers Add Principle" \
+  "printf '5\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Principle"
+
+# Mark complete on H5 is blocked while any validation is pending
+test_command_output "Reflect - h5 mark complete is blocked when state pending" \
+  "printf '5\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "blocked"
+
+# Validate Purposes picker reachable from H5
+test_command_output "Reflect - h5 validate purposes picker shows header" \
+  "printf '5\np\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Validate Purposes ═══"
+
+# Validate Principles picker reachable from H5
+test_command_output "Reflect - h5 validate principles picker shows header" \
+  "printf '5\nr\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Validate Principles ═══"
 
 # Ground (d) opens a picker that lists collections with pending decisions
 # (Setup: a fresh collection with two undecided items so an undecided pair exists)

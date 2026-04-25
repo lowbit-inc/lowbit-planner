@@ -34,7 +34,7 @@ function reflect_main() {
       horizon2)  reflect_screen_horizon2_actions                                      ;;
       horizon3)  reflect_screen_horizon3_actions                                      ;;
       horizon4)  reflect_screen_horizon4_actions                                      ;;
-      horizon5)  reflect_screen_horizon "horizon5" "Horizon 5 - Purpose & Principles" ;;
+      horizon5)  reflect_screen_horizon5_actions                                      ;;
     esac
     # If a nested screen got EOF, propagate quit out of the outer loop
     if [[ "${this_reflect_choice}" == "quit" ]]; then
@@ -115,175 +115,6 @@ function reflect_print_menu_item() {
 
   printf "  ${color_green}(%s)${color_reset} ${this_badge_fmt} ${color_bold}%s${color_reset} — ${this_suffix_fmt}\n" \
     "${this_key}" "${this_label}"
-}
-
-############
-# Layer 2b #
-# Horizon review TUI
-############
-
-# Args: <horizon> <label>
-function reflect_screen_horizon() {
-  local this_horizon="$1"
-  local this_label="$2"
-  local this_choice
-
-  while true; do
-    clear
-    workflow_print_header "reflect"
-    printf "${color_bold}${color_bright_blue}═══ Reviewing: ${this_label} ═══${color_reset}\n\n"
-    printf "  ${color_green}(l)${color_reset} List items\n"
-    if reflect_horizon_has_decide "${this_horizon}"; then
-      printf "  ${color_green}(d)${color_reset} Decide\n"
-    fi
-    printf "  ${color_green}(m)${color_reset} Mark review as complete\n"
-    printf "  ---\n"
-    printf "  ${color_yellow}(b)${color_reset} Back to main menu\n"
-    printf "  ${color_yellow}(q)${color_reset} Quit\n\n"
-    printf "> "
-
-    if ! read this_choice; then
-      this_reflect_choice="quit"
-      return 0
-    fi
-
-    case "${this_choice}" in
-      l|L)
-        reflect_show_list "${this_horizon}"
-        ;;
-      d|D)
-        if reflect_horizon_has_decide "${this_horizon}"; then
-          reflect_run_decide "${this_horizon}"
-        fi
-        ;;
-      m|M)
-        reflect_mark_complete "${this_horizon}" "${this_label}"
-        return 0
-        ;;
-      b|B)
-        return 0
-        ;;
-      q|Q)
-        this_reflect_choice="quit"
-        return 0
-        ;;
-      *)
-        ;; # invalid - redraw
-    esac
-
-    # If a sub-action propagated quit (via Ctrl+D in list/decide/mark), honor it
-    if [[ "${this_reflect_choice}" == "quit" ]]; then
-      return 0
-    fi
-  done
-}
-
-###########
-# Helpers #
-###########
-
-# Returns 0 (true) if the horizon has a backend "decide" implementation.
-# Args: <horizon>
-function reflect_horizon_has_decide() {
-  return 1
-}
-
-# Dispatch the (l) action to the horizon-specific list/picker screen.
-# Ground uses its own action menu (reflect_screen_ground_actions) and does not
-# go through reflect_screen_horizon, so it is not dispatched here.
-# Args: <horizon>
-function reflect_show_list() {
-  local this_horizon="$1"
-  case "${this_horizon}" in
-    horizon5) reflect_screen_list_horizon5 ;;
-  esac
-}
-
-############
-# Layer 2c #
-# Generic numbered picker used by horizon list screens
-############
-
-# Renders a numbered list from a 2-column SQL query (id, label). Sets
-# this_reflect_picker_id / this_reflect_picker_name on selection, or leaves them
-# empty when the user presses (b)ack. EOF / (q)uit propagates via
-# this_reflect_choice="quit".
-# Args: <title> <query>
-function reflect_screen_picker() {
-  local this_title="$1"
-  local this_query="$2"
-  this_reflect_picker_id=""
-  this_reflect_picker_name=""
-
-  local this_choice
-  local i
-  while true; do
-    clear
-    workflow_print_header "reflect"
-    printf "${color_bold}${color_bright_blue}═══ ${this_title} ═══${color_reset}\n\n"
-
-    local this_raw
-    this_raw=$(sqlite3 -separator $'\t' "${database_path}" "${this_query}")
-
-    local -a this_ids=()
-    local -a this_names=()
-    if [[ -n "${this_raw}" ]]; then
-      local id label
-      while IFS=$'\t' read -r id label; do
-        this_ids+=("${id}")
-        this_names+=("${label}")
-      done <<< "${this_raw}"
-    fi
-
-    if [[ ${#this_ids[@]} -eq 0 ]]; then
-      printf "  ${color_gray}(none)${color_reset}\n\n"
-    else
-      for i in "${!this_ids[@]}"; do
-        printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_names[$i]}"
-      done
-      printf "\n"
-    fi
-
-    printf "  ---\n"
-    printf "  Enter a ${color_green}number${color_reset} to open, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
-    printf "> "
-
-    if ! read this_choice; then
-      this_reflect_choice="quit"
-      return 0
-    fi
-
-    case "${this_choice}" in
-      b|B) return 0 ;;
-      q|Q) this_reflect_choice="quit" ; return 0 ;;
-      *[!0-9]*|"") ;; # invalid - redraw
-      *)
-        if (( this_choice >= 1 && this_choice <= ${#this_ids[@]} )); then
-          this_reflect_picker_id="${this_ids[$((this_choice-1))]}"
-          this_reflect_picker_name="${this_names[$((this_choice-1))]}"
-          return 0
-        fi
-        ;;
-    esac
-  done
-}
-
-############
-# Layer 2d #
-# Horizon list screens (picker → detail loop)
-############
-
-# Horizon 5 keeps the plain show-and-return flow — no drill-down.
-function reflect_screen_list_horizon5() {
-  local _
-  clear
-  workflow_print_header "reflect"
-  reflect_review_horizon5
-  printf "\n${color_gray}Press ENTER to return (or Ctrl+D to quit)...${color_reset}\n"
-  if ! read _; then
-    this_reflect_choice="quit"
-    return 0
-  fi
 }
 
 # Ground is reviewed daily. Instead of listing object categories, this screen
@@ -1327,6 +1158,218 @@ function reflect_screen_horizon4_add_goal_picker() {
 }
 
 ############
+# Layer 2e5 #
+# Horizon 5 (Purposes & Principles) action-focused TUI.
+############
+
+# Yearly review of life direction. Two validation tracks (purposes, principles)
+# plus two free-form add actions. (m) only unlocks once both validation
+# counters hit zero; the add actions don't gate completion since "missing" is
+# subjective.
+function reflect_screen_horizon5_actions() {
+  local this_choice
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Horizon 5 - Purposes & Principles ═══${color_reset}\n\n"
+
+    local this_pending_purposes=$(database_run csv \
+      "SELECT count(*) FROM purposes
+        WHERE last_validated_at IS NULL
+           OR strftime('%Y', last_validated_at) != strftime('%Y', 'now', 'localtime');" \
+      | tr -d '"')
+    local this_pending_principles=$(database_run csv \
+      "SELECT count(*) FROM principles
+        WHERE last_validated_at IS NULL
+           OR strftime('%Y', last_validated_at) != strftime('%Y', 'now', 'localtime');" \
+      | tr -d '"')
+    [[ -z "${this_pending_purposes}"   ]] && this_pending_purposes=0
+    [[ -z "${this_pending_principles}" ]] && this_pending_principles=0
+
+    if (( this_pending_purposes > 0 )); then
+      printf "  ${color_green}(p)${color_reset} Validate Purposes           — ${this_pending_purposes} purpose(s) not validated this year\n"
+    else
+      printf "  ${color_gray}(p) Validate Purposes           — (all validated)${color_reset}\n"
+    fi
+
+    if (( this_pending_principles > 0 )); then
+      printf "  ${color_green}(r)${color_reset} Validate Principles         — ${this_pending_principles} principle(s) not validated this year\n"
+    else
+      printf "  ${color_gray}(r) Validate Principles         — (all validated)${color_reset}\n"
+    fi
+
+    printf "  ${color_green}(a)${color_reset} Add Purpose                 — capture a missing purpose\n"
+    printf "  ${color_green}(n)${color_reset} Add Principle               — capture a missing principle\n"
+
+    local this_mark_enabled="false"
+    if (( this_pending_purposes == 0 && this_pending_principles == 0 )); then
+      this_mark_enabled="true"
+      printf "  ${color_green}(m)${color_reset} Mark review as complete\n"
+    else
+      printf "  ${color_gray}(m) Mark review as complete   [blocked: validate every purpose and principle first]${color_reset}\n"
+    fi
+
+    printf "  ---\n"
+    printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      p|P)
+        if (( this_pending_purposes > 0 )); then
+          reflect_screen_horizon5_validate_picker "purpose" "Validate Purposes" "purposes"
+          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+      r|R)
+        if (( this_pending_principles > 0 )); then
+          reflect_screen_horizon5_validate_picker "principle" "Validate Principles" "principles"
+          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+      a|A)
+        clarify_screen_object_form "purpose"
+        [[ "${this_form_result}" == "quit" ]] && this_reflect_choice="quit" && return 0
+        ;;
+      n|N)
+        clarify_screen_object_form "principle"
+        [[ "${this_form_result}" == "quit" ]] && this_reflect_choice="quit" && return 0
+        ;;
+      m|M)
+        if [[ "${this_mark_enabled}" == "true" ]]; then
+          reflect_mark_complete "horizon5" "Horizon 5"
+          return 0
+        fi
+        ;;
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *)   ;; # invalid - redraw
+    esac
+  done
+}
+
+# Generic picker of purposes/principles pending validation; on selection opens
+# the validate detail screen.
+# Args: <type> <screen_label> <table_name>
+function reflect_screen_horizon5_validate_picker() {
+  local this_type="$1"
+  local this_label="$2"
+  local this_table="$3"
+  local this_choice
+  local i
+
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ ${this_label} ═══${color_reset}\n\n"
+
+    local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "
+      SELECT id, name FROM ${this_table}
+       WHERE last_validated_at IS NULL
+          OR strftime('%Y', last_validated_at) != strftime('%Y', 'now', 'localtime')
+       ORDER BY name;")
+    local -a this_ids=()
+    local -a this_names=()
+    if [[ -n "${this_raw}" ]]; then
+      local id name
+      while IFS=$'\t' read -r id name; do
+        this_ids+=("${id}")
+        this_names+=("${name}")
+      done <<< "${this_raw}"
+    fi
+    if [[ ${#this_ids[@]} -eq 0 ]]; then
+      printf "  ${color_gray}(none)${color_reset}\n\n"
+    else
+      for i in "${!this_ids[@]}"; do
+        printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_names[$i]}"
+      done
+      printf "\n"
+    fi
+
+    printf "  ---\n"
+    printf "  Enter a ${color_green}number${color_reset} to validate, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *[!0-9]*|"") ;; # invalid - redraw
+      *)
+        if (( this_choice >= 1 && this_choice <= ${#this_ids[@]} )); then
+          reflect_screen_horizon5_validate_detail \
+            "${this_type}" "${this_table}" \
+            "${this_ids[$((this_choice-1))]}" \
+            "${this_names[$((this_choice-1))]}"
+          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+    esac
+  done
+}
+
+# Detail screen for a single purpose/principle pending validation.
+# Args: <type> <table_name> <id> <name>
+function reflect_screen_horizon5_validate_detail() {
+  local this_type="$1"
+  local this_table="$2"
+  local this_id="$3"
+  local this_name="$4"
+  local this_choice
+
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Validate ${this_type}: ${this_name} ═══${color_reset}\n\n"
+
+    local this_desc=$(database_run csv "SELECT COALESCE(description, '') FROM ${this_table} WHERE id = ${this_id};" | tr -d '"')
+    if [[ -n "${this_desc}" ]]; then
+      printf "  ${color_bold}Description:${color_reset} %s\n\n" "${this_desc}"
+    else
+      printf "  ${color_gray}(no description)${color_reset}\n\n"
+    fi
+
+    printf "  Does this ${this_type} still resonate?\n\n"
+    printf "  ${color_green}(y)${color_reset} Confirm — bumps last_validated_at to now\n"
+    printf "  ${color_green}(d)${color_reset} Delete  — removes the ${this_type}\n"
+    printf "  ${color_yellow}(s)${color_reset} Skip    — leave for next time\n"
+    printf "  ---\n"
+    printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      y|Y)
+        database_run csv "UPDATE ${this_table} SET last_validated_at = datetime('now', 'localtime') WHERE id = ${this_id};"
+        return 0
+        ;;
+      d|D)
+        local _
+        ${this_type}_delete "${this_name}"
+        printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+        if ! read _; then
+          this_reflect_choice="quit"
+          return 0
+        fi
+        return 0
+        ;;
+      s|S|b|B) return 0 ;;
+      q|Q)     this_reflect_choice="quit" ; return 0 ;;
+      *)       ;; # invalid - redraw
+    esac
+  done
+}
+
+############
 # Layer 2e #
 # Detail screens
 ############
@@ -1354,27 +1397,6 @@ function reflect_mark_complete() {
 #################
 # Render helpers #
 #################
-
-# Kept from the pre-TUI implementation — still used by reflect_print_menu_item
-# to compute the inline badge, and retained as a reusable helper.
-function reflect_show_status() {
-  local this_horizon="${1}"
-  local this_label="${2}"
-  local this_current_period="${3}"
-
-  local this_last_reviewed=$(database_run csv "SELECT last_reviewed_at FROM reviews WHERE horizon = '${this_horizon}';" | tr -d '"')
-
-  if [[ -z "${this_last_reviewed}" ]]; then
-    printf "  ${color_yellow}[!]${color_reset} ${color_bold}${this_label}${color_reset} — ${color_yellow}Never reviewed${color_reset}\n"
-  else
-    # Check if the review is current
-    if reflect_is_current "${this_horizon}" "${this_last_reviewed}" "${this_current_period}"; then
-      printf "  ${color_green}[v]${color_reset} ${color_bold}${this_label}${color_reset} — Last: ${this_last_reviewed}\n"
-    else
-      printf "  ${color_yellow}[!]${color_reset} ${color_bold}${this_label}${color_reset} — ${color_yellow}Due${color_reset} (last: ${this_last_reviewed})\n"
-    fi
-  fi
-}
 
 function reflect_is_current() {
   local this_horizon="${1}"
@@ -1408,24 +1430,3 @@ function reflect_is_current() {
   [[ "${this_review_period}" == "${this_current_period}" ]]
 }
 
-function reflect_review_horizon5() {
-  printf "${color_bold}${color_cyan}── Purposes ──${color_reset}\n"
-  local this_purposes=$(database_run box "SELECT * FROM purposes_view")
-  if [[ -n "${this_purposes}" ]]; then
-    echo "${this_purposes}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
-
-  printf "${color_bold}${color_cyan}── Principles ──${color_reset}\n"
-  local this_principles=$(database_run box "SELECT * FROM principles_view")
-  if [[ -n "${this_principles}" ]]; then
-    echo "${this_principles}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-  printf "\n"
-  printf "  ${color_yellow}Tip: Does your life direction still resonate? Any new principles?${color_reset}\n"
-  printf "\n"
-}

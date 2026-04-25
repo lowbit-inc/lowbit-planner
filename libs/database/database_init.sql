@@ -5,7 +5,7 @@ CREATE TABLE meta (
   value TEXT
 );
 
-INSERT INTO meta VALUES ("db_schema", "8");
+INSERT INTO meta VALUES ("db_schema", "9");
 
 -- Workflow:Reflect:Reviews --
 
@@ -190,10 +190,11 @@ ORDER BY
 -- Objects:Horizon5:Purpose --
 
 CREATE TABLE purposes (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  name        TEXT NOT NULL UNIQUE,
-  description TEXT,
-  created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  name              TEXT NOT NULL UNIQUE,
+  description       TEXT,
+  last_validated_at TEXT,
+  created_at        TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE VIEW purposes_view AS
@@ -204,10 +205,11 @@ ORDER BY name ASC;
 -- Objects:Horizon5:Principle --
 
 CREATE TABLE principles (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  name        TEXT NOT NULL UNIQUE,
-  description TEXT,
-  created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  name              TEXT NOT NULL UNIQUE,
+  description       TEXT,
+  last_validated_at TEXT,
+  created_at        TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE VIEW principles_view AS
