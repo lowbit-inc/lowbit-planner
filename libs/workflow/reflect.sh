@@ -33,7 +33,7 @@ function reflect_main() {
       horizon1)  reflect_screen_horizon1_actions                                      ;;
       horizon2)  reflect_screen_horizon2_actions                                      ;;
       horizon3)  reflect_screen_horizon3_actions                                      ;;
-      horizon4)  reflect_screen_horizon "horizon4" "Horizon 4 - Visions"              ;;
+      horizon4)  reflect_screen_horizon4_actions                                      ;;
       horizon5)  reflect_screen_horizon "horizon5" "Horizon 5 - Purpose & Principles" ;;
     esac
     # If a nested screen got EOF, propagate quit out of the outer loop
@@ -185,10 +185,7 @@ function reflect_screen_horizon() {
 # Returns 0 (true) if the horizon has a backend "decide" implementation.
 # Args: <horizon>
 function reflect_horizon_has_decide() {
-  case "$1" in
-    horizon4) return 0 ;;
-    *)        return 1 ;;
-  esac
+  return 1
 }
 
 # Dispatch the (l) action to the horizon-specific list/picker screen.
@@ -198,7 +195,6 @@ function reflect_horizon_has_decide() {
 function reflect_show_list() {
   local this_horizon="$1"
   case "${this_horizon}" in
-    horizon4) reflect_screen_list_horizon4 ;;
     horizon5) reflect_screen_list_horizon5 ;;
   esac
 }
@@ -276,17 +272,6 @@ function reflect_screen_picker() {
 # Layer 2d #
 # Horizon list screens (picker → detail loop)
 ############
-
-function reflect_screen_list_horizon4() {
-  while true; do
-    reflect_screen_picker "Visions" \
-      "SELECT id, name FROM visions_view WHERE status != 'Done';"
-    [[ "${this_reflect_choice}" == "quit" ]] && return 0
-    [[ -z "${this_reflect_picker_id}" ]] && return 0
-    reflect_screen_detail_horizon4 "${this_reflect_picker_id}" "${this_reflect_picker_name}"
-    [[ "${this_reflect_choice}" == "quit" ]] && return 0
-  done
-}
 
 # Horizon 5 keeps the plain show-and-return flow — no drill-down.
 function reflect_screen_list_horizon5() {
@@ -1178,28 +1163,62 @@ function reflect_screen_horizon3_add_project_picker() {
 }
 
 ############
-# Layer 2e #
-# Detail screens
+# Layer 2e4 #
+# Horizon 4 (Visions) action-focused TUI — mirrors Horizon 3.
 ############
 
-function reflect_screen_detail_horizon4() {
-  local this_id="$1"
-  local this_name="$2"
+# Two things must be resolved during a biannual Visions review:
+#   (d) rank visions against each other (global)
+#   (g) ensure every vision has at least one Goal planned
+# (m) only unlocks when both counters hit zero.
+function reflect_screen_horizon4_actions() {
   local this_choice
-
   while true; do
     clear
     workflow_print_header "reflect"
-    printf "${color_bold}${color_bright_blue}═══ Vision: ${this_name} ═══${color_reset}\n\n"
+    printf "${color_bold}${color_bright_blue}═══ Horizon 4 - Visions ═══${color_reset}\n\n"
 
-    printf "${color_bold}${color_cyan}── Goals ──${color_reset}\n"
-    local this_goals=$(database_run box "SELECT * FROM goals_view WHERE vision = '${this_name}' AND status != 'Done'")
-    if [[ -n "${this_goals}" ]]; then
-      echo "${this_goals}"
+    local this_pending_visions=$(database_run csv \
+      "SELECT count(*) FROM visions a
+         JOIN visions b ON a.id < b.id
+         LEFT JOIN vision_decisions d
+           ON d.item_id_low  = a.id
+          AND d.item_id_high = b.id
+          AND d.choice_id IS NOT NULL
+        WHERE a.status != 'Done'
+          AND b.status != 'Done'
+          AND d.choice_id IS NULL;" \
+      | tr -d '"')
+    local this_visions_without_goal=$(database_run csv \
+      "SELECT count(*) FROM visions v
+        WHERE v.status != 'Done'
+          AND NOT EXISTS (
+            SELECT 1 FROM goals g
+             WHERE g.vision_id = v.id AND g.status != 'Done'
+          );" \
+      | tr -d '"')
+    [[ -z "${this_pending_visions}"        ]] && this_pending_visions=0
+    [[ -z "${this_visions_without_goal}"   ]] && this_visions_without_goal=0
+
+    if (( this_pending_visions > 0 )); then
+      printf "  ${color_green}(d)${color_reset} Decide Visions              — ${this_pending_visions} pending vision decision(s)\n"
     else
-      printf "  ${color_gray}(none)${color_reset}\n"
+      printf "  ${color_gray}(d) Decide Visions              — (nothing to decide)${color_reset}\n"
     fi
-    printf "\n"
+
+    if (( this_visions_without_goal > 0 )); then
+      printf "  ${color_green}(g)${color_reset} Add Goals                   — ${this_visions_without_goal} vision(s) without goal\n"
+    else
+      printf "  ${color_gray}(g) Add Goals                   — (every vision has a goal)${color_reset}\n"
+    fi
+
+    local this_mark_enabled="false"
+    if (( this_pending_visions == 0 && this_visions_without_goal == 0 )); then
+      this_mark_enabled="true"
+      printf "  ${color_green}(m)${color_reset} Mark review as complete\n"
+    else
+      printf "  ${color_gray}(m) Mark review as complete   [blocked: resolve vision decisions and ensure each vision has a goal]${color_reset}\n"
+    fi
 
     printf "  ---\n"
     printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
@@ -1208,29 +1227,109 @@ function reflect_screen_detail_horizon4() {
       this_reflect_choice="quit"
       return 0
     fi
+
     case "${this_choice}" in
+      d|D)
+        if (( this_pending_visions > 0 )); then
+          local _
+          clear
+          workflow_print_header "reflect"
+          vision_decide
+          printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+          if ! read _; then
+            this_reflect_choice="quit"
+            return 0
+          fi
+        fi
+        ;;
+      g|G)
+        if (( this_visions_without_goal > 0 )); then
+          reflect_screen_horizon4_add_goal_picker
+          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+      m|M)
+        if [[ "${this_mark_enabled}" == "true" ]]; then
+          reflect_mark_complete "horizon4" "Horizon 4"
+          return 0
+        fi
+        ;;
       b|B) return 0 ;;
       q|Q) this_reflect_choice="quit" ; return 0 ;;
-      *) ;; # invalid - redraw
+      *)   ;; # invalid - redraw
     esac
   done
 }
 
-# Dispatch to the object-level decide function. Only called for horizons where
-# reflect_horizon_has_decide returns true.
-# Args: <horizon>
-function reflect_run_decide() {
-  local _
+# Picker of visions without a pending goal; on selection opens the goal clarify
+# form pre-filled with the vision's name and area (derived from vision.area_id).
+function reflect_screen_horizon4_add_goal_picker() {
+  local this_choice
+  local i
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Add Goals ═══${color_reset}\n\n"
 
-  case "$1" in
-    horizon4) vision_decide  ;;
-  esac
-  printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
-  if ! read _; then
-    this_reflect_choice="quit"
-    return 0
-  fi
+    local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "
+      SELECT v.id, v.name, COALESCE(a.name, '')
+        FROM visions v
+        LEFT JOIN areas a ON a.id = v.area_id
+       WHERE v.status != 'Done'
+         AND NOT EXISTS (
+           SELECT 1 FROM goals g
+            WHERE g.vision_id = v.id AND g.status != 'Done'
+         )
+       ORDER BY v.name;")
+    local -a this_vision_ids=()
+    local -a this_vision_names=()
+    local -a this_area_names=()
+    if [[ -n "${this_raw}" ]]; then
+      local id name area
+      while IFS=$'\t' read -r id name area; do
+        this_vision_ids+=("${id}")
+        this_vision_names+=("${name}")
+        this_area_names+=("${area}")
+      done <<< "${this_raw}"
+    fi
+    if [[ ${#this_vision_ids[@]} -eq 0 ]]; then
+      printf "  ${color_gray}(none)${color_reset}\n\n"
+    else
+      for i in "${!this_vision_ids[@]}"; do
+        printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_vision_names[$i]}"
+      done
+      printf "\n"
+    fi
+
+    printf "  ---\n"
+    printf "  Enter a ${color_green}number${color_reset} to add a goal, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *[!0-9]*|"") ;; # invalid - redraw
+      *)
+        if (( this_choice >= 1 && this_choice <= ${#this_vision_ids[@]} )); then
+          clarify_screen_object_form "goal" "" "" "" \
+            "${this_area_names[$((this_choice-1))]}" \
+            "" \
+            "${this_vision_names[$((this_choice-1))]}"
+          [[ "${this_form_result}" == "quit" ]] && this_reflect_choice="quit" && return 0
+        fi
+        ;;
+    esac
+  done
 }
+
+############
+# Layer 2e #
+# Detail screens
+############
 
 # Mark a horizon's review as complete (update reviews table), show confirmation,
 # wait for ENTER, return. Caller should return after this so the main loop
