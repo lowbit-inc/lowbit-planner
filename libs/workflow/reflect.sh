@@ -31,7 +31,7 @@ function reflect_main() {
       quit|"")  return 0 ;;
       ground)    reflect_screen_ground_actions                                        ;;
       horizon1)  reflect_screen_horizon1_actions                                      ;;
-      horizon2)  reflect_screen_horizon "horizon2" "Horizon 2 - Areas"                ;;
+      horizon2)  reflect_screen_horizon2_actions                                      ;;
       horizon3)  reflect_screen_horizon "horizon3" "Horizon 3 - Goals"                ;;
       horizon4)  reflect_screen_horizon "horizon4" "Horizon 4 - Visions"              ;;
       horizon5)  reflect_screen_horizon "horizon5" "Horizon 5 - Purpose & Principles" ;;
@@ -198,7 +198,6 @@ function reflect_horizon_has_decide() {
 function reflect_show_list() {
   local this_horizon="$1"
   case "${this_horizon}" in
-    horizon2) reflect_screen_list_horizon2 ;;
     horizon3) reflect_screen_list_horizon3 ;;
     horizon4) reflect_screen_list_horizon4 ;;
     horizon5) reflect_screen_list_horizon5 ;;
@@ -278,24 +277,6 @@ function reflect_screen_picker() {
 # Layer 2d #
 # Horizon list screens (picker → detail loop)
 ############
-
-function reflect_screen_list_horizon2() {
-  while true; do
-    reflect_screen_picker "Areas" \
-      "SELECT a.id, a.name || ' (' ||
-         (SELECT COUNT(*) FROM projects WHERE area_id = a.id AND status != 'Done') || 'p, ' ||
-         (SELECT COUNT(*) FROM goals    WHERE area_id = a.id AND status != 'Done') || 'g, ' ||
-         (SELECT COUNT(*) FROM visions  WHERE area_id = a.id AND status != 'Done') || 'v)'
-       FROM areas a ORDER BY a.name;"
-    [[ "${this_reflect_choice}" == "quit" ]] && return 0
-    [[ -z "${this_reflect_picker_id}" ]] && return 0
-    # Picker label carries "(Np, Ng, Nv)" suffix; fetch the raw area name for filtering.
-    local this_area_name
-    this_area_name=$(database_run csv "SELECT name FROM areas WHERE id = ${this_reflect_picker_id};")
-    reflect_screen_detail_horizon2 "${this_reflect_picker_id}" "${this_area_name}"
-    [[ "${this_reflect_choice}" == "quit" ]] && return 0
-  done
-}
 
 function reflect_screen_list_horizon3() {
   while true; do
@@ -745,46 +726,82 @@ function reflect_screen_horizon1_decide_tasks_picker() {
 }
 
 ############
-# Layer 2e #
-# Detail screens
+# Layer 2e2 #
+# Horizon 2 (Areas) action-focused TUI — mirrors Ground/Horizon1.
 ############
 
-function reflect_screen_detail_horizon2() {
-  local this_id="$1"
-  local this_name="$2"
+# Four things must be resolved during a monthly Areas review:
+#   (a) validate each area still makes sense (last_validated_at within current month)
+#   (v) ensure every area has at least one Vision
+#   (g) ensure every area has at least one Goal
+#   (p) ensure every area has at least one Project
+# (m) only unlocks when all four counters hit zero.
+function reflect_screen_horizon2_actions() {
   local this_choice
-
   while true; do
     clear
     workflow_print_header "reflect"
-    printf "${color_bold}${color_bright_blue}═══ Area: ${this_name} ═══${color_reset}\n\n"
+    printf "${color_bold}${color_bright_blue}═══ Horizon 2 - Areas ═══${color_reset}\n\n"
 
-    printf "${color_bold}${color_cyan}── Projects ──${color_reset}\n"
-    local this_projects=$(database_run box "SELECT * FROM projects_view WHERE area = '${this_name}' AND status != 'Done'")
-    if [[ -n "${this_projects}" ]]; then
-      echo "${this_projects}"
-    else
-      printf "  ${color_gray}(none)${color_reset}\n"
-    fi
-    printf "\n"
+    local this_pending_validate=$(database_run csv \
+      "SELECT count(*) FROM areas
+        WHERE last_validated_at IS NULL
+           OR strftime('%Y-%m', last_validated_at) != strftime('%Y-%m', 'now', 'localtime');" \
+      | tr -d '"')
+    local this_areas_without_vision=$(database_run csv \
+      "SELECT count(*) FROM areas a
+        WHERE NOT EXISTS (
+          SELECT 1 FROM visions v WHERE v.area_id = a.id AND v.status != 'Done'
+        );" \
+      | tr -d '"')
+    local this_areas_without_goal=$(database_run csv \
+      "SELECT count(*) FROM areas a
+        WHERE NOT EXISTS (
+          SELECT 1 FROM goals g WHERE g.area_id = a.id AND g.status != 'Done'
+        );" \
+      | tr -d '"')
+    local this_areas_without_project=$(database_run csv \
+      "SELECT count(*) FROM areas a
+        WHERE NOT EXISTS (
+          SELECT 1 FROM projects p WHERE p.area_id = a.id AND p.status != 'Done'
+        );" \
+      | tr -d '"')
+    [[ -z "${this_pending_validate}"        ]] && this_pending_validate=0
+    [[ -z "${this_areas_without_vision}"    ]] && this_areas_without_vision=0
+    [[ -z "${this_areas_without_goal}"      ]] && this_areas_without_goal=0
+    [[ -z "${this_areas_without_project}"   ]] && this_areas_without_project=0
 
-    printf "${color_bold}${color_cyan}── Goals ──${color_reset}\n"
-    local this_goals=$(database_run box "SELECT * FROM goals_view WHERE area = '${this_name}' AND status != 'Done'")
-    if [[ -n "${this_goals}" ]]; then
-      echo "${this_goals}"
+    if (( this_pending_validate > 0 )); then
+      printf "  ${color_green}(a)${color_reset} Validate Areas              — ${this_pending_validate} area(s) not validated this month\n"
     else
-      printf "  ${color_gray}(none)${color_reset}\n"
+      printf "  ${color_gray}(a) Validate Areas              — (all validated)${color_reset}\n"
     fi
-    printf "\n"
 
-    printf "${color_bold}${color_cyan}── Visions ──${color_reset}\n"
-    local this_visions=$(database_run box "SELECT * FROM visions_view WHERE area = '${this_name}' AND status != 'Done'")
-    if [[ -n "${this_visions}" ]]; then
-      echo "${this_visions}"
+    if (( this_areas_without_vision > 0 )); then
+      printf "  ${color_green}(v)${color_reset} Add Visions                 — ${this_areas_without_vision} area(s) without vision\n"
     else
-      printf "  ${color_gray}(none)${color_reset}\n"
+      printf "  ${color_gray}(v) Add Visions                 — (every area has a vision)${color_reset}\n"
     fi
-    printf "\n"
+
+    if (( this_areas_without_goal > 0 )); then
+      printf "  ${color_green}(g)${color_reset} Add Goals                   — ${this_areas_without_goal} area(s) without goal\n"
+    else
+      printf "  ${color_gray}(g) Add Goals                   — (every area has a goal)${color_reset}\n"
+    fi
+
+    if (( this_areas_without_project > 0 )); then
+      printf "  ${color_green}(p)${color_reset} Add Projects                — ${this_areas_without_project} area(s) without project\n"
+    else
+      printf "  ${color_gray}(p) Add Projects                — (every area has a project)${color_reset}\n"
+    fi
+
+    local this_mark_enabled="false"
+    if (( this_pending_validate == 0 && this_areas_without_vision == 0 && this_areas_without_goal == 0 && this_areas_without_project == 0 )); then
+      this_mark_enabled="true"
+      printf "  ${color_green}(m)${color_reset} Mark review as complete\n"
+    else
+      printf "  ${color_gray}(m) Mark review as complete   [blocked: validate areas and ensure each has a vision, goal and project]${color_reset}\n"
+    fi
 
     printf "  ---\n"
     printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
@@ -793,13 +810,226 @@ function reflect_screen_detail_horizon2() {
       this_reflect_choice="quit"
       return 0
     fi
+
     case "${this_choice}" in
+      a|A)
+        if (( this_pending_validate > 0 )); then
+          reflect_screen_horizon2_validate_picker
+          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+      v|V)
+        if (( this_areas_without_vision > 0 )); then
+          reflect_screen_horizon2_add_plan_picker "vision" "Add Visions" "visions"
+          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+      g|G)
+        if (( this_areas_without_goal > 0 )); then
+          reflect_screen_horizon2_add_plan_picker "goal" "Add Goals" "goals"
+          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+      p|P)
+        if (( this_areas_without_project > 0 )); then
+          reflect_screen_horizon2_add_plan_picker "project" "Add Projects" "projects"
+          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+      m|M)
+        if [[ "${this_mark_enabled}" == "true" ]]; then
+          reflect_mark_complete "horizon2" "Horizon 2"
+          return 0
+        fi
+        ;;
       b|B) return 0 ;;
       q|Q) this_reflect_choice="quit" ; return 0 ;;
-      *) ;; # invalid - redraw
+      *)   ;; # invalid - redraw
     esac
   done
 }
+
+# Picker of areas pending validation; on selection opens the validate detail screen.
+function reflect_screen_horizon2_validate_picker() {
+  local this_choice
+  local i
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Validate Areas ═══${color_reset}\n\n"
+
+    local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "
+      SELECT id, name FROM areas
+       WHERE last_validated_at IS NULL
+          OR strftime('%Y-%m', last_validated_at) != strftime('%Y-%m', 'now', 'localtime')
+       ORDER BY name;")
+    local -a this_area_ids=()
+    local -a this_area_names=()
+    if [[ -n "${this_raw}" ]]; then
+      local id name
+      while IFS=$'\t' read -r id name; do
+        this_area_ids+=("${id}")
+        this_area_names+=("${name}")
+      done <<< "${this_raw}"
+    fi
+    if [[ ${#this_area_ids[@]} -eq 0 ]]; then
+      printf "  ${color_gray}(none)${color_reset}\n\n"
+    else
+      for i in "${!this_area_ids[@]}"; do
+        printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_area_names[$i]}"
+      done
+      printf "\n"
+    fi
+
+    printf "  ---\n"
+    printf "  Enter a ${color_green}number${color_reset} to validate, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *[!0-9]*|"") ;; # invalid - redraw
+      *)
+        if (( this_choice >= 1 && this_choice <= ${#this_area_ids[@]} )); then
+          reflect_screen_horizon2_validate_detail \
+            "${this_area_ids[$((this_choice-1))]}" \
+            "${this_area_names[$((this_choice-1))]}"
+          [[ "${this_reflect_choice}" == "quit" ]] && return 0
+        fi
+        ;;
+    esac
+  done
+}
+
+# Detail screen for a single area pending validation. Shows description and
+# child counts, then offers Confirm / Delete / Skip.
+function reflect_screen_horizon2_validate_detail() {
+  local this_id="$1"
+  local this_name="$2"
+  local this_choice
+
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ Validate: ${this_name} ═══${color_reset}\n\n"
+
+    local this_desc=$(database_run csv "SELECT COALESCE(description, '') FROM areas WHERE id = ${this_id};" | tr -d '"')
+    local this_np=$(database_run csv "SELECT count(*) FROM projects WHERE area_id = ${this_id} AND status != 'Done';")
+    local this_ng=$(database_run csv "SELECT count(*) FROM goals    WHERE area_id = ${this_id} AND status != 'Done';")
+    local this_nv=$(database_run csv "SELECT count(*) FROM visions  WHERE area_id = ${this_id} AND status != 'Done';")
+
+    if [[ -n "${this_desc}" ]]; then
+      printf "  ${color_bold}Description:${color_reset} %s\n" "${this_desc}"
+    else
+      printf "  ${color_gray}(no description)${color_reset}\n"
+    fi
+    printf "  ${color_bold}Active plans:${color_reset} ${this_np} project(s), ${this_ng} goal(s), ${this_nv} vision(s)\n\n"
+
+    printf "  Does this area still make sense?\n\n"
+    printf "  ${color_green}(y)${color_reset} Confirm — bumps last_validated_at to now\n"
+    printf "  ${color_green}(d)${color_reset} Delete  — removes the area (fails if it has children)\n"
+    printf "  ${color_yellow}(s)${color_reset} Skip    — leave for next time\n"
+    printf "  ---\n"
+    printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      y|Y)
+        database_run csv "UPDATE areas SET last_validated_at = datetime('now', 'localtime') WHERE id = ${this_id};"
+        return 0
+        ;;
+      d|D)
+        local _
+        area_delete "${this_name}"
+        printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+        if ! read _; then
+          this_reflect_choice="quit"
+          return 0
+        fi
+        return 0
+        ;;
+      s|S|b|B) return 0 ;;
+      q|Q)     this_reflect_choice="quit" ; return 0 ;;
+      *)       ;; # invalid - redraw
+    esac
+  done
+}
+
+# Generic picker of areas missing a given plan type (vision/goal/project). On
+# selection opens the clarify form pre-filled with the chosen area name.
+# Args: <type> <screen_label> <table_name>
+function reflect_screen_horizon2_add_plan_picker() {
+  local this_type="$1"
+  local this_label="$2"
+  local this_table="$3"
+  local this_choice
+  local i
+
+  while true; do
+    clear
+    workflow_print_header "reflect"
+    printf "${color_bold}${color_bright_blue}═══ ${this_label} ═══${color_reset}\n\n"
+
+    local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "
+      SELECT a.id, a.name
+        FROM areas a
+       WHERE NOT EXISTS (
+         SELECT 1 FROM ${this_table} x
+          WHERE x.area_id = a.id AND x.status != 'Done'
+       )
+       ORDER BY a.name;")
+    local -a this_area_ids=()
+    local -a this_area_names=()
+    if [[ -n "${this_raw}" ]]; then
+      local id name
+      while IFS=$'\t' read -r id name; do
+        this_area_ids+=("${id}")
+        this_area_names+=("${name}")
+      done <<< "${this_raw}"
+    fi
+    if [[ ${#this_area_ids[@]} -eq 0 ]]; then
+      printf "  ${color_gray}(none)${color_reset}\n\n"
+    else
+      for i in "${!this_area_ids[@]}"; do
+        printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_area_names[$i]}"
+      done
+      printf "\n"
+    fi
+
+    printf "  ---\n"
+    printf "  Enter a ${color_green}number${color_reset} to add a ${this_type}, or ${color_yellow}(b)${color_reset} Back / ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+    if ! read this_choice; then
+      this_reflect_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      b|B) return 0 ;;
+      q|Q) this_reflect_choice="quit" ; return 0 ;;
+      *[!0-9]*|"") ;; # invalid - redraw
+      *)
+        if (( this_choice >= 1 && this_choice <= ${#this_area_ids[@]} )); then
+          clarify_screen_object_form "${this_type}" "" "" "" "${this_area_names[$((this_choice-1))]}"
+          [[ "${this_form_result}" == "quit" ]] && this_reflect_choice="quit" && return 0
+        fi
+        ;;
+    esac
+  done
+}
+
+############
+# Layer 2e #
+# Detail screens
+############
 
 function reflect_screen_detail_horizon3() {
   local this_id="$1"

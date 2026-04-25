@@ -5,7 +5,7 @@ CREATE TABLE meta (
   value TEXT
 );
 
-INSERT INTO meta VALUES ("db_schema", "7");
+INSERT INTO meta VALUES ("db_schema", "8");
 
 -- Workflow:Reflect:Reviews --
 
@@ -38,10 +38,11 @@ ORDER BY id ASC;
 -- Objects:Horizon2:Area --
 
 CREATE TABLE areas (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  name        TEXT NOT NULL UNIQUE,
-  description TEXT,
-  created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  name              TEXT NOT NULL UNIQUE,
+  description       TEXT,
+  last_validated_at TEXT,
+  created_at        TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE VIEW areas_view AS

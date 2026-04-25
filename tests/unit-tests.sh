@@ -542,10 +542,6 @@ test_command_output "Reflect - ground screen offers Decide Collections" \
 test_command_output "Reflect - h1 list shows Projects" \
   "printf '1\nl\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Projects"
 
-# (l) on Horizon 2 shows Areas picker
-test_command_output "Reflect - h2 list shows Areas" \
-  "printf '2\nl\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Areas"
-
 # (l) on Horizon 3 shows Goals picker
 test_command_output "Reflect - h3 list shows Goals" \
   "printf '3\nl\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Goals"
@@ -561,16 +557,6 @@ test_command_output "Reflect - h5 list shows Purposes" \
 # (d) Decide option is shown on Horizon 1 (supported)
 test_command_output "Reflect - h1 screen shows Decide option" \
   "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "(d) Decide"
-
-# (d) Decide option is NOT shown on Horizon 2 (unsupported)
-log_print info "--------------------------------"
-log_print info "Test: Reflect - h2 screen hides Decide option"
-if printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect 2>/dev/null | grep -q "(d) Decide"; then
-  log_print error "Result: Decide option should not appear on h2 screen"
-else
-  log_print info "Result: ${color_green}OK${color_reset}"
-fi
-log_print info "--------------------------------"
 
 # (m) is blocked while inbox has items or collections have pending decisions.
 test_command_output "Reflect - ground mark complete is blocked when state pending" \
@@ -606,17 +592,28 @@ test_command_output "Reflect - h1 mark complete is blocked when state pending" \
 test_command_output "Reflect - h1 next action picker shows project without tasks" \
   "printf '1\nn\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Add Next Actions ═══"
 
-# Horizon 2 picker label carries (Np, Ng, Nv) counts suffix
-test_command_output "Reflect - h2 list label shows counts pattern" \
-  "printf '2\nl\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Casa (.*p, .*g, .*v)"
+# Horizon 2 actions screen surfaces the four review actions
+test_command_output "Reflect - h2 actions screen offers Validate Areas" \
+  "printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Validate Areas"
+test_command_output "Reflect - h2 actions screen offers Add Visions" \
+  "printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Visions"
+test_command_output "Reflect - h2 actions screen offers Add Goals" \
+  "printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Goals"
+test_command_output "Reflect - h2 actions screen offers Add Projects" \
+  "printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Projects"
 
-# Horizon 2 drill-down shows Projects/Goals/Visions sections for the area
-test_command_output "Reflect - h2 drill-down shows Projects section" \
-  "printf '2\nl\n1\nb\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "── Projects ──"
-test_command_output "Reflect - h2 drill-down shows Goals section" \
-  "printf '2\nl\n1\nb\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "── Goals ──"
-test_command_output "Reflect - h2 drill-down shows Visions section" \
-  "printf '2\nl\n1\nb\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "── Visions ──"
+# Mark complete on H2 is blocked while any of the four counters > 0
+test_command_output "Reflect - h2 mark complete is blocked when state pending" \
+  "printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "blocked"
+
+# Validate Areas picker shows pending areas (any area where last_validated_at
+# is not in the current YYYY-MM is pending; freshly created areas are NULL)
+test_command_output "Reflect - h2 validate picker shows header" \
+  "printf '2\na\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Validate Areas ═══"
+
+# Add Visions picker reachable from H2
+test_command_output "Reflect - h2 add vision picker shows header" \
+  "printf '2\nv\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Add Visions ═══"
 
 # Ground (d) opens a picker that lists collections with pending decisions
 # (Setup: a fresh collection with two undecided items so an undecided pair exists)
