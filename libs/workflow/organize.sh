@@ -92,7 +92,6 @@ function organize_screen_object_menu() {
         printf "  ${color_green}(r)${color_reset} Recurring\n"
         printf "  ${color_green}(h)${color_reset} Habit\n"
         printf "  ${color_green}(c)${color_reset} Collection\n"
-        printf "  ${color_green}(x)${color_reset} Item\n"
         ;;
       horizon5)
         printf "${color_bold}${color_bright_blue}═══ Horizon 5 ═══${color_reset}\n\n"
@@ -119,7 +118,6 @@ function organize_screen_object_menu() {
           r|R) organize_screen_object_ops "recurring"  ;;
           h|H) organize_screen_object_ops "habit"      ;;
           c|C) organize_screen_object_ops "collection" ;;
-          x|X) organize_screen_object_ops "item"       ;;
           b|B) return 0 ;;
           q|Q) this_organize_choice="quit" ; return 0 ;;
           *)   ;;
@@ -146,21 +144,21 @@ function organize_screen_object_menu() {
 ##########
 
 # Echoes a space-separated list of verbs supported by <type>.
-# Verbs: list add complete start stop decide remove
+# Verbs: add complete start stop decide remove
 function organize_type_caps() {
   case "$1" in
-    inbox)      echo "list add remove" ;;
-    task)       echo "list add complete start stop remove" ;;
-    recurring)  echo "list add complete remove" ;;
-    habit)      echo "list add complete remove" ;;
-    collection) echo "list add decide remove" ;;
-    item)       echo "list add complete start stop remove" ;;
-    project)    echo "list add complete start stop decide remove" ;;
-    area)       echo "list add remove" ;;
-    goal)       echo "list add complete start stop decide remove" ;;
-    vision)     echo "list add complete start stop decide remove" ;;
-    purpose)    echo "list add remove" ;;
-    principle)  echo "list add remove" ;;
+    inbox)      echo "add remove" ;;
+    task)       echo "add complete start stop remove" ;;
+    recurring)  echo "add complete remove" ;;
+    habit)      echo "add complete remove" ;;
+    collection) echo "add remove" ;;
+    item)       echo "add complete start stop remove" ;;
+    project)    echo "add complete start stop decide remove" ;;
+    area)       echo "add remove" ;;
+    goal)       echo "add complete start stop decide remove" ;;
+    vision)     echo "add complete start stop decide remove" ;;
+    purpose)    echo "add remove" ;;
+    principle)  echo "add remove" ;;
   esac
 }
 
@@ -180,14 +178,49 @@ function organize_screen_object_ops() {
   local this_type="$1"
   local this_caps=$(organize_type_caps "${this_type}")
   local this_title_type=$(organize_type_title "${this_type}")
+  local this_view=$(organize_view_name "${this_type}")
   local this_choice
+
+  local this_where=""
+  case "${this_type}" in
+    task|recurring|habit|item|project|goal|vision) this_where=" WHERE status != 'Done'" ;;
+  esac
+
+  local -a this_ids=()
+  local -a this_names=()
 
   while true; do
     clear
     workflow_print_header "organize"
     printf "${color_bold}${color_bright_blue}═══ ${this_title_type} ═══${color_reset}\n\n"
 
-    organize_caps_has "${this_caps}" "list"     && printf "  ${color_green}(l)${color_reset} List\n"
+    if [[ "${this_type}" == "collection" ]]; then
+      this_ids=()
+      this_names=()
+      local this_raw=$(sqlite3 -separator $'\t' "${database_path}" "SELECT id, name FROM ${this_view}")
+      if [[ -n "${this_raw}" ]]; then
+        local id label i
+        while IFS=$'\t' read -r id label; do
+          this_ids+=("${id}")
+          this_names+=("${label}")
+        done <<< "${this_raw}"
+        for i in "${!this_ids[@]}"; do
+          printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_names[$i]}"
+        done
+      else
+        printf "  ${color_gray}(none)${color_reset}\n"
+      fi
+      printf "\n"
+    else
+      local this_rows=$(database_run box "SELECT * FROM ${this_view}${this_where}")
+      if [[ -n "${this_rows}" ]]; then
+        echo "${this_rows}"
+      else
+        printf "  ${color_gray}(none)${color_reset}\n"
+      fi
+      printf "\n"
+    fi
+
     organize_caps_has "${this_caps}" "add"      && printf "  ${color_green}(a)${color_reset} Add\n"
     organize_caps_has "${this_caps}" "complete" && printf "  ${color_green}(c)${color_reset} Complete\n"
     organize_caps_has "${this_caps}" "start"    && printf "  ${color_green}(s)${color_reset} Start\n"
@@ -204,13 +237,107 @@ function organize_screen_object_ops() {
     fi
 
     case "${this_choice}" in
-      l|L) organize_caps_has "${this_caps}" "list"     && organize_action_list     "${this_type}" ;;
       a|A) organize_caps_has "${this_caps}" "add"      && organize_action_add      "${this_type}" ;;
       c|C) organize_caps_has "${this_caps}" "complete" && organize_action_complete "${this_type}" ;;
       s|S) organize_caps_has "${this_caps}" "start"    && organize_action_start    "${this_type}" ;;
       x|X) organize_caps_has "${this_caps}" "stop"     && organize_action_stop     "${this_type}" ;;
       d|D) organize_caps_has "${this_caps}" "decide"   && organize_action_decide   "${this_type}" ;;
       r|R) organize_caps_has "${this_caps}" "remove"   && organize_action_remove   "${this_type}" ;;
+      b|B) return 0 ;;
+      q|Q) this_organize_choice="quit" ; return 0 ;;
+      *[!0-9]*|"") ;;
+      *)
+        if [[ "${this_type}" == "collection" ]] && (( this_choice >= 1 && this_choice <= ${#this_ids[@]} )); then
+          organize_screen_collection_drill "${this_ids[$((this_choice-1))]}" "${this_names[$((this_choice-1))]}"
+        fi
+        ;;
+    esac
+
+    [[ "${this_organize_choice}" == "quit" ]] && return 0
+  done
+}
+
+##########
+# Layer 4
+# Collection drill: items inside a chosen collection
+##########
+
+# Args: <collection_id> <collection_name>
+function organize_screen_collection_drill() {
+  local this_collection_id="$1"
+  local this_collection_name="$2"
+  local this_choice
+  local _
+
+  while true; do
+    clear
+    workflow_print_header "organize"
+    printf "${color_bold}${color_bright_blue}═══ Collection: ${this_collection_name} ═══${color_reset}\n\n"
+
+    local this_rows=$(database_run box "SELECT * FROM collection_items_view WHERE collection = '${this_collection_name}' AND status != 'Done'")
+    if [[ -n "${this_rows}" ]]; then
+      echo "${this_rows}"
+    else
+      printf "  ${color_gray}(none)${color_reset}\n"
+    fi
+    printf "\n"
+
+    printf "  ${color_green}(a)${color_reset} Add\n"
+    printf "  ${color_green}(d)${color_reset} Decide\n"
+    printf "  ${color_green}(r)${color_reset} Remove\n"
+    printf "  ---\n"
+    printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+
+    if ! read this_choice; then
+      this_organize_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      a|A)
+        clear
+        workflow_print_header "organize"
+        printf "${color_bold}${color_bright_blue}═══ Add Item to ${this_collection_name} ═══${color_reset}\n\n"
+        printf "  Name (empty to cancel): "
+        local this_name
+        if ! read this_name; then
+          this_organize_choice="quit"
+          return 0
+        fi
+        if [[ -n "${this_name}" ]]; then
+          item_add "${this_name}" --collection "${this_collection_name}"
+          printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+          if ! read _; then
+            this_organize_choice="quit"
+            return 0
+          fi
+        fi
+        ;;
+      d|D)
+        clear
+        workflow_print_header "organize"
+        collection_decide "${this_collection_name}"
+        printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+        if ! read _; then
+          this_organize_choice="quit"
+          return 0
+        fi
+        ;;
+      r|R)
+        local this_query="SELECT id, name FROM collection_items_view WHERE collection = '${this_collection_name}'"
+        organize_screen_id_picker "Remove Item from ${this_collection_name}" "${this_query}"
+        [[ "${this_organize_choice}" == "quit" ]] && return 0
+        [[ -z "${this_organize_picker_id}" ]] && continue
+        clear
+        workflow_print_header "organize"
+        item_delete "${this_organize_picker_id}"
+        printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
+        if ! read _; then
+          this_organize_choice="quit"
+          return 0
+        fi
+        ;;
       b|B) return 0 ;;
       q|Q) this_organize_choice="quit" ; return 0 ;;
       *)   ;;
@@ -342,34 +469,6 @@ function organize_view_name() {
 ##########
 # Actions
 ##########
-
-function organize_action_list() {
-  local this_type="$1"
-  local this_title=$(organize_type_title "${this_type}")
-  local this_view=$(organize_view_name "${this_type}")
-  local _
-
-  clear
-  workflow_print_header "organize"
-  printf "${color_bold}${color_bright_blue}═══ ${this_title} ═══${color_reset}\n\n"
-
-  local this_where=""
-  case "${this_type}" in
-    task|recurring|habit|item|project|goal|vision) this_where=" WHERE status != 'Done'" ;;
-  esac
-  local this_rows=$(database_run box "SELECT * FROM ${this_view}${this_where}")
-  if [[ -n "${this_rows}" ]]; then
-    echo "${this_rows}"
-  else
-    printf "  ${color_gray}(none)${color_reset}\n"
-  fi
-
-  printf "\n${color_gray}Press ENTER to return...${color_reset}\n"
-  if ! read _; then
-    this_organize_choice="quit"
-    return 0
-  fi
-}
 
 function organize_action_add() {
   local this_type="$1"

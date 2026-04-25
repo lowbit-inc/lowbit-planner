@@ -479,8 +479,8 @@ test_command_output "Organize - H5 → purpose → list shows Purpose header" \
   "printf '5\nu\nl\n\nb\nb\nq\n' | ./plan.sh --noprompt organize" "═══ Purpose ═══"
 test_command_output "Organize - task ops menu offers Complete" \
   "printf 'g\nt\nb\nb\nq\n' | ./plan.sh --noprompt organize" "Complete"
-test_command_output "Organize - collection ops menu offers Decide" \
-  "printf 'g\nc\nb\nb\nq\n' | ./plan.sh --noprompt organize" "Decide"
+test_command_output "Organize - collection drill offers Decide" \
+  "printf 'g\nc\n1\nb\nb\nb\nq\n' | ./plan.sh --noprompt organize" "Decide"
 test_command_output "Organize - inbox ops menu offers Remove" \
   "printf 'g\ni\nb\nb\nq\n' | ./plan.sh --noprompt organize" "Remove"
 
