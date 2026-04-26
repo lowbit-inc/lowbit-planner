@@ -30,7 +30,12 @@ function datetime_add_days() {
     date -d "${this_date} ${this_offset} days" '+%Y-%m-%d'
   else
     local sign="+"
-    [[ "${this_offset}" == -* ]] && sign="-" && this_offset="${this_offset#-}"
+    if [[ "${this_offset}" == -* ]]; then
+      sign="-"
+      this_offset="${this_offset#-}"
+    else
+      this_offset="${this_offset#+}"
+    fi
     date -j -f '%Y-%m-%d' -v"${sign}${this_offset}d" "${this_date}" '+%Y-%m-%d'
   fi
 }
