@@ -668,14 +668,15 @@ test_command_output "Reflect - ground decide picker shows header" \
 #   - one overdue task (past due_date)
 #   - one pending recurring
 #   - one pending habit
-#   (Next Available task + pending collection items already exist from earlier tests.)
+#   (pending collection items already exist from earlier tests.)
 #
 # With these, the deterministic 1-based item ordering is:
 #   1 = overdue task     ("Tarefa atrasada")
-#   2 = next-available   ("Comprar peças")
-#   3 = recurring        ("Trocar filtro")
-#   4 = habit            ("Alongar")
-#   5 = collection item  ("Hyperion" or "Snow Crash" — randomized from Books)
+#   2 = recurring        ("Trocar filtro")
+#   3 = habit            ("Alongar")
+#   4 = collection item  ("Hyperion" or "Snow Crash" — randomized from Books)
+# Next Actions only renders when overdue/today/3-days are empty, so it is not
+# in this fixture (covered by a dedicated test below).
 ./plan.sh task add 'Tarefa atrasada' --due-date '2026-01-01' >/dev/null 2>&1
 ./plan.sh recurring add 'Trocar filtro' --recurrence monthly >/dev/null 2>&1
 ./plan.sh habit add 'Alongar' --recurrence daily >/dev/null 2>&1
@@ -686,23 +687,19 @@ test_command_output "Engage - TUI dashboard header" \
 
 # Overdue section is shown when applicable
 test_command_output "Engage - shows Overdue section" \
-  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Overdue ──"
-
-# Next Available fallback section is shown when no tasks due in 3 days
-test_command_output "Engage - shows Next Available fallback" \
-  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Next Available ──"
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "═══ Overdue ═══"
 
 # Recurring section is shown
 test_command_output "Engage - shows Recurring section" \
-  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Recurring ──"
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "═══ Recurring ═══"
 
 # Habit section is shown
 test_command_output "Engage - shows Habit section" \
-  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Habit ──"
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "═══ Habit ═══"
 
 # Collection Item section is shown
 test_command_output "Engage - shows Collection Item section" \
-  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Collection Item ──"
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "═══ Collection Item ═══"
 
 # Dashboard action prompt footer
 test_command_output "Engage - shows action prompt" \
@@ -740,11 +737,32 @@ test_command_output "Engage - invalid key in submenu ignored" \
 test_command_output "Engage - refresh stays on dashboard" \
   "printf 'r\nq\n' | ./plan.sh --nocolor --noprompt engage" "Enter item"
 
+# In-progress task gets the [ip] badge inline. Setup: flip the overdue task to
+# In Progress directly via sqlite (avoids guessing its task ID), render the
+# dashboard, then restore Pending so subsequent tests stay deterministic.
+test_command_output "Engage - in-progress task shows [ip] badge" \
+  "sqlite3 \$LBPLAN_DB_PATH \"UPDATE tasks SET status='In Progress' WHERE name='Tarefa atrasada';\" && \
+   printf 'q\n' | ./plan.sh --nocolor --noprompt engage; \
+   sqlite3 \$LBPLAN_DB_PATH \"UPDATE tasks SET status='Pending' WHERE name='Tarefa atrasada';\"" \
+  "\[ip\]"
+
+# Next Actions section renders only when overdue/today/3-days are all empty.
+# Setup: clear due_date and mark every existing task Done in a temporary save,
+# add 1 task in a project + 1 orphan task, render, then restore.
+test_command_output "Engage - next actions section shows project + orphan tasks" \
+  "sqlite3 \$LBPLAN_DB_PATH 'CREATE TABLE _bk_tasks AS SELECT id, status, due_date FROM tasks; UPDATE tasks SET status = \"Done\";' && \
+   ./plan.sh project add 'NA Project' --area Casa >/dev/null && \
+   ./plan.sh task add 'NA project task' --project 'NA Project' >/dev/null && \
+   ./plan.sh task add 'NA orphan task' >/dev/null && \
+   printf 'q\n' | ./plan.sh --nocolor --noprompt engage; \
+   sqlite3 \$LBPLAN_DB_PATH 'UPDATE tasks SET status = (SELECT status FROM _bk_tasks WHERE _bk_tasks.id = tasks.id), due_date = (SELECT due_date FROM _bk_tasks WHERE _bk_tasks.id = tasks.id) WHERE id IN (SELECT id FROM _bk_tasks); DELETE FROM tasks WHERE name IN (\"NA project task\", \"NA orphan task\"); DELETE FROM projects WHERE name = \"NA Project\"; DROP TABLE _bk_tasks;'" \
+  "═══ Next Actions ═══"
+
 # Negative: recurring submenu does NOT show Start/Stop.
-# Index 3 is the recurring in this fixture (see setup comment above).
+# Index 2 is the recurring in this fixture (see setup comment above).
 log_print info "--------------------------------"
 log_print info "Test: Engage - recurring submenu hides Start"
-if printf '3\nb\nq\n' | ./plan.sh --nocolor --noprompt engage 2>/dev/null | grep -q "(s) Start"; then
+if printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt engage 2>/dev/null | grep -q "(s) Start"; then
   log_print error "Result: Start option should not appear on recurring submenu"
 else
   log_print info "Result: ${color_green}OK${color_reset}"

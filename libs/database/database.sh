@@ -12,7 +12,7 @@ database_path="${LBPLAN_DB_PATH:-${database_dir}/${database_file}}"
 # When adding a migration, bump this default AND the seed in database_init.sql
 # AND add the NNN_<desc>.sql file under libs/database/migrations/.
 # LBPLAN_EXPECTED_SCHEMA is an env override used only by unit tests.
-database_expected_schema="${LBPLAN_EXPECTED_SCHEMA:-9}"
+database_expected_schema="${LBPLAN_EXPECTED_SCHEMA:-10}"
 
 # Migrations directory. LBPLAN_MIGRATIONS_DIR override is used only by unit
 # tests so they can plant fake migrations in /tmp without touching the real dir.

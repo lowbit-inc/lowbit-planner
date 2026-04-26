@@ -58,8 +58,8 @@ function engage_screen_dashboard() {
   # function on 'refresh', which re-runs these queries and picks new items.
   # Recurring intentionally stays deterministic (oldest pending) to force the
   # user to tackle it before moving on.
-  local engage_habit_id=$(database_run csv "SELECT id FROM habits WHERE status = 'Pending' ORDER BY RANDOM() LIMIT 1;")
-  local engage_item_id=$(database_run csv "SELECT ci.id FROM collection_items ci WHERE ci.status = 'Pending' AND ci.collection_id = (SELECT collection_id FROM collection_items WHERE status = 'Pending' GROUP BY collection_id ORDER BY RANDOM() LIMIT 1) ORDER BY ci.position DESC, ci.name ASC LIMIT 1;")
+  local engage_habit_id=$(database_run csv "SELECT id FROM habits WHERE status != 'Done' ORDER BY RANDOM() LIMIT 1;")
+  local engage_item_id=$(database_run csv "SELECT ci.id FROM collection_items ci WHERE ci.status != 'Done' AND ci.collection_id = (SELECT collection_id FROM collection_items WHERE status != 'Done' GROUP BY collection_id ORDER BY RANDOM() LIMIT 1) ORDER BY CASE WHEN ci.status = 'In Progress' THEN 0 ELSE 1 END ASC, ci.position DESC, ci.name ASC LIMIT 1;")
 
   while true; do
     engage_load_items
@@ -71,8 +71,9 @@ function engage_screen_dashboard() {
 
     if engage_has_tasks "due_date > '${this_today}' AND due_date <= '${this_3days}'"; then
       engage_print_section_tasks "Due in 3 Days" "${color_cyan}" "due_date > '${this_today}' AND due_date <= '${this_3days}'"
-    else
-      engage_print_section_next_available "${color_green}" "${this_today}"
+    elif ! engage_has_tasks "due_date < '${this_today}' AND due_date != ''" \
+       && ! engage_has_tasks "due_date = '${this_today}'"; then
+      engage_print_section_next_actions "${color_green}" "${this_today}"
     fi
 
     engage_print_section_one "Recurring"       "${color_magenta}"     "recurrings"       ""
@@ -229,22 +230,30 @@ function engage_has_tasks() {
 }
 
 # Print a tasks section. Shows up to 5 items; if more match, appends "(+N more)".
-# Hides the section entirely when no rows match.
+# Hides the section entirely when no rows match. Order: due → status (In
+# Progress first) → position (DESC) → id (ASC).
 # Args: <label> <color> <where_fragment>
 function engage_print_section_tasks() {
   local this_label="$1"
   local this_color="$2"
   local this_where="$3"
 
-  local this_rows=$(database_run csv "SELECT id, name, project, due_date FROM tasks_view WHERE ${this_where} AND status != 'Done' LIMIT 6;")
+  local this_order="
+    ORDER BY
+      CASE WHEN due_date IS NULL OR due_date = '' THEN 1 ELSE 0 END ASC,
+      due_date ASC,
+      CASE WHEN status = 'In Progress' THEN 0 ELSE 1 END ASC,
+      position DESC,
+      id ASC"
+  local this_rows=$(database_run csv "SELECT id, name, project, due_date, status FROM tasks_view WHERE ${this_where} AND status != 'Done' ${this_order} LIMIT 6;")
   if [[ -z "${this_rows}" ]]; then
     return 0
   fi
 
-  printf "${color_bold}${this_color}── ${this_label} ──${color_reset}\n"
+  printf "${color_bold}${this_color}═══ ${this_label} ═══${color_reset}\n"
   local this_count=0
-  local id name project due_date
-  while IFS=',' read -r id name project due_date; do
+  local id name project due_date status
+  while IFS=',' read -r id name project due_date status; do
     [[ -z "${id}" ]] && continue
     if [[ ${this_count} -ge 5 ]]; then
       local this_total=$(database_run csv "SELECT COUNT(*) FROM tasks_view WHERE ${this_where} AND status != 'Done';")
@@ -254,45 +263,103 @@ function engage_print_section_tasks() {
     local this_clean_name=$(echo "${name}" | tr -d '"')
     local this_clean_project=$(echo "${project}" | tr -d '"')
     local this_clean_due=$(echo "${due_date}" | tr -d '"')
+    local this_clean_status=$(echo "${status}" | tr -d '"')
     engage_append_item "task" "${id}" "${this_clean_name}"
     local this_idx=${engage_last_idx}
-    local this_meta=""
-    [[ -n "${this_clean_project}" ]] && this_meta+="project: ${this_clean_project}"
-    [[ -n "${this_clean_due}" ]] && { [[ -n "${this_meta}" ]] && this_meta+=", "; this_meta+="due ${this_clean_due}"; }
-    if [[ -n "${this_meta}" ]]; then
-      printf "  ${color_green}%2d.${color_reset} %-36s ${color_gray}(%s)${color_reset}\n" "${this_idx}" "${this_clean_name}" "${this_meta}"
-    else
-      printf "  ${color_green}%2d.${color_reset} %s\n" "${this_idx}" "${this_clean_name}"
-    fi
+    engage_print_item_line "${this_idx}" "${this_clean_name}" "${this_clean_status}" \
+      "$(engage_build_task_meta "${this_clean_project}" "${this_clean_due}")"
     ((this_count++))
   done <<< "${this_rows}"
   printf "\n"
 }
 
-# Print the "Next Available" fallback: 1 task with no due date and a start date
-# that is empty or already past. Hides the section if no such task exists.
+# Build the parenthesized meta string for a task line (project + due).
+# Args: <project_name> <due_date>
+function engage_build_task_meta() {
+  local this_project="$1"
+  local this_due="$2"
+  local this_meta=""
+  [[ -n "${this_project}" ]] && this_meta+="project: ${this_project}"
+  [[ -n "${this_due}" ]] && { [[ -n "${this_meta}" ]] && this_meta+=", "; this_meta+="due ${this_due}"; }
+  echo "${this_meta}"
+}
+
+# Render one item line with optional [ip] badge and (meta) suffix.
+# Args: <idx> <name> <status> <meta>
+function engage_print_item_line() {
+  local this_idx="$1"
+  local this_name="$2"
+  local this_status="$3"
+  local this_meta="$4"
+  local this_badge=""
+  [[ "${this_status}" == "In Progress" ]] && this_badge=" ${color_yellow}[ip]${color_reset}"
+  if [[ -n "${this_meta}" ]]; then
+    printf "  ${color_green}%2d.${color_reset} %-36s${this_badge} ${color_gray}(%s)${color_reset}\n" "${this_idx}" "${this_name}" "${this_meta}"
+  else
+    printf "  ${color_green}%2d.${color_reset} %s${this_badge}\n" "${this_idx}" "${this_name}"
+  fi
+}
+
+# Print the "Next Actions" fallback: up to 2 tasks — one inside the most
+# relevant pending project (highest project position → highest task position),
+# plus the oldest orphan task (no project). Hides the section if neither
+# exists.
 # Args: <color> <today>
-function engage_print_section_next_available() {
+function engage_print_section_next_actions() {
   local this_color="$1"
   local this_today="$2"
 
-  local this_row=$(database_run csv "SELECT id, name, project FROM tasks_view WHERE (due_date IS NULL OR due_date = '') AND (start_date IS NULL OR start_date = '' OR start_date <= '${this_today}') AND status != 'Done' LIMIT 1;")
-  if [[ -z "${this_row}" ]]; then
+  local this_with=$(database_run csv "
+    SELECT t.id, t.name, p.name, t.status
+      FROM tasks t
+      JOIN projects p ON t.project_id = p.id
+     WHERE t.status != 'Done'
+       AND p.status != 'Done'
+       AND (t.start_date IS NULL OR t.start_date = '' OR t.start_date <= '${this_today}')
+     ORDER BY
+       CASE WHEN p.status = 'In Progress' THEN 0 ELSE 1 END ASC,
+       p.position DESC,
+       CASE WHEN t.status = 'In Progress' THEN 0 ELSE 1 END ASC,
+       t.position DESC,
+       t.id ASC
+     LIMIT 1;")
+
+  local this_orphan=$(database_run csv "
+    SELECT t.id, t.name, t.status
+      FROM tasks t
+     WHERE t.project_id IS NULL
+       AND t.status != 'Done'
+       AND (t.start_date IS NULL OR t.start_date = '' OR t.start_date <= '${this_today}')
+     ORDER BY t.id ASC
+     LIMIT 1;")
+
+  if [[ -z "${this_with}" && -z "${this_orphan}" ]]; then
     return 0
   fi
 
-  printf "${color_bold}${this_color}── Next Available ──${color_reset}\n"
-  local id name project
-  IFS=',' read -r id name project <<< "${this_row}"
-  local this_clean_name=$(echo "${name}" | tr -d '"')
-  local this_clean_project=$(echo "${project}" | tr -d '"')
-  engage_append_item "task" "${id}" "${this_clean_name}"
-  local this_idx=${engage_last_idx}
-  if [[ -n "${this_clean_project}" ]]; then
-    printf "  ${color_green}%2d.${color_reset} %-36s ${color_gray}(project: %s)${color_reset}\n" "${this_idx}" "${this_clean_name}" "${this_clean_project}"
-  else
-    printf "  ${color_green}%2d.${color_reset} %s\n" "${this_idx}" "${this_clean_name}"
+  printf "${color_bold}${this_color}═══ Next Actions ═══${color_reset}\n"
+
+  if [[ -n "${this_with}" ]]; then
+    local id name project status
+    IFS=',' read -r id name project status <<< "${this_with}"
+    local this_clean_name=$(echo "${name}" | tr -d '"')
+    local this_clean_project=$(echo "${project}" | tr -d '"')
+    local this_clean_status=$(echo "${status}" | tr -d '"')
+    engage_append_item "task" "${id}" "${this_clean_name}"
+    engage_print_item_line "${engage_last_idx}" "${this_clean_name}" "${this_clean_status}" \
+      "project: ${this_clean_project}"
   fi
+
+  if [[ -n "${this_orphan}" ]]; then
+    local id name status
+    IFS=',' read -r id name status <<< "${this_orphan}"
+    local this_clean_name=$(echo "${name}" | tr -d '"')
+    local this_clean_status=$(echo "${status}" | tr -d '"')
+    engage_append_item "task" "${id}" "${this_clean_name}"
+    engage_print_item_line "${engage_last_idx}" "${this_clean_name}" "${this_clean_status}" \
+      "no project"
+  fi
+
   printf "\n"
 }
 
@@ -311,15 +378,15 @@ function engage_print_section_one() {
   local this_type
   case "${this_table}" in
     recurrings)
-      this_row=$(database_run csv "SELECT id, name, recurrence FROM recurrings WHERE status = 'Pending' ORDER BY id LIMIT 1;")
+      this_row=$(database_run csv "SELECT id, name, recurrence, status FROM recurrings WHERE status != 'Done' ORDER BY id LIMIT 1;")
       this_type="recurring"
       ;;
     habits)
-      this_row=$(database_run csv "SELECT id, name, recurrence FROM habits WHERE status = 'Pending' AND id = ${this_fixed_id} LIMIT 1;")
+      this_row=$(database_run csv "SELECT id, name, recurrence, status FROM habits WHERE status != 'Done' AND id = ${this_fixed_id} LIMIT 1;")
       this_type="habit"
       ;;
     collection_items)
-      this_row=$(database_run csv "SELECT ci.id, ci.name, c.name FROM collection_items ci LEFT JOIN collections c ON ci.collection_id = c.id WHERE ci.status = 'Pending' AND ci.id = ${this_fixed_id} LIMIT 1;")
+      this_row=$(database_run csv "SELECT ci.id, ci.name, c.name, ci.status FROM collection_items ci LEFT JOIN collections c ON ci.collection_id = c.id WHERE ci.status != 'Done' AND ci.id = ${this_fixed_id} LIMIT 1;")
       this_type="item"
       ;;
   esac
@@ -328,22 +395,22 @@ function engage_print_section_one() {
     return 0
   fi
 
-  printf "${color_bold}${this_color}── ${this_label} ──${color_reset}\n"
-  local id name extra
-  IFS=',' read -r id name extra <<< "${this_row}"
+  printf "${color_bold}${this_color}═══ ${this_label} ═══${color_reset}\n"
+  local id name extra status
+  IFS=',' read -r id name extra status <<< "${this_row}"
   local this_clean_name=$(echo "${name}" | tr -d '"')
   local this_clean_extra=$(echo "${extra}" | tr -d '"')
+  local this_clean_status=$(echo "${status}" | tr -d '"')
   engage_append_item "${this_type}" "${id}" "${this_clean_name}"
-  local this_idx=${engage_last_idx}
   local this_meta
   case "${this_table}" in
     recurrings|habits) this_meta="${this_clean_extra}" ;;
     collection_items)  this_meta="from: ${this_clean_extra}" ;;
   esac
-  if [[ -n "${this_clean_extra}" ]]; then
-    printf "  ${color_green}%2d.${color_reset} %-36s ${color_gray}(%s)${color_reset}\n" "${this_idx}" "${this_clean_name}" "${this_meta}"
-  else
-    printf "  ${color_green}%2d.${color_reset} %s\n" "${this_idx}" "${this_clean_name}"
-  fi
+  # Only collection items support the start/stop cycle; recurrings/habits stay
+  # binary so the [ip] badge would never appear for them.
+  local this_badge_status=""
+  [[ "${this_type}" == "item" ]] && this_badge_status="${this_clean_status}"
+  engage_print_item_line "${engage_last_idx}" "${this_clean_name}" "${this_badge_status}" "${this_meta}"
   printf "\n"
 }

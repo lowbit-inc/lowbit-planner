@@ -5,7 +5,7 @@ CREATE TABLE meta (
   value TEXT
 );
 
-INSERT INTO meta VALUES ("db_schema", "9");
+INSERT INTO meta VALUES ("db_schema", "10");
 
 -- Workflow:Reflect:Reviews --
 
@@ -177,6 +177,7 @@ SELECT
   projects.name    AS project,
   tasks.start_date AS start_date,
   tasks.due_date   AS due_date,
+  tasks.position   AS position,
   tasks.status     AS status
 FROM tasks
 LEFT JOIN projects ON tasks.project_id = projects.id
