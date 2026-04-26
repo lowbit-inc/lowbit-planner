@@ -10,6 +10,41 @@
 # Methods #
 ###########
 
+# BSD date (macOS) and GNU date (Linux) disagree on flags for parsing and
+# arithmetic. We detect once at source time: GNU date supports `--version`,
+# BSD date does not. Everything date-math goes through the helpers below.
+if date --version >/dev/null 2>&1; then
+  datetime_flavor="gnu"
+else
+  datetime_flavor="bsd"
+fi
+
+# Add (or subtract) N days from a YYYY-MM-DD date and print the result.
+# Pass an empty first arg to mean "today".
+function datetime_add_days() {
+  local this_date="$1"
+  local this_offset="$2"
+  [[ -z "${this_date}" ]] && this_date=$(date '+%Y-%m-%d')
+
+  if [[ "${datetime_flavor}" == "gnu" ]]; then
+    date -d "${this_date} ${this_offset} days" '+%Y-%m-%d'
+  else
+    local sign="+"
+    [[ "${this_offset}" == -* ]] && sign="-" && this_offset="${this_offset#-}"
+    date -j -f '%Y-%m-%d' -v"${sign}${this_offset}d" "${this_date}" '+%Y-%m-%d'
+  fi
+}
+
+# Print the ISO week number (00-53) for a YYYY-MM-DD date.
+function datetime_week_number_from_date() {
+  local this_date="$1"
+  if [[ "${datetime_flavor}" == "gnu" ]]; then
+    date -d "${this_date}" '+%W'
+  else
+    date -j -f '%Y-%m-%d' "${this_date}" '+%W'
+  fi
+}
+
 function datetime_get_current_day() {
   date '+%Y-%m-%d'
 }
@@ -62,7 +97,7 @@ function datetime_get_week_from_date() {
   this_date="$1"
 
   this_year=$(datetime_get_year_from_date $this_date)
-  this_week_number=$(date -j -f %Y-%m-%d ${this_date} +%W)
+  this_week_number=$(datetime_week_number_from_date "${this_date}")
 
   echo "${this_year}W${this_week_number}"
 }

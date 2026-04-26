@@ -51,7 +51,7 @@ function engage_screen_dashboard() {
   local this_choice
 
   local this_today=$(datetime_get_current_day)
-  local this_3days=$(date -j -v+3d '+%Y-%m-%d')
+  local this_3days=$(datetime_add_days "" "+3")
 
   # Random selections are picked once per dashboard invocation so that Enter
   # just redraws the same screen. The outer engage_main loop re-enters this
