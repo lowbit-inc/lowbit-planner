@@ -4,123 +4,164 @@
 # Date: 2025-11-01
 # Description: A GTD-inspired task management tool for the terminal.
 
-##########
-# Config #
-##########
-#config_text_editor="vim" # Why/where is it used?
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || realpath "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 
 ########
 # Libs #
 ########
-source ./libs/area.sh
-source ./libs/clarify.sh
-source ./libs/collection.sh
-source ./libs/color.sh
-source ./libs/database.sh
-source ./libs/datetime.sh
-source ./libs/decision.sh
-source ./libs/dependencies.sh
-source ./libs/engage.sh
-source ./libs/goal.sh
-source ./libs/habit.sh
-source ./libs/help.sh
-source ./libs/inbox.sh
-source ./libs/log.sh
-source ./libs/principle.sh
-source ./libs/project.sh
-source ./libs/purpose.sh
-source ./libs/recurring.sh
-source ./libs/reflect.sh
-source ./libs/system.sh
-source ./libs/task.sh
-source ./libs/vision.sh
-source ./libs/tui.sh
+
+# Utils
+source ${SCRIPT_DIR}/libs/utils/color.sh
+source ${SCRIPT_DIR}/libs/utils/config.sh
+source ${SCRIPT_DIR}/libs/utils/datetime.sh
+source ${SCRIPT_DIR}/libs/utils/dependencies.sh
+source ${SCRIPT_DIR}/libs/utils/help.sh
+source ${SCRIPT_DIR}/libs/utils/log.sh
+source ${SCRIPT_DIR}/libs/utils/system.sh
+source ${SCRIPT_DIR}/libs/utils/validate.sh
+
+# Database
+source ${SCRIPT_DIR}/libs/database/database.sh
+
+# Objects
+source ${SCRIPT_DIR}/libs/objects/generic.sh      # Basic template
+source ${SCRIPT_DIR}/libs/objects/inbox.sh        # Ground
+source ${SCRIPT_DIR}/libs/objects/task.sh         # Ground
+source ${SCRIPT_DIR}/libs/objects/recurring.sh    # Ground
+source ${SCRIPT_DIR}/libs/objects/habit.sh        # Ground
+source ${SCRIPT_DIR}/libs/objects/collection.sh   # Ground
+source ${SCRIPT_DIR}/libs/objects/item.sh         # Ground
+source ${SCRIPT_DIR}/libs/objects/project.sh      # Horizon 1
+source ${SCRIPT_DIR}/libs/objects/area.sh         # Horizon 2
+source ${SCRIPT_DIR}/libs/objects/goal.sh         # Horizon 3
+source ${SCRIPT_DIR}/libs/objects/vision.sh       # Horizon 4
+source ${SCRIPT_DIR}/libs/objects/purpose.sh      # Horizon 5
+source ${SCRIPT_DIR}/libs/objects/principle.sh    # Horizon 5
+
+# Workflow
+source ${SCRIPT_DIR}/libs/workflow/workflow_common.sh  # Shared header + mode switching
+source ${SCRIPT_DIR}/libs/workflow/capture.sh     # Step 1
+source ${SCRIPT_DIR}/libs/workflow/clarify.sh     # Step 2
+source ${SCRIPT_DIR}/libs/workflow/organize.sh    # Step 3
+source ${SCRIPT_DIR}/libs/workflow/reflect.sh     # Step 4
+source ${SCRIPT_DIR}/libs/workflow/engage.sh      # Step 5
+source ${SCRIPT_DIR}/libs/workflow/decision.sh    # Ranking System
 
 ##########
 # Script #
 ##########
 
-log_message debug "Starting ${system_banner}"
+# Parse global args before dispatching
+args=()
+while [[ "$#" -gt 0 ]]; do
+  case "${1}" in
+    "--debug")
+      DEBUG="true"
+      ;;
+    "--nocolor")
+      color_reset="" ; color_bold="" ; color_underline=""
+      color_black="" ; color_red="" ; color_green="" ; color_yellow=""
+      color_blue="" ; color_magenta="" ; color_cyan="" ; color_white=""
+      color_gray="" ; color_bright_red="" ; color_bright_green=""
+      color_bright_yellow="" ; color_bright_blue="" ; color_bright_magenta=""
+      color_bright_cyan="" ; color_bright_white=""
+      ;;
+    "--noprompt")
+      LBPLAN_NOPROMPT="true"
+      ;;
+    *)
+      args+=("${1}")
+      ;;
+  esac
+  shift
+done
+set -- "${args[@]}"
 
+log_print debug "Starting ${system_long_name}"
+
+# Getting user args
 if [[ "${1}" ]]; then
-  user_arg="${1}" && log_message debug "User arg: ${user_arg}"
+  log_print debug "User args: $@"
+  user_arg="${1}"; shift # Capturing first arg
 else
-  log_message debug "No user arg provided - calling help message"
-  system_get_help
+  log_print debug "No user args provided - calling help message"
+  help_get_message main
 fi
 
-case "${1}" in
+case "${user_arg}" in
+  # System
+  "help"|"-h"|"--help")
+    help_get_message main
+    ;;
+  "install")
+    system_install
+    ;;
+  "migrate")
+    database_migrate_main "$@"
+    ;;
+  "search")
+    system_search "$@"
+    ;;
+  "version"|"-v"|"--version")
+    system_get_version
+    ;;
+  # Objects
   "area")
-    shift
     area_main "$@"
     ;;
-  "capture")
-    shift
-    inbox_add "$@"
-    ;;
-  "clarify")
-    clarify
-    ;;
   "collection")
-    shift
     collection_main "$@"
     ;;
-  "engage")
-    engage
-    ;;
   "goal")
-    shift
     goal_main "$@"
     ;;
   "habit")
-    shift
     habit_main "$@"
     ;;
-  "help")
-    system_get_help
-    ;;
   "inbox")
-    shift
     inbox_main "$@"
     ;;
-  "organize")
-    clarify
+  "item")
+    item_main "$@"
     ;;
   "principle")
-    shift
     principle_main "$@"
     ;;
   "project")
-    shift
     project_main "$@"
     ;;
   "purpose")
-    shift
     purpose_main "$@"
     ;;
   "recurring")
-    shift
     recurring_main "$@"
     ;;
-  "reflect")
-    reflect
-    ;;
   "task")
-    shift
     task_main "$@"
     ;;
-  "tui")
-    tui_main
+  # Workflow
+  "capture")
+    workflow_dispatch capture "$@"
     ;;
-  "version")
-    system_get_version
+  "clarify")
+    workflow_dispatch clarify
+    ;;
+  "engage")
+    workflow_dispatch engage
+    ;;
+  "organize")
+    workflow_dispatch organize "$@"
+    ;;
+  "reflect")
+    workflow_dispatch reflect "$@"
     ;;
   "vision")
-    shift
     vision_main "$@"
     ;;
+  # Other
   *)
-    log_message warn "Unknown command (${user_arg})"
-    system_get_help
+    log_print warn "Unknown command (${user_arg})"
+    help_get_message main
     ;;
 esac

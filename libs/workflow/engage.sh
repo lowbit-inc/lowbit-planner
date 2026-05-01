@@ -1,0 +1,416 @@
+#!/bin/bash
+
+##############
+# Properties #
+##############
+
+# Communication between TUI layers (set by callees, read by callers):
+#   this_engage_choice - "item:<N>" | "refresh" | "quit" | ""
+#
+# Dashboard item registry (built fresh at each dashboard redraw):
+#   engage_item_types  - parallel array, 1..N: "task" | "recurring" | "habit" | "item"
+#   engage_item_ids    - parallel array, 1..N: numeric ID from the backing table
+#   engage_item_names  - parallel array, 1..N: display name (for confirmation prompts)
+#   engage_item_count  - integer, number of items currently registered
+#   engage_last_idx    - index most recently assigned by engage_append_item
+
+###########
+# Layer 1 #
+# Session loop
+###########
+
+function engage_main() {
+  log_print debug "Starting Engage workflow"
+
+  while true; do
+    this_engage_choice=""
+    engage_screen_dashboard
+    # Mode switch requested from the dashboard
+    [[ -n "${this_workflow_switch}" ]] && return 0
+    case "${this_engage_choice}" in
+      quit|"")  return 0 ;;
+      refresh)  continue ;;
+      item:*)
+        local this_idx="${this_engage_choice#item:}"
+        engage_screen_item "${this_idx}"
+        ;;
+    esac
+    # If a sub-screen got EOF, propagate quit out of the outer loop
+    if [[ "${this_engage_choice}" == "quit" ]]; then
+      return 0
+    fi
+  done
+}
+
+############
+# Layer 2a #
+# Dashboard TUI
+############
+
+function engage_screen_dashboard() {
+  local this_choice
+
+  local this_today=$(datetime_get_current_day)
+  local this_3days=$(datetime_add_days "" "+3")
+
+  # Random selections are picked once per dashboard invocation so that Enter
+  # just redraws the same screen. The outer engage_main loop re-enters this
+  # function on 'refresh', which re-runs these queries and picks new items.
+  # Recurring intentionally stays deterministic (oldest pending) to force the
+  # user to tackle it before moving on.
+  local engage_habit_id=$(database_run csv "SELECT id FROM habits WHERE status != 'Done' ORDER BY RANDOM() LIMIT 1;")
+  local engage_item_id=$(database_run csv "SELECT ci.id FROM collection_items ci WHERE ci.status != 'Done' AND ci.collection_id = (SELECT collection_id FROM collection_items WHERE status != 'Done' GROUP BY collection_id ORDER BY RANDOM() LIMIT 1) ORDER BY CASE WHEN ci.status = 'In Progress' THEN 0 ELSE 1 END ASC, ci.position DESC, ci.name ASC LIMIT 1;")
+
+  while true; do
+    engage_load_items
+    clear
+    workflow_print_header "engage"
+
+    engage_print_section_tasks "Overdue"   "${color_red}"    "due_date < '${this_today}' AND due_date != ''"
+    engage_print_section_tasks "Due Today" "${color_yellow}" "due_date = '${this_today}'"
+
+    if engage_has_tasks "due_date > '${this_today}' AND due_date <= '${this_3days}'"; then
+      engage_print_section_tasks "Due in 3 Days" "${color_cyan}" "due_date > '${this_today}' AND due_date <= '${this_3days}'"
+    elif ! engage_has_tasks "due_date < '${this_today}' AND due_date != ''" \
+       && ! engage_has_tasks "due_date = '${this_today}'"; then
+      engage_print_section_next_actions "${color_green}" "${this_today}"
+    fi
+
+    engage_print_section_one "Recurring"       "${color_magenta}"     "recurrings"       ""
+    [[ -n "${engage_habit_id}" ]] && engage_print_section_one "Habit"           "${color_blue}"        "habits"           "${engage_habit_id}"
+    [[ -n "${engage_item_id}" ]]  && engage_print_section_one "Collection Item" "${color_bright_cyan}" "collection_items" "${engage_item_id}"
+
+    if [[ ${engage_item_count} -eq 0 ]]; then
+      printf "  ${color_gray}Nothing actionable right now. Enjoy your free time!${color_reset}\n\n"
+    fi
+
+    printf "  ---\n"
+    printf "  Enter item ${color_green}number${color_reset} to act, or ${color_green}(r)${color_reset}efresh, ${color_yellow}(q)${color_reset}uit\n\n"
+    printf "> "
+
+    if ! read this_choice; then
+      this_engage_choice="quit"
+      return 0
+    fi
+
+    if workflow_try_switch "${this_choice}" "engage"; then
+      return 0
+    fi
+
+    case "${this_choice}" in
+      r|R) this_engage_choice="refresh" ; return 0 ;;
+      q|Q) this_engage_choice="quit"    ; return 0 ;;
+      '')  ;; # enter alone = redraw
+      *)
+        if [[ "${this_choice}" =~ ^[0-9]+$ ]] \
+          && [[ "${this_choice}" -ge 1 ]] \
+          && [[ "${this_choice}" -le ${engage_item_count} ]]; then
+          this_engage_choice="item:${this_choice}"
+          return 0
+        fi
+        ;; # invalid - redraw
+    esac
+  done
+}
+
+############
+# Layer 2b #
+# Item action submenu
+############
+
+# Args: <index>
+function engage_screen_item() {
+  local this_idx="$1"
+  local this_type="${engage_item_types[${this_idx}]}"
+  local this_id="${engage_item_ids[${this_idx}]}"
+  local this_name="${engage_item_names[${this_idx}]}"
+  local this_choice
+
+  while true; do
+    clear
+    workflow_print_header "engage"
+    printf "${color_bold}${color_bright_blue}═══ ${this_type}: ${this_name} ═══${color_reset}\n\n"
+    if engage_type_supports_start "${this_type}"; then
+      printf "  ${color_green}(s)${color_reset} Start\n"
+      printf "  ${color_green}(t)${color_reset} Stop\n"
+    fi
+    printf "  ${color_green}(c)${color_reset} Complete\n"
+    printf "  ${color_green}(d)${color_reset} Delete\n"
+    printf "  ---\n"
+    printf "  ${color_yellow}(b)${color_reset} Back to dashboard\n"
+    printf "  ${color_yellow}(q)${color_reset} Quit\n\n"
+    printf "> "
+
+    if ! read this_choice; then
+      this_engage_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      s|S)
+        if engage_type_supports_start "${this_type}"; then
+          engage_run_action "${this_type}" "start" "${this_id}"
+          return 0
+        fi
+        ;;
+      t|T)
+        if engage_type_supports_start "${this_type}"; then
+          engage_run_action "${this_type}" "stop" "${this_id}"
+          return 0
+        fi
+        ;;
+      c|C) engage_run_action "${this_type}" "complete" "${this_id}" ; return 0 ;;
+      d|D) engage_run_action "${this_type}" "delete"   "${this_id}" ; return 0 ;;
+      b|B) return 0 ;;
+      q|Q) this_engage_choice="quit" ; return 0 ;;
+      *)   ;; # invalid - redraw
+    esac
+  done
+}
+
+###########
+# Helpers #
+###########
+
+# Reset the item registry. Called at the start of each dashboard redraw so
+# numbering is fresh and reflects the current DB state.
+function engage_load_items() {
+  engage_item_types=()
+  engage_item_ids=()
+  engage_item_names=()
+  engage_item_count=0
+}
+
+# Append an item to the registry and publish its assigned 1-based index via
+# the global `engage_last_idx`. We use a side-effect global (not a subshell
+# `$(...)` return) because bash command substitution forks a subshell, which
+# would silently drop all updates to the parallel arrays and counter.
+# Args: <type> <id> <name>
+function engage_append_item() {
+  ((engage_item_count++))
+  engage_item_types[${engage_item_count}]="$1"
+  engage_item_ids[${engage_item_count}]="$2"
+  engage_item_names[${engage_item_count}]="$3"
+  engage_last_idx=${engage_item_count}
+}
+
+# Return 0 (true) if the given item type supports start/stop.
+# Args: <type>
+function engage_type_supports_start() {
+  case "$1" in
+    task|item) return 0 ;;
+    *)         return 1 ;;
+  esac
+}
+
+# Dispatch to the backend <type>_<action> function using the item's ID, then
+# pause so the user can read the resulting output before the dashboard redraws.
+# "item" maps to the backend "item_*" functions (collection items).
+# Args: <type> <action> <id>
+function engage_run_action() {
+  local this_type="$1"
+  local this_action="$2"
+  local this_id="$3"
+  local _
+
+  "${this_type}_${this_action}" "${this_id}"
+  printf "\n${color_gray}Press ENTER to return to dashboard...${color_reset}\n"
+  if ! read _; then
+    this_engage_choice="quit"
+    return 0
+  fi
+}
+
+# Return 0 (true) if at least one task matches the given WHERE fragment (which
+# must already combine with 'AND status != ''Done''').
+# Args: <where_fragment>
+function engage_has_tasks() {
+  local this_count=$(database_run csv "SELECT COUNT(*) FROM tasks_view WHERE $1 AND status != 'Done';")
+  [[ "${this_count}" -gt 0 ]]
+}
+
+# Print a tasks section. Shows up to 5 items; if more match, appends "(+N more)".
+# Hides the section entirely when no rows match. Order: due → status (In
+# Progress first) → position (DESC) → id (ASC).
+# Args: <label> <color> <where_fragment>
+function engage_print_section_tasks() {
+  local this_label="$1"
+  local this_color="$2"
+  local this_where="$3"
+
+  local this_order="
+    ORDER BY
+      CASE WHEN due_date IS NULL OR due_date = '' THEN 1 ELSE 0 END ASC,
+      due_date ASC,
+      CASE WHEN status = 'In Progress' THEN 0 ELSE 1 END ASC,
+      position DESC,
+      id ASC"
+  local this_rows=$(database_run csv "SELECT id, name, project, due_date, status FROM tasks_view WHERE ${this_where} AND status != 'Done' ${this_order} LIMIT 6;")
+  if [[ -z "${this_rows}" ]]; then
+    return 0
+  fi
+
+  printf "${color_bold}${this_color}═══ ${this_label} ═══${color_reset}\n"
+  local this_count=0
+  local id name project due_date status
+  while IFS=',' read -r id name project due_date status; do
+    [[ -z "${id}" ]] && continue
+    if [[ ${this_count} -ge 5 ]]; then
+      local this_total=$(database_run csv "SELECT COUNT(*) FROM tasks_view WHERE ${this_where} AND status != 'Done';")
+      printf "      ${color_gray}(+$((this_total - 5)) more)${color_reset}\n"
+      break
+    fi
+    local this_clean_name=$(echo "${name}" | tr -d '"')
+    local this_clean_project=$(echo "${project}" | tr -d '"')
+    local this_clean_due=$(echo "${due_date}" | tr -d '"')
+    local this_clean_status=$(echo "${status}" | tr -d '"')
+    engage_append_item "task" "${id}" "${this_clean_name}"
+    local this_idx=${engage_last_idx}
+    engage_print_item_line "${this_idx}" "${this_clean_name}" "${this_clean_status}" \
+      "$(engage_build_task_meta "${this_clean_project}" "${this_clean_due}")"
+    ((this_count++))
+  done <<< "${this_rows}"
+  printf "\n"
+}
+
+# Build the parenthesized meta string for a task line (project + due).
+# Args: <project_name> <due_date>
+function engage_build_task_meta() {
+  local this_project="$1"
+  local this_due="$2"
+  local this_meta=""
+  [[ -n "${this_project}" ]] && this_meta+="project: ${this_project}"
+  [[ -n "${this_due}" ]] && { [[ -n "${this_meta}" ]] && this_meta+=", "; this_meta+="due ${this_due}"; }
+  echo "${this_meta}"
+}
+
+# Render one item line with optional [ip] badge and (meta) suffix.
+# Args: <idx> <name> <status> <meta>
+function engage_print_item_line() {
+  local this_idx="$1"
+  local this_name="$2"
+  local this_status="$3"
+  local this_meta="$4"
+  local this_badge=""
+  [[ "${this_status}" == "In Progress" ]] && this_badge=" ${color_yellow}[ip]${color_reset}"
+  if [[ -n "${this_meta}" ]]; then
+    printf "  ${color_green}%2d.${color_reset} %-36s${this_badge} ${color_gray}(%s)${color_reset}\n" "${this_idx}" "${this_name}" "${this_meta}"
+  else
+    printf "  ${color_green}%2d.${color_reset} %s${this_badge}\n" "${this_idx}" "${this_name}"
+  fi
+}
+
+# Print the "Next Actions" fallback: up to 2 tasks — one inside the most
+# relevant pending project (highest project position → highest task position),
+# plus the oldest orphan task (no project). Hides the section if neither
+# exists.
+# Args: <color> <today>
+function engage_print_section_next_actions() {
+  local this_color="$1"
+  local this_today="$2"
+
+  local this_with=$(database_run csv "
+    SELECT t.id, t.name, p.name, t.status
+      FROM tasks t
+      JOIN projects p ON t.project_id = p.id
+     WHERE t.status != 'Done'
+       AND p.status != 'Done'
+       AND (t.start_date IS NULL OR t.start_date = '' OR t.start_date <= '${this_today}')
+     ORDER BY
+       CASE WHEN p.status = 'In Progress' THEN 0 ELSE 1 END ASC,
+       p.position DESC,
+       CASE WHEN t.status = 'In Progress' THEN 0 ELSE 1 END ASC,
+       t.position DESC,
+       t.id ASC
+     LIMIT 1;")
+
+  local this_orphan=$(database_run csv "
+    SELECT t.id, t.name, t.status
+      FROM tasks t
+     WHERE t.project_id IS NULL
+       AND t.status != 'Done'
+       AND (t.start_date IS NULL OR t.start_date = '' OR t.start_date <= '${this_today}')
+     ORDER BY t.id ASC
+     LIMIT 1;")
+
+  if [[ -z "${this_with}" && -z "${this_orphan}" ]]; then
+    return 0
+  fi
+
+  printf "${color_bold}${this_color}═══ Next Actions ═══${color_reset}\n"
+
+  if [[ -n "${this_with}" ]]; then
+    local id name project status
+    IFS=',' read -r id name project status <<< "${this_with}"
+    local this_clean_name=$(echo "${name}" | tr -d '"')
+    local this_clean_project=$(echo "${project}" | tr -d '"')
+    local this_clean_status=$(echo "${status}" | tr -d '"')
+    engage_append_item "task" "${id}" "${this_clean_name}"
+    engage_print_item_line "${engage_last_idx}" "${this_clean_name}" "${this_clean_status}" \
+      "project: ${this_clean_project}"
+  fi
+
+  if [[ -n "${this_orphan}" ]]; then
+    local id name status
+    IFS=',' read -r id name status <<< "${this_orphan}"
+    local this_clean_name=$(echo "${name}" | tr -d '"')
+    local this_clean_status=$(echo "${status}" | tr -d '"')
+    engage_append_item "task" "${id}" "${this_clean_name}"
+    engage_print_item_line "${engage_last_idx}" "${this_clean_name}" "${this_clean_status}" \
+      "no project"
+  fi
+
+  printf "\n"
+}
+
+# Print one pending item from a single-object table (recurrings/habits/collection_items).
+# Hides the section if no pending row exists.
+# For recurrings, picks the oldest pending (deterministic, forces follow-through).
+# For habits/collection_items, the caller passes a pre-selected id.
+# Args: <label> <color> <table> <id_or_empty>
+function engage_print_section_one() {
+  local this_label="$1"
+  local this_color="$2"
+  local this_table="$3"
+  local this_fixed_id="$4"
+
+  local this_row
+  local this_type
+  case "${this_table}" in
+    recurrings)
+      this_row=$(database_run csv "SELECT id, name, recurrence, status FROM recurrings WHERE status != 'Done' ORDER BY id LIMIT 1;")
+      this_type="recurring"
+      ;;
+    habits)
+      this_row=$(database_run csv "SELECT id, name, recurrence, status FROM habits WHERE status != 'Done' AND id = ${this_fixed_id} LIMIT 1;")
+      this_type="habit"
+      ;;
+    collection_items)
+      this_row=$(database_run csv "SELECT ci.id, ci.name, c.name, ci.status FROM collection_items ci LEFT JOIN collections c ON ci.collection_id = c.id WHERE ci.status != 'Done' AND ci.id = ${this_fixed_id} LIMIT 1;")
+      this_type="item"
+      ;;
+  esac
+
+  if [[ -z "${this_row}" ]]; then
+    return 0
+  fi
+
+  printf "${color_bold}${this_color}═══ ${this_label} ═══${color_reset}\n"
+  local id name extra status
+  IFS=',' read -r id name extra status <<< "${this_row}"
+  local this_clean_name=$(echo "${name}" | tr -d '"')
+  local this_clean_extra=$(echo "${extra}" | tr -d '"')
+  local this_clean_status=$(echo "${status}" | tr -d '"')
+  engage_append_item "${this_type}" "${id}" "${this_clean_name}"
+  local this_meta
+  case "${this_table}" in
+    recurrings|habits) this_meta="${this_clean_extra}" ;;
+    collection_items)  this_meta="from: ${this_clean_extra}" ;;
+  esac
+  # Only collection items support the start/stop cycle; recurrings/habits stay
+  # binary so the [ip] badge would never appear for them.
+  local this_badge_status=""
+  [[ "${this_type}" == "item" ]] && this_badge_status="${this_clean_status}"
+  engage_print_item_line "${engage_last_idx}" "${this_clean_name}" "${this_badge_status}" "${this_meta}"
+  printf "\n"
+}
