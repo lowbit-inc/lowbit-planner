@@ -6,7 +6,7 @@
 
 system_short_name="lowbit-planner"
 system_long_name="Lowbit Planner"
-system_version="0.3.0-dev"
+system_version="v1.0.0"
 system_basename="$(basename $0)"
 
 ###########

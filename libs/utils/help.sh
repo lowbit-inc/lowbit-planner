@@ -195,6 +195,33 @@ function help_print_task() {
   printf "  search    ${color_blue}PATTERN${color_reset}\n"
   printf "  start     ${color_blue}TASK_ID${color_reset}\n"
   printf "  stop      ${color_blue}TASK_ID${color_reset}\n"
+  printf "  decide    ${color_blue}PROJECT_NAME [--reset]${color_reset}\n"
+  printf "\n"
+}
+
+function help_print_task_decide() {
+  printf "${color_bold}${system_long_name} - Task Decide${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}DESCRIPTION:${color_reset}\n"
+  printf "  Rank tasks within a project through pairwise comparisons.\n"
+  printf "  Each pending pair is shown; choosing the winner increments its position.\n"
+  printf "  The process is idempotent: aborting and re-running resumes where you left off,\n"
+  printf "  and new tasks added later are folded into the next run without re-asking decisions.\n"
+  printf "  Tasks with status Done are excluded from new pairings.\n"
+  printf "\n"
+  printf "${color_bold}USAGE:${color_reset}\n"
+  printf "  ${system_basename} ${color_gray}[GLOBAL_ARGS]${color_reset} task decide ${color_blue}PROJECT_NAME [--reset]${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}REQUIRED ARGUMENTS:${color_reset}\n"
+  printf "  ${color_blue}PROJECT_NAME               ${color_gray}Name of the project whose tasks to rank${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}OPTIONAL ARGUMENTS:${color_reset}\n"
+  printf "  --reset                    ${color_gray}Clear all decisions and zero task positions${color_reset}\n"
+  printf "\n"
+  printf "${color_bold}KEYS DURING DECIDE:${color_reset}\n"
+  printf "  ${color_green}1${color_reset}  Pick the first option\n"
+  printf "  ${color_green}2${color_reset}  Pick the second option\n"
+  printf "  ${color_yellow}a${color_reset}  Abort (progress is saved)\n"
   printf "\n"
 }
 

@@ -193,7 +193,7 @@ function habit_list() {
   # Auto-reset completed items whose period has changed
   habit_auto_reset
 
-  this_status_value=""
+  this_status_value="all"
   while [[ "$@" ]] ; do
     case "${1}" in
       "--help"|"-h") help_get_message habit_list ;;
@@ -212,7 +212,7 @@ function habit_auto_reset() {
   log_print debug "Starting Habit Auto Reset"
 
   IFS=$'\n'
-  for row in $(database_run csv "SELECT id, recurrence, completed_at FROM habits WHERE status = 'Done' AND completed_at IS NOT NULL;"); do
+  for row in $(database_run list "SELECT id, recurrence, completed_at FROM habits WHERE status = 'Done' AND completed_at IS NOT NULL;"); do
     this_id=$(echo "${row}" | cut -d'|' -f1)
     this_recurrence=$(echo "${row}" | cut -d'|' -f2)
     this_completed_at=$(echo "${row}" | cut -d'|' -f3)

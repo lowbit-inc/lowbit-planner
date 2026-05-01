@@ -12,6 +12,11 @@
 
 # Args: <object_table> <decision_table> [parent_fk] [parent_id]
 # When parent_fk/parent_id are empty, scope is global (no parent filter).
+#
+# Scrubs stale pending pairs (items deleted or now Done) before generating new
+# pairs. Without this, decision_make_choice would iterate "ghost" pairs whose
+# item rows no longer satisfy the Pending criteria. Completed decisions
+# (choice_id IS NOT NULL) are preserved as history even if items later vanish.
 function decision_generate_list() {
   this_object_table="$1"
   this_decision_table="$2"
@@ -19,6 +24,16 @@ function decision_generate_list() {
   this_parent_id="$4"
 
   if [[ -n "${this_parent_fk}" ]]; then
+    log_print debug "Scrubbing stale pending decisions for ${this_object_table} ${this_parent_fk}=${this_parent_id}"
+    database_run csv "DELETE FROM ${this_decision_table}
+      WHERE ${this_parent_fk} = ${this_parent_id}
+        AND choice_id IS NULL
+        AND (
+          item_id_low  NOT IN (SELECT id FROM ${this_object_table} WHERE ${this_parent_fk} = ${this_parent_id} AND status != 'Done')
+          OR
+          item_id_high NOT IN (SELECT id FROM ${this_object_table} WHERE ${this_parent_fk} = ${this_parent_id} AND status != 'Done')
+        );" >/dev/null
+
     log_print debug "Generating decisions for ${this_object_table} ${this_parent_fk}=${this_parent_id}"
     database_run csv "INSERT OR IGNORE INTO ${this_decision_table} (${this_parent_fk}, item_id_low, item_id_high)
       SELECT a.${this_parent_fk}, a.id, b.id
@@ -29,6 +44,15 @@ function decision_generate_list() {
         AND a.status != 'Done'
         AND b.status != 'Done';" >/dev/null
   else
+    log_print debug "Scrubbing stale global pending decisions for ${this_object_table}"
+    database_run csv "DELETE FROM ${this_decision_table}
+      WHERE choice_id IS NULL
+        AND (
+          item_id_low  NOT IN (SELECT id FROM ${this_object_table} WHERE status != 'Done')
+          OR
+          item_id_high NOT IN (SELECT id FROM ${this_object_table} WHERE status != 'Done')
+        );" >/dev/null
+
     log_print debug "Generating global decisions for ${this_object_table}"
     database_run csv "INSERT OR IGNORE INTO ${this_decision_table} (item_id_low, item_id_high)
       SELECT a.id, b.id

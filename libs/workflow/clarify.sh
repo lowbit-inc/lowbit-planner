@@ -75,6 +75,7 @@ function clarify_screen_enum_picker() {
   local i
   while true; do
     clear
+    workflow_print_header "clarify"
     printf "${color_bold}Pick a %s${color_reset}\n\n" "${this_label}"
     for i in "${!this_values[@]}"; do
       printf "  ${color_green}(%d)${color_reset} %s\n" "$((i+1))" "${this_values[$i]}"
@@ -137,6 +138,7 @@ function clarify_screen_fk_picker() {
   local i
   while true; do
     clear
+    workflow_print_header "clarify"
     printf "${color_bold}Pick a %s${color_reset}\n\n" "${this_label}"
 
     # Query existing items (id, name)
@@ -216,12 +218,16 @@ function clarify_screen_object_form() {
   local this_type="$1"
   local this_inbox_id="$2"
   local this_prefilled_name="$3"
+  local this_prefilled_project="$4"
+  local this_prefilled_area="$5"
+  local this_prefilled_goal="$6"
+  local this_prefilled_vision="$7"
 
   local this_name="${this_prefilled_name}"
-  local this_project=""
-  local this_area=""
-  local this_goal=""
-  local this_vision=""
+  local this_project="${this_prefilled_project}"
+  local this_area="${this_prefilled_area}"
+  local this_goal="${this_prefilled_goal}"
+  local this_vision="${this_prefilled_vision}"
   local this_collection=""
   local this_description=""
   local this_start_date=""
@@ -233,6 +239,7 @@ function clarify_screen_object_form() {
 
   while true; do
     clear
+    workflow_print_header "clarify"
 
     if [[ -n "${this_inbox_id}" ]]; then
       printf "${color_bold}Clarify as %s${color_reset}\n\n" "${this_type}"
@@ -292,7 +299,7 @@ function clarify_screen_object_form() {
     printf "\n"
     printf "  ${color_green}(c)${color_reset} Create\n"
     printf "  ---\n"
-    printf "  ${color_yellow}(s)${color_reset} Skip    ${color_yellow}(d)${color_reset} Delete    ${color_yellow}(q)${color_reset} Quit\n"
+    printf "  ${color_yellow}(b)${color_reset} Back    ${color_yellow}(s)${color_reset} Skip    ${color_yellow}(d)${color_reset} Delete    ${color_yellow}(q)${color_reset} Quit\n"
     printf "\n"
     printf "> "
     if ! read this_choice; then
@@ -401,6 +408,10 @@ function clarify_screen_object_form() {
 
         this_form_result="created"
         this_last_created_name="${this_name}"
+        return 0
+        ;;
+      b|B)
+        this_form_result="back"
         return 0
         ;;
       s|S)
@@ -536,6 +547,7 @@ function clarify_screen_type_select() {
   local this_choice
   while true; do
     clear
+    workflow_print_header "clarify"
     printf "${color_bold}[%d/%d]${color_reset} ${color_green}%s${color_reset}\n\n" "${this_idx}" "${this_total}" "${this_inbox_name}"
     printf "  What type of object?\n"
     printf "  ${color_green}(t)${color_reset} Task       ${color_green}(r)${color_reset} Recurring   ${color_green}(h)${color_reset} Habit\n"
@@ -551,18 +563,23 @@ function clarify_screen_type_select() {
       return 0
     fi
 
+    if workflow_try_switch "${this_choice}" "clarify"; then
+      this_form_result="quit"
+      return 0
+    fi
+
     case "${this_choice}" in
-      t) clarify_screen_object_form "task"       "${this_inbox_id}" "${this_inbox_name}" ; return 0 ;;
-      r) clarify_screen_object_form "recurring"  "${this_inbox_id}" "${this_inbox_name}" ; return 0 ;;
-      h) clarify_screen_object_form "habit"      "${this_inbox_id}" "${this_inbox_name}" ; return 0 ;;
-      p) clarify_screen_object_form "project"    "${this_inbox_id}" "${this_inbox_name}" ; return 0 ;;
-      a) clarify_screen_object_form "area"       "${this_inbox_id}" "${this_inbox_name}" ; return 0 ;;
-      g) clarify_screen_object_form "goal"       "${this_inbox_id}" "${this_inbox_name}" ; return 0 ;;
-      v) clarify_screen_object_form "vision"     "${this_inbox_id}" "${this_inbox_name}" ; return 0 ;;
-      u) clarify_screen_object_form "purpose"    "${this_inbox_id}" "${this_inbox_name}" ; return 0 ;;
-      n) clarify_screen_object_form "principle"  "${this_inbox_id}" "${this_inbox_name}" ; return 0 ;;
-      c) clarify_screen_object_form "collection" "${this_inbox_id}" "${this_inbox_name}" ; return 0 ;;
-      i) clarify_screen_object_form "item"       "${this_inbox_id}" "${this_inbox_name}" ; return 0 ;;
+      t) clarify_screen_object_form "task"       "${this_inbox_id}" "${this_inbox_name}" ; [[ "${this_form_result}" != "back" ]] && return 0 ;;
+      r) clarify_screen_object_form "recurring"  "${this_inbox_id}" "${this_inbox_name}" ; [[ "${this_form_result}" != "back" ]] && return 0 ;;
+      h) clarify_screen_object_form "habit"      "${this_inbox_id}" "${this_inbox_name}" ; [[ "${this_form_result}" != "back" ]] && return 0 ;;
+      p) clarify_screen_object_form "project"    "${this_inbox_id}" "${this_inbox_name}" ; [[ "${this_form_result}" != "back" ]] && return 0 ;;
+      a) clarify_screen_object_form "area"       "${this_inbox_id}" "${this_inbox_name}" ; [[ "${this_form_result}" != "back" ]] && return 0 ;;
+      g) clarify_screen_object_form "goal"       "${this_inbox_id}" "${this_inbox_name}" ; [[ "${this_form_result}" != "back" ]] && return 0 ;;
+      v) clarify_screen_object_form "vision"     "${this_inbox_id}" "${this_inbox_name}" ; [[ "${this_form_result}" != "back" ]] && return 0 ;;
+      u) clarify_screen_object_form "purpose"    "${this_inbox_id}" "${this_inbox_name}" ; [[ "${this_form_result}" != "back" ]] && return 0 ;;
+      n) clarify_screen_object_form "principle"  "${this_inbox_id}" "${this_inbox_name}" ; [[ "${this_form_result}" != "back" ]] && return 0 ;;
+      c) clarify_screen_object_form "collection" "${this_inbox_id}" "${this_inbox_name}" ; [[ "${this_form_result}" != "back" ]] && return 0 ;;
+      i) clarify_screen_object_form "item"       "${this_inbox_id}" "${this_inbox_name}" ; [[ "${this_form_result}" != "back" ]] && return 0 ;;
       s)
         this_form_result="skipped"
         return 0

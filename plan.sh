@@ -40,6 +40,7 @@ source ${SCRIPT_DIR}/libs/objects/purpose.sh      # Horizon 5
 source ${SCRIPT_DIR}/libs/objects/principle.sh    # Horizon 5
 
 # Workflow
+source ${SCRIPT_DIR}/libs/workflow/workflow_common.sh  # Shared header + mode switching
 source ${SCRIPT_DIR}/libs/workflow/capture.sh     # Step 1
 source ${SCRIPT_DIR}/libs/workflow/clarify.sh     # Step 2
 source ${SCRIPT_DIR}/libs/workflow/organize.sh    # Step 3
@@ -141,19 +142,19 @@ case "${user_arg}" in
     ;;
   # Workflow
   "capture")
-    capture_main "$@"
+    workflow_dispatch capture "$@"
     ;;
   "clarify")
-    clarify_main
+    workflow_dispatch clarify
     ;;
   "engage")
-    engage_main
+    workflow_dispatch engage
     ;;
   "organize")
-    organize_main "$@"
+    workflow_dispatch organize "$@"
     ;;
   "reflect")
-    reflect_main "$@"
+    workflow_dispatch reflect "$@"
     ;;
   "vision")
     vision_main "$@"

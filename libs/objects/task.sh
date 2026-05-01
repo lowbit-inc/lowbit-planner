@@ -306,6 +306,50 @@ function task_list() {
 
 }
 
+function task_decide() {
+
+  log_print debug "Starting Task Decide"
+
+  if [[ "${1}" ]]; then
+    log_print debug "User args: $@"
+  else
+    log_print debug "No user arg provided - calling help message"
+    help_get_message task_decide
+  fi
+
+  this_project_name="$1" ; shift ; log_print debug "Project name: ${this_project_name}"
+
+  this_project_id=$(database_run csv "SELECT id FROM projects WHERE name = '${this_project_name}';")
+  if [[ -z "${this_project_id}" ]]; then
+    log_print error "Project not found: ${this_project_name}"
+  fi
+
+  this_reset="false"
+  while [[ "$@" ]] ; do
+    this_arg="${1}"
+    case "${this_arg}" in
+      "--reset")
+        this_reset="true"
+        ;;
+      *)
+        log_print debug "Unknown arg - ignoring: ${this_arg}"
+        ;;
+    esac
+    shift
+  done
+
+  if [[ "${this_reset}" == "true" ]]; then
+    log_print user "Reset all task decisions and positions for '${this_project_name}'?"
+    decision_forget tasks task_decisions project_id "${this_project_id}"
+    log_print info "Task decisions cleared for ${this_project_name}."
+    return 0
+  fi
+
+  decision_generate_list tasks task_decisions project_id "${this_project_id}"
+  decision_make_choice   tasks task_decisions project_id "${this_project_id}"
+
+}
+
 function task_main() {
 
   log_print debug "Starting Task Main"
@@ -324,6 +368,9 @@ function task_main() {
       ;;
     "complete")
       task_complete "$@"
+      ;;
+    "decide")
+      task_decide "$@"
       ;;
     "delete")
       task_delete "$@"

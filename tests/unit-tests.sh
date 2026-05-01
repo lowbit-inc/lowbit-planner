@@ -235,6 +235,17 @@ echo "" | ./plan.sh item complete 1 >/dev/null 2>&1
 test_command_output "Collection decide - skips Done items (only pair 4-5)" \
   "sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM collection_item_decisions WHERE collection_id=1'" "1"
 
+# Regression: stale pending pairs pointing at deleted items are scrubbed on
+# the next decide run so no "ghost" comparisons remain.
+./plan.sh --noprompt collection decide Books --reset >/dev/null 2>&1
+./plan.sh item add 'Ghost Book' --collection Books >/dev/null 2>&1
+ghost_id=$(sqlite3 $LBPLAN_DB_PATH "SELECT id FROM collection_items WHERE name='Ghost Book';")
+./plan.sh --noprompt collection decide Books >/dev/null 2>&1
+./plan.sh --noprompt item delete "${ghost_id}" >/dev/null 2>&1
+./plan.sh --noprompt collection decide Books >/dev/null 2>&1
+test_command_output "Collection decide - scrubs pending pairs for deleted items" \
+  "sqlite3 \$LBPLAN_DB_PATH \"SELECT COUNT(*) FROM collection_item_decisions WHERE collection_id=1 AND choice_id IS NULL AND (item_id_low=${ghost_id} OR item_id_high=${ghost_id})\"" "0"
+
 # Help routing
 test_command_output "Collection decide - help on missing arg" "./plan.sh collection decide" "Collection Decide"
 
@@ -320,6 +331,30 @@ else
   log_print info "Result: ${color_green}OK${color_reset}"
 fi
 log_print info "--------------------------------"
+
+# Task decide workflow tests (scoped to a project)
+# Project "Arrumar torneira" (id 1) has 1 pending task ("Comprar peças"). Add 2
+# more so C(3,2) = 3 pairs are generated when we run task decide on it.
+./plan.sh task add 'Trocar cano'    --project 'Arrumar torneira' >/dev/null 2>&1
+./plan.sh task add 'Comprar fita'   --project 'Arrumar torneira' >/dev/null 2>&1
+
+test_command_output "Task decide - help on missing arg" \
+  "./plan.sh task decide" "Task Decide"
+
+test_command_output "Task decide - generates 3 pairs" \
+  "./plan.sh --noprompt task decide 'Arrumar torneira' && sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM task_decisions WHERE project_id=1'" "3"
+
+test_command_output "Task decide - idempotent re-run" \
+  "./plan.sh --noprompt task decide 'Arrumar torneira' && sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM task_decisions WHERE project_id=1'" "3"
+
+test_command_output "Task decide - positions incremented" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT SUM(position) FROM tasks WHERE project_id=1'" "3"
+
+./plan.sh --noprompt task decide 'Arrumar torneira' --reset >/dev/null 2>&1
+test_command_output "Task decide --reset - clears decisions" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT COUNT(*) FROM task_decisions WHERE project_id=1'" "0"
+test_command_output "Task decide --reset - zeroes positions" \
+  "sqlite3 \$LBPLAN_DB_PATH 'SELECT SUM(position) FROM tasks WHERE project_id=1'" "0"
 
 # Purpose CRUD tests
 test_command_output "Purpose - help" "./plan.sh purpose" "Lowbit Planner - Purpose"
@@ -436,30 +471,52 @@ test_command_output "Clarify - FK picker creates new area inline" \
 test_command_output "Clarify - project created with inline-new area" \
   "./plan.sh project list" "Novo projeto com area nova"
 
-# Organize workflow tests (TUI — drive via piped keystrokes)
-#   <level-key>\n       -> pick a horizon from the menu
-#   \n                  -> press ENTER at the "Press ENTER to return" prompt
-#   q\n                 -> quit the TUI from the menu
-test_command_output "Organize - TUI menu shows horizons" \
+# (b) Back from the object form returns to type-select for the same inbox item.
+# Input: 't' (Task form) -> 'b' (back) -> 'u' (Purpose form) -> 'c' (Create).
+# After this the item must end up as a purpose, proving the back step brought
+# us back to the type-select screen instead of advancing/skipping.
+./plan.sh inbox add 'Item para voltar' >/dev/null 2>&1
+printf "t\nb\nu\nc\n" | ./plan.sh --noprompt clarify >/dev/null 2>&1
+test_command_output "Clarify - (b) Back returns to type select" \
+  "./plan.sh purpose list" "Item para voltar"
+
+# Organize workflow tests (TUI — 3-level CRUD explorer: horizon → object → op)
+#   L1 keys: g/1/2/3/4/5/q   L2 keys: (varies per horizon) b/q
+#   L3 keys: l/a/c/s/x/d/r/b/q    ENTER to dismiss result screens
+test_command_output "Organize - L1 menu shows horizons" \
   "printf 'q\n' | ./plan.sh --noprompt organize" "Choose a horizon"
-test_command_output "Organize - ground shows Inbox" \
-  "printf 'g\n\nq\n' | ./plan.sh --noprompt organize" "Inbox"
-test_command_output "Organize - h1 shows Projects" \
-  "printf '1\n\nq\n' | ./plan.sh --noprompt organize" "Projects"
-test_command_output "Organize - h2 shows Areas" \
-  "printf '2\n\nq\n' | ./plan.sh --noprompt organize" "Areas"
-test_command_output "Organize - h3 shows Goals" \
-  "printf '3\n\nq\n' | ./plan.sh --noprompt organize" "Goals"
-test_command_output "Organize - h4 shows Visions" \
-  "printf '4\n\nq\n' | ./plan.sh --noprompt organize" "Visions"
-test_command_output "Organize - h5 shows Purpose" \
-  "printf '5\n\nq\n' | ./plan.sh --noprompt organize" "Purpose"
-test_command_output "Organize - all shows everything" \
-  "printf 'a\n\nq\n' | ./plan.sh --noprompt organize" "Ground Level"
+test_command_output "Organize - L2 ground menu offers Inbox option" \
+  "printf 'g\nb\nq\n' | ./plan.sh --noprompt organize" "Inbox"
+test_command_output "Organize - L2 horizon5 menu offers Purpose option" \
+  "printf '5\nb\nq\n' | ./plan.sh --noprompt organize" "Purpose"
+test_command_output "Organize - L3 ground → inbox → list shows Inbox header" \
+  "printf 'g\ni\nl\n\nb\nb\nq\n' | ./plan.sh --noprompt organize" "═══ Inbox ═══"
+test_command_output "Organize - H1 skips L2 and goes direct to Project ops" \
+  "printf '1\nl\n\nb\nq\n' | ./plan.sh --noprompt organize" "═══ Project ═══"
+test_command_output "Organize - H2 skips L2 and goes direct to Area ops" \
+  "printf '2\nb\nq\n' | ./plan.sh --noprompt organize" "═══ Area ═══"
+test_command_output "Organize - H3 skips L2 and goes direct to Goal ops" \
+  "printf '3\nb\nq\n' | ./plan.sh --noprompt organize" "═══ Goal ═══"
+test_command_output "Organize - H4 skips L2 and goes direct to Vision ops" \
+  "printf '4\nb\nq\n' | ./plan.sh --noprompt organize" "═══ Vision ═══"
+test_command_output "Organize - H5 → purpose → list shows Purpose header" \
+  "printf '5\nu\nl\n\nb\nb\nq\n' | ./plan.sh --noprompt organize" "═══ Purpose ═══"
+test_command_output "Organize - task ops menu offers Complete" \
+  "printf 'g\nt\nb\nb\nq\n' | ./plan.sh --noprompt organize" "Complete"
+test_command_output "Organize - collection drill offers Decide" \
+  "printf 'g\nc\n1\nb\nb\nb\nq\n' | ./plan.sh --noprompt organize" "Decide"
+test_command_output "Organize - inbox ops menu offers Remove" \
+  "printf 'g\ni\nb\nb\nq\n' | ./plan.sh --noprompt organize" "Remove"
 
 # Invalid key on the menu is ignored (screen redraws); then 'g' still works
-test_command_output "Organize - invalid key ignored, then ground works" \
-  "printf 'x\ng\n\nq\n' | ./plan.sh --noprompt organize" "Inbox"
+test_command_output "Organize - invalid L1 key ignored, then ground works" \
+  "printf 'z\ng\nb\nq\n' | ./plan.sh --noprompt organize" "Inbox"
+
+# Inbox add via inline prompt (only type without clarify form support)
+./plan.sh --noprompt inbox delete "Novo via organize" >/dev/null 2>&1
+printf "g\ni\na\nNovo via organize\n\nb\nb\nq\n" | ./plan.sh --noprompt organize >/dev/null 2>&1
+test_command_output "Organize - inbox add creates item via inline prompt" \
+  "./plan.sh inbox list" "Novo via organize"
 
 # Reflect workflow tests
 
@@ -471,59 +528,139 @@ test_command_output "Reflect - TUI menu shows horizons" \
 test_command_output "Reflect - menu shows Ground label" \
   "printf 'q\n' | ./plan.sh --noprompt reflect" "Ground (Daily)"
 
-# Pressing 'g' opens the horizon review screen for Ground
-test_command_output "Reflect - ground screen shows Reviewing header" \
-  "printf 'g\nb\nq\n' | ./plan.sh --noprompt reflect" "Reviewing: Ground"
+# Pressing 'g' opens the Ground actions screen (Clarify / Decide / Mark)
+test_command_output "Reflect - ground screen shows Ground header" \
+  "printf 'g\nb\nq\n' | ./plan.sh --noprompt reflect" "═══ Ground ═══"
 
-# (l) lists the items of Ground (Inbox section is part of the render)
-test_command_output "Reflect - ground list shows Inbox" \
-  "printf 'g\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Inbox"
+# Ground actions screen lists the three action items
+test_command_output "Reflect - ground screen offers Clarify Inbox" \
+  "printf 'g\nb\nq\n' | ./plan.sh --noprompt reflect" "Clarify Inbox"
+test_command_output "Reflect - ground screen offers Decide Collections" \
+  "printf 'g\nb\nq\n' | ./plan.sh --noprompt reflect" "Decide Collections"
 
-# (l) on Horizon 1 shows Active Projects
+# (l) on Horizon 1 shows Projects picker
 test_command_output "Reflect - h1 list shows Projects" \
-  "printf '1\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Active Projects"
+  "printf '1\nl\nb\nb\nq\n' | ./plan.sh --noprompt reflect" "Projects"
 
-# (l) on Horizon 2 shows Areas of Responsibility
-test_command_output "Reflect - h2 list shows Areas" \
-  "printf '2\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Areas of Responsibility"
+# (m) is blocked while inbox has items or collections have pending decisions.
+test_command_output "Reflect - ground mark complete is blocked when state pending" \
+  "printf 'g\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "blocked"
 
-# (l) on Horizon 3 shows Active Goals
-test_command_output "Reflect - h3 list shows Goals" \
-  "printf '3\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Active Goals"
-
-# (l) on Horizon 4 shows Active Visions
-test_command_output "Reflect - h4 list shows Visions" \
-  "printf '4\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Active Visions"
-
-# (l) on Horizon 5 shows Purposes section
-test_command_output "Reflect - h5 list shows Purposes" \
-  "printf '5\nl\n\nb\nq\n' | ./plan.sh --noprompt reflect" "Purposes"
-
-# (d) Decide option is shown on Horizon 1 (supported)
-test_command_output "Reflect - h1 screen shows Decide option" \
-  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "(d) Decide"
-
-# (d) Decide option is NOT shown on Horizon 2 (unsupported)
-log_print info "--------------------------------"
-log_print info "Test: Reflect - h2 screen hides Decide option"
-if printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect 2>/dev/null | grep -q "(d) Decide"; then
-  log_print error "Result: Decide option should not appear on h2 screen"
-else
-  log_print info "Result: ${color_green}OK${color_reset}"
-fi
-log_print info "--------------------------------"
-
-# (m) marks the review as complete; main menu re-renders with [v] badge
+# (m) marks the review as complete once state is empty; main menu shows [v].
+# Saves and restores inbox + collection_items state so subsequent tests are unaffected.
 test_command_output "Reflect - mark ground complete updates badge" \
-  "printf 'g\nm\n\nq\n' | ./plan.sh --noprompt reflect" "\[v\].*Ground"
+  "sqlite3 \$LBPLAN_DB_PATH 'CREATE TABLE _bk_inbox AS SELECT * FROM inbox; CREATE TABLE _bk_pending AS SELECT id FROM collection_items WHERE status != \"Done\"; DELETE FROM inbox; UPDATE collection_items SET status = \"Done\" WHERE id IN (SELECT id FROM _bk_pending);' && printf 'g\nm\n\nq\n' | ./plan.sh --noprompt reflect; sqlite3 \$LBPLAN_DB_PATH 'INSERT INTO inbox SELECT * FROM _bk_inbox; UPDATE collection_items SET status = \"Pending\" WHERE id IN (SELECT id FROM _bk_pending); DROP TABLE _bk_inbox; DROP TABLE _bk_pending;'" \
+  "\[v\].*Ground"
 
 # Invalid key on the main menu is ignored (redraws); then 'g' still works
 test_command_output "Reflect - invalid key at main menu ignored" \
-  "printf 'x\ng\nb\nq\n' | ./plan.sh --noprompt reflect" "Reviewing: Ground"
+  "printf 'x\ng\nb\nq\n' | ./plan.sh --noprompt reflect" "═══ Ground ═══"
 
-# Invalid key on the horizon screen is ignored (redraws); then 'b' returns
-test_command_output "Reflect - invalid key at horizon menu ignored" \
-  "printf 'g\nz\nb\nq\n' | ./plan.sh --noprompt reflect" "Reviewing: Ground"
+# Invalid key on the ground actions screen is ignored (redraws); then 'b' returns
+test_command_output "Reflect - invalid key at ground menu ignored" \
+  "printf 'g\nz\nb\nq\n' | ./plan.sh --noprompt reflect" "═══ Ground ═══"
+
+# Horizon 1 actions screen surfaces the three review actions
+test_command_output "Reflect - h1 actions screen offers Decide Projects" \
+  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Decide Projects"
+test_command_output "Reflect - h1 actions screen offers Add Next Actions" \
+  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Next Actions"
+test_command_output "Reflect - h1 actions screen offers Decide Tasks in Project" \
+  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Decide Tasks in Project"
+
+# Mark complete on H1 is blocked while any of the three counters > 0
+test_command_output "Reflect - h1 mark complete is blocked when state pending" \
+  "printf '1\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "blocked"
+
+# Add Next Actions picker lists projects without a pending task
+test_command_output "Reflect - h1 next action picker shows project without tasks" \
+  "printf '1\nn\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Add Next Actions ═══"
+
+# Horizon 2 actions screen surfaces the four review actions
+test_command_output "Reflect - h2 actions screen offers Validate Areas" \
+  "printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Validate Areas"
+test_command_output "Reflect - h2 actions screen offers Add Visions" \
+  "printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Visions"
+test_command_output "Reflect - h2 actions screen offers Add Goals" \
+  "printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Goals"
+test_command_output "Reflect - h2 actions screen offers Add Projects" \
+  "printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Projects"
+
+# Mark complete on H2 is blocked while any of the four counters > 0
+test_command_output "Reflect - h2 mark complete is blocked when state pending" \
+  "printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "blocked"
+
+# Validate Areas picker shows pending areas (any area where last_validated_at
+# is not in the current YYYY-MM is pending; freshly created areas are NULL)
+test_command_output "Reflect - h2 validate picker shows header" \
+  "printf '2\na\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Validate Areas ═══"
+
+# Add Visions picker reachable from H2
+test_command_output "Reflect - h2 add vision picker shows header" \
+  "printf '2\nv\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Add Visions ═══"
+
+# Horizon 3 actions screen surfaces the two review actions
+test_command_output "Reflect - h3 actions screen offers Decide Goals" \
+  "printf '3\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Decide Goals"
+test_command_output "Reflect - h3 actions screen offers Add Projects" \
+  "printf '3\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Projects"
+
+# Mark complete on H3 is blocked while any of the two counters > 0
+test_command_output "Reflect - h3 mark complete is blocked when state pending" \
+  "printf '3\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "blocked"
+
+# Add Projects picker reachable from H3 (lists goals without project)
+test_command_output "Reflect - h3 add project picker shows header" \
+  "printf '3\np\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Add Projects ═══"
+
+# Horizon 4 actions screen surfaces the two review actions
+test_command_output "Reflect - h4 actions screen offers Decide Visions" \
+  "printf '4\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Decide Visions"
+test_command_output "Reflect - h4 actions screen offers Add Goals" \
+  "printf '4\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Goals"
+
+# Mark complete on H4 is blocked while any of the two counters > 0
+test_command_output "Reflect - h4 mark complete is blocked when state pending" \
+  "printf '4\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "blocked"
+
+# Add Goals picker reachable from H4 (lists visions without goal)
+test_command_output "Reflect - h4 add goal picker shows header" \
+  "printf '4\ng\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Add Goals ═══"
+
+# Setup: ensure there's at least one principle so the validate picker has rows.
+# (The principle CRUD test deletes its fixture; without this the (r) action is
+# gated and the picker never opens.)
+./plan.sh principle add 'Consistencia acima de intensidade' >/dev/null 2>&1
+
+# Horizon 5 actions screen surfaces all four review actions
+test_command_output "Reflect - h5 actions screen offers Validate Purposes" \
+  "printf '5\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Validate Purposes"
+test_command_output "Reflect - h5 actions screen offers Validate Principles" \
+  "printf '5\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Validate Principles"
+test_command_output "Reflect - h5 actions screen offers Add Purpose" \
+  "printf '5\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Purpose"
+test_command_output "Reflect - h5 actions screen offers Add Principle" \
+  "printf '5\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "Add Principle"
+
+# Mark complete on H5 is blocked while any validation is pending
+test_command_output "Reflect - h5 mark complete is blocked when state pending" \
+  "printf '5\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "blocked"
+
+# Validate Purposes picker reachable from H5
+test_command_output "Reflect - h5 validate purposes picker shows header" \
+  "printf '5\np\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Validate Purposes ═══"
+
+# Validate Principles picker reachable from H5
+test_command_output "Reflect - h5 validate principles picker shows header" \
+  "printf '5\nr\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Validate Principles ═══"
+
+# Ground (d) opens a picker that lists collections with pending decisions
+# (Setup: a fresh collection with two undecided items so an undecided pair exists)
+./plan.sh collection add 'Boardgames'           >/dev/null 2>&1
+./plan.sh item add 'Gloomhaven' --collection Boardgames >/dev/null 2>&1
+./plan.sh item add 'Wingspan'   --collection Boardgames >/dev/null 2>&1
+test_command_output "Reflect - ground decide picker shows header" \
+  "printf 'g\nd\nb\nb\nq\n' | ./plan.sh --nocolor --noprompt reflect" "═══ Decide Collections ═══"
 
 # Engage workflow tests
 #
@@ -531,41 +668,38 @@ test_command_output "Reflect - invalid key at horizon menu ignored" \
 #   - one overdue task (past due_date)
 #   - one pending recurring
 #   - one pending habit
-#   (Next Available task + pending collection items already exist from earlier tests.)
+#   (pending collection items already exist from earlier tests.)
 #
 # With these, the deterministic 1-based item ordering is:
 #   1 = overdue task     ("Tarefa atrasada")
-#   2 = next-available   ("Comprar peças")
-#   3 = recurring        ("Trocar filtro")
-#   4 = habit            ("Alongar")
-#   5 = collection item  ("Hyperion" or "Snow Crash" — randomized from Books)
+#   2 = recurring        ("Trocar filtro")
+#   3 = habit            ("Alongar")
+#   4 = collection item  ("Hyperion" or "Snow Crash" — randomized from Books)
+# Next Actions only renders when overdue/today/3-days are empty, so it is not
+# in this fixture (covered by a dedicated test below).
 ./plan.sh task add 'Tarefa atrasada' --due-date '2026-01-01' >/dev/null 2>&1
 ./plan.sh recurring add 'Trocar filtro' --recurrence monthly >/dev/null 2>&1
 ./plan.sh habit add 'Alongar' --recurrence daily >/dev/null 2>&1
 
 # Dashboard header
 test_command_output "Engage - TUI dashboard header" \
-  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "Lowbit Planner - Engage"
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "\[E\] engage"
 
 # Overdue section is shown when applicable
 test_command_output "Engage - shows Overdue section" \
-  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Overdue ──"
-
-# Next Available fallback section is shown when no tasks due in 3 days
-test_command_output "Engage - shows Next Available fallback" \
-  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Next Available ──"
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "═══ Overdue ═══"
 
 # Recurring section is shown
 test_command_output "Engage - shows Recurring section" \
-  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Recurring ──"
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "═══ Recurring ═══"
 
 # Habit section is shown
 test_command_output "Engage - shows Habit section" \
-  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Habit ──"
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "═══ Habit ═══"
 
 # Collection Item section is shown
 test_command_output "Engage - shows Collection Item section" \
-  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "── Collection Item ──"
+  "printf 'q\n' | ./plan.sh --nocolor --noprompt engage" "═══ Collection Item ═══"
 
 # Dashboard action prompt footer
 test_command_output "Engage - shows action prompt" \
@@ -603,11 +737,32 @@ test_command_output "Engage - invalid key in submenu ignored" \
 test_command_output "Engage - refresh stays on dashboard" \
   "printf 'r\nq\n' | ./plan.sh --nocolor --noprompt engage" "Enter item"
 
+# In-progress task gets the [ip] badge inline. Setup: flip the overdue task to
+# In Progress directly via sqlite (avoids guessing its task ID), render the
+# dashboard, then restore Pending so subsequent tests stay deterministic.
+test_command_output "Engage - in-progress task shows [ip] badge" \
+  "sqlite3 \$LBPLAN_DB_PATH \"UPDATE tasks SET status='In Progress' WHERE name='Tarefa atrasada';\" && \
+   printf 'q\n' | ./plan.sh --nocolor --noprompt engage; \
+   sqlite3 \$LBPLAN_DB_PATH \"UPDATE tasks SET status='Pending' WHERE name='Tarefa atrasada';\"" \
+  "\[ip\]"
+
+# Next Actions section renders only when overdue/today/3-days are all empty.
+# Setup: clear due_date and mark every existing task Done in a temporary save,
+# add 1 task in a project + 1 orphan task, render, then restore.
+test_command_output "Engage - next actions section shows project + orphan tasks" \
+  "sqlite3 \$LBPLAN_DB_PATH 'CREATE TABLE _bk_tasks AS SELECT id, status, due_date FROM tasks; UPDATE tasks SET status = \"Done\";' && \
+   ./plan.sh project add 'NA Project' --area Casa >/dev/null && \
+   ./plan.sh task add 'NA project task' --project 'NA Project' >/dev/null && \
+   ./plan.sh task add 'NA orphan task' >/dev/null && \
+   printf 'q\n' | ./plan.sh --nocolor --noprompt engage; \
+   sqlite3 \$LBPLAN_DB_PATH 'UPDATE tasks SET status = (SELECT status FROM _bk_tasks WHERE _bk_tasks.id = tasks.id), due_date = (SELECT due_date FROM _bk_tasks WHERE _bk_tasks.id = tasks.id) WHERE id IN (SELECT id FROM _bk_tasks); DELETE FROM tasks WHERE name IN (\"NA project task\", \"NA orphan task\"); DELETE FROM projects WHERE name = \"NA Project\"; DROP TABLE _bk_tasks;'" \
+  "═══ Next Actions ═══"
+
 # Negative: recurring submenu does NOT show Start/Stop.
-# Index 3 is the recurring in this fixture (see setup comment above).
+# Index 2 is the recurring in this fixture (see setup comment above).
 log_print info "--------------------------------"
 log_print info "Test: Engage - recurring submenu hides Start"
-if printf '3\nb\nq\n' | ./plan.sh --nocolor --noprompt engage 2>/dev/null | grep -q "(s) Start"; then
+if printf '2\nb\nq\n' | ./plan.sh --nocolor --noprompt engage 2>/dev/null | grep -q "(s) Start"; then
   log_print error "Result: Start option should not appear on recurring submenu"
 else
   log_print info "Result: ${color_green}OK${color_reset}"
