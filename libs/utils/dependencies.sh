@@ -14,12 +14,8 @@ dependencies_list="
 
 function dependencies_check() {
   for dependency in $dependencies_list; do
-    # Checking the dependency
-    which "${dependency}" > /dev/null 2>&1 ; this_rc=$?
-
-    # Validating
-    if [[ $this_rc -ne 0 ]] ; then
-      echo "Error: dependency '${dependency}' not found."
+    if ! command -v "${dependency}" > /dev/null 2>&1; then
+      echo "Error: dependency '${dependency}' not found. Please install it before running ${system_basename}."
       exit 1
     fi
   done
