@@ -5,7 +5,7 @@ CREATE TABLE meta (
   value TEXT
 );
 
-INSERT INTO meta VALUES ("db_schema", "10");
+INSERT INTO meta VALUES ('db_schema', '10');
 
 -- Workflow:Reflect:Reviews --
 

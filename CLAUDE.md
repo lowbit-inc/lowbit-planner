@@ -26,6 +26,14 @@ LBPLAN_DB_PATH=/tmp/custom.db ./plan.sh <command>
 
 There is no linter configured.
 
+## Cross-platform compatibility
+
+The project must run on both **macOS** (BSD toolchain) and **Linux** (GNU toolchain). Keep these rules in mind when making changes:
+
+- **SQL string literals** must always use single quotes (`'value'`). Double quotes are identifier delimiters in standard SQLite; Linux enforces this strictly (`SQLITE_DQS=0`), macOS is lenient.
+- **`date` command** differs between BSD (macOS) and GNU (Linux). All date arithmetic goes through helpers in `libs/utils/datetime.sh`, which detects the flavor at source time. Do not call `date` directly with platform-specific flags outside that file.
+- **`readlink`/`realpath`** — `plan.sh` already handles this with `readlink -f ... || realpath ...` fallback. Follow the same pattern if you need to resolve paths elsewhere.
+
 ## Architecture
 
 `plan.sh` is the single entry point. It sources all libraries, parses global flags (`--debug`, `--nocolor`, `--noprompt`), then dispatches to object or workflow handler functions.
@@ -74,7 +82,7 @@ Each object file follows the same pattern:
 When you need to evolve the schema, three things must change together:
 
 1. Add a new file at `libs/database/migrations/NNN_<snake_case_desc>.sql` where `NNN` is the next integer (zero-padded to 3 digits), with the SQL statements for the change. No `BEGIN`/`COMMIT` — the runner wraps each migration in its own transaction.
-2. Edit `libs/database/database_init.sql` inline to reflect the new schema as the baseline for fresh installs, and bump `INSERT INTO meta VALUES ("db_schema", "NNN")` to match.
+2. Edit `libs/database/database_init.sql` inline to reflect the new schema as the baseline for fresh installs, and bump `INSERT INTO meta VALUES ('db_schema', 'NNN')` to match. **Always use single quotes for string literals in SQL** — double quotes are identifier delimiters in standard SQLite (Linux enforces this strictly; macOS is lenient).
 3. Bump the default in `database_expected_schema="${LBPLAN_EXPECTED_SCHEMA:-NNN}"` in `libs/database/database.sh`.
 
 The three must agree. A unit test enforces this. Every invocation of `./plan.sh` auto-applies pending migrations before dispatching; `./plan.sh migrate status` and `./plan.sh migrate up` let you inspect or force the process manually.
