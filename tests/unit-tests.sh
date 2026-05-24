@@ -549,7 +549,7 @@ test_command_output "Reflect - ground mark complete is blocked when state pendin
 # (m) marks the review as complete once state is empty; main menu shows [v].
 # Saves and restores inbox + collection_items state so subsequent tests are unaffected.
 test_command_output "Reflect - mark ground complete updates badge" \
-  "sqlite3 \$LBPLAN_DB_PATH 'CREATE TABLE _bk_inbox AS SELECT * FROM inbox; CREATE TABLE _bk_pending AS SELECT id FROM collection_items WHERE status != \"Done\"; DELETE FROM inbox; UPDATE collection_items SET status = \"Done\" WHERE id IN (SELECT id FROM _bk_pending);' && printf 'g\nm\n\nq\n' | ./plan.sh --noprompt reflect; sqlite3 \$LBPLAN_DB_PATH 'INSERT INTO inbox SELECT * FROM _bk_inbox; UPDATE collection_items SET status = \"Pending\" WHERE id IN (SELECT id FROM _bk_pending); DROP TABLE _bk_inbox; DROP TABLE _bk_pending;'" \
+  "sqlite3 \$LBPLAN_DB_PATH 'CREATE TABLE _bk_inbox AS SELECT * FROM inbox; CREATE TABLE _bk_pending AS SELECT id FROM collection_items WHERE status != '\"'\"'Done'\"'\"'; DELETE FROM inbox; UPDATE collection_items SET status = '\"'\"'Done'\"'\"' WHERE id IN (SELECT id FROM _bk_pending);' && printf 'g\nm\n\nq\n' | ./plan.sh --noprompt reflect; sqlite3 \$LBPLAN_DB_PATH 'INSERT INTO inbox SELECT * FROM _bk_inbox; UPDATE collection_items SET status = '\"'\"'Pending'\"'\"' WHERE id IN (SELECT id FROM _bk_pending); DROP TABLE _bk_inbox; DROP TABLE _bk_pending;'" \
   "\[v\].*Ground"
 
 # Invalid key on the main menu is ignored (redraws); then 'g' still works
@@ -750,12 +750,12 @@ test_command_output "Engage - in-progress task shows [ip] badge" \
 # Setup: clear due_date and mark every existing task Done in a temporary save,
 # add 1 task in a project + 1 orphan task, render, then restore.
 test_command_output "Engage - next actions section shows project + orphan tasks" \
-  "sqlite3 \$LBPLAN_DB_PATH 'CREATE TABLE _bk_tasks AS SELECT id, status, due_date FROM tasks; UPDATE tasks SET status = \"Done\";' && \
+  "sqlite3 \$LBPLAN_DB_PATH 'CREATE TABLE _bk_tasks AS SELECT id, status, due_date FROM tasks; UPDATE tasks SET status = '\"'\"'Done'\"'\"';' && \
    ./plan.sh project add 'NA Project' --area Casa >/dev/null && \
    ./plan.sh task add 'NA project task' --project 'NA Project' >/dev/null && \
    ./plan.sh task add 'NA orphan task' >/dev/null && \
    printf 'q\n' | ./plan.sh --nocolor --noprompt engage; \
-   sqlite3 \$LBPLAN_DB_PATH 'UPDATE tasks SET status = (SELECT status FROM _bk_tasks WHERE _bk_tasks.id = tasks.id), due_date = (SELECT due_date FROM _bk_tasks WHERE _bk_tasks.id = tasks.id) WHERE id IN (SELECT id FROM _bk_tasks); DELETE FROM tasks WHERE name IN (\"NA project task\", \"NA orphan task\"); DELETE FROM projects WHERE name = \"NA Project\"; DROP TABLE _bk_tasks;'" \
+   sqlite3 \$LBPLAN_DB_PATH 'UPDATE tasks SET status = (SELECT status FROM _bk_tasks WHERE _bk_tasks.id = tasks.id), due_date = (SELECT due_date FROM _bk_tasks WHERE _bk_tasks.id = tasks.id) WHERE id IN (SELECT id FROM _bk_tasks); DELETE FROM tasks WHERE name IN ('\"'\"'NA project task'\"'\"', '\"'\"'NA orphan task'\"'\"'); DELETE FROM projects WHERE name = '\"'\"'NA Project'\"'\"'; DROP TABLE _bk_tasks;'" \
   "═══ Next Actions ═══"
 
 # Negative: recurring submenu does NOT show Start/Stop.
@@ -821,7 +821,7 @@ log_print info "--------------------------------"
 # Invariant: database_expected_schema default in database.sh must equal the
 # db_schema value seeded in database_init.sql.
 expected_in_sh=$(grep '^database_expected_schema=' libs/database/database.sh | sed 's/.*:-\([0-9]*\)}.*/\1/')
-seed_in_sql=$(grep 'INSERT INTO meta VALUES ("db_schema"' libs/database/database_init.sql | sed 's/.*"\([0-9]*\)".*/\1/')
+seed_in_sql=$(grep "INSERT INTO meta VALUES ('db_schema'" libs/database/database_init.sql | sed "s/.*'\([0-9]*\)'.*/\1/")
 log_print info "--------------------------------"
 log_print info "Test: database_expected_schema matches init.sql seed"
 if [[ "${expected_in_sh}" == "${seed_in_sql}" ]]; then
