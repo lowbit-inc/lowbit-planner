@@ -136,6 +136,9 @@ function engage_screen_item() {
     fi
     printf "  ${color_green}(c)${color_reset} Complete\n"
     printf "  ${color_green}(d)${color_reset} Delete\n"
+    if engage_type_supports_dates "${this_type}"; then
+      printf "  ${color_green}(e)${color_reset} Edit dates\n"
+    fi
     printf "  ---\n"
     printf "  ${color_yellow}(b)${color_reset} Back to dashboard\n"
     printf "  ${color_yellow}(q)${color_reset} Quit\n\n"
@@ -161,6 +164,12 @@ function engage_screen_item() {
         ;;
       c|C) engage_run_action "${this_type}" "complete" "${this_id}" ; return 0 ;;
       d|D) engage_run_action "${this_type}" "delete"   "${this_id}" ; return 0 ;;
+      e|E)
+        if engage_type_supports_dates "${this_type}"; then
+          engage_screen_edit_dates "${this_id}" "${this_name}"
+          [[ "${this_engage_choice}" == "quit" ]] && return 0
+        fi
+        ;;
       b|B) return 0 ;;
       q|Q) this_engage_choice="quit" ; return 0 ;;
       *)   ;; # invalid - redraw
@@ -203,6 +212,12 @@ function engage_type_supports_start() {
   esac
 }
 
+# Return 0 (true) if the given item type supports start/due date editing.
+# Args: <type>
+function engage_type_supports_dates() {
+  [[ "$1" == "task" ]]
+}
+
 # Dispatch to the backend <type>_<action> function using the item's ID, then
 # pause so the user can read the resulting output before the dashboard redraws.
 # "item" maps to the backend "item_*" functions (collection items).
@@ -219,6 +234,89 @@ function engage_run_action() {
     this_engage_choice="quit"
     return 0
   fi
+}
+
+############
+# Layer 3  #
+# Date editor
+############
+
+# Interactive sub-screen to set or clear start_date / due_date on a task.
+# Stays open until the user presses (b)ack; sets this_engage_choice="quit" on EOF.
+# Args: <task_id> <task_name>
+function engage_screen_edit_dates() {
+  local this_id="$1"
+  local this_name="$2"
+  local this_choice this_input this_start this_due _
+
+  while true; do
+    IFS=',' read -r this_start this_due <<< "$(database_run csv "SELECT start_date, due_date FROM tasks WHERE id = ${this_id};")"
+    this_start=$(echo "${this_start}" | tr -d '"')
+    this_due=$(echo "${this_due}" | tr -d '"')
+
+    clear
+    workflow_print_header "engage"
+    printf "${color_bold}${color_bright_blue}═══ edit dates: ${this_name} ═══${color_reset}\n\n"
+    printf "  Start date : ${color_cyan}%s${color_reset}\n" "${this_start:-none}"
+    printf "  Due date   : ${color_cyan}%s${color_reset}\n\n" "${this_due:-none}"
+    printf "  ${color_green}(s)${color_reset} Set start date\n"
+    printf "  ${color_green}(d)${color_reset} Set due date\n"
+    printf "  ${color_green}(S)${color_reset} Clear start date\n"
+    printf "  ${color_green}(D)${color_reset} Clear due date\n"
+    printf "  ---\n"
+    printf "  ${color_yellow}(b)${color_reset} Back\n\n"
+    printf "> "
+
+    if ! read this_choice; then
+      this_engage_choice="quit"
+      return 0
+    fi
+
+    case "${this_choice}" in
+      s)
+        printf "New start date (YYYY-MM-DD): "
+        if ! read this_input; then this_engage_choice="quit" ; return 0 ; fi
+        if [[ -z "${this_input}" ]]; then
+          continue
+        elif [[ "${this_input}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+          generic_set_property tasks id "${this_id}" start_date "'${this_input}'" "${this_name}"
+          printf "\n${color_gray}Press ENTER to continue...${color_reset}\n"
+          read _ || { this_engage_choice="quit" ; return 0 ; }
+        else
+          printf "${color_red}Invalid date — use YYYY-MM-DD.${color_reset}\n"
+          printf "${color_gray}Press ENTER to continue...${color_reset}\n"
+          read _ || { this_engage_choice="quit" ; return 0 ; }
+        fi
+        ;;
+      d)
+        printf "New due date (YYYY-MM-DD): "
+        if ! read this_input; then this_engage_choice="quit" ; return 0 ; fi
+        if [[ -z "${this_input}" ]]; then
+          continue
+        elif [[ "${this_input}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+          generic_set_property tasks id "${this_id}" due_date "'${this_input}'" "${this_name}"
+          printf "\n${color_gray}Press ENTER to continue...${color_reset}\n"
+          read _ || { this_engage_choice="quit" ; return 0 ; }
+        else
+          printf "${color_red}Invalid date — use YYYY-MM-DD.${color_reset}\n"
+          printf "${color_gray}Press ENTER to continue...${color_reset}\n"
+          read _ || { this_engage_choice="quit" ; return 0 ; }
+        fi
+        ;;
+      S)
+        generic_set_property tasks id "${this_id}" start_date "NULL" "${this_name}"
+        printf "\n${color_gray}Press ENTER to continue...${color_reset}\n"
+        read _ || { this_engage_choice="quit" ; return 0 ; }
+        ;;
+      D)
+        generic_set_property tasks id "${this_id}" due_date "NULL" "${this_name}"
+        printf "\n${color_gray}Press ENTER to continue...${color_reset}\n"
+        read _ || { this_engage_choice="quit" ; return 0 ; }
+        ;;
+      b|B) return 0 ;;
+      *)   ;; # invalid - redraw
+    esac
+  done
 }
 
 # Return 0 (true) if at least one task matches the given WHERE fragment (which
